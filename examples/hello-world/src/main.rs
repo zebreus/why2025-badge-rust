@@ -1,14 +1,10 @@
 #![no_std]
 #![no_main]
 
-unsafe extern "C" {
-    fn printf(format: *const u8, ...) -> i32;
-}
-
 #[unsafe(no_mangle)]
 pub extern "C" fn main() -> i32 {
     unsafe {
-        printf(b"Hello, world 2! (from rust)\n\0".as_ptr());
+        why2025_badge_sys::printf(b"Hello, world! (from rust)\n\0".as_ptr());
     }
     121
 }

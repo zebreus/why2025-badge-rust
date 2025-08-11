@@ -1,0 +1,19 @@
+[workspace]
+resolver = "3"
+members = ["examples/hello-world"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Zebreus"]
+license = "AGPL-3.0"
+description = "Various support packages for using rust on the WHY2025 badge"
+repository = "https://github.com/zebreus/why2025-badge-rust"
+
+[profile.release]
+panic = 'abort'
+lto = "fat"
+
+[profile.dev]
+panic = 'abort'
+lto = "thin"

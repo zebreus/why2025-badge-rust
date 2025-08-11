@@ -1,0 +1,9 @@
+[package]
+version.workspace = true
+name = "hello-world"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["why2025", "badge"]
+categories = ["embedded", "no-std", "os"]

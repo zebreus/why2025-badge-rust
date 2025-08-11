@@ -44,19 +44,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "embedded-graphics-why2025-badge"
-version = "0.1.0"
-dependencies = [
- "embedded-graphics",
-]
-
-[[package]]
 name = "float-cmp"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98de4bbd547a563b716d8dfa9aad1cb19bfab00f4fa09a6a4ed21dbcf44ce9c4"
 dependencies = [
  "num-traits",
+]
+
+[[package]]
+name = "graphics-demo"
+version = "0.1.0"
+dependencies = [
+ "embedded-graphics",
+ "why2025-badge-embedded-graphics",
+ "why2025-badge-sys",
 ]
 
 [[package]]
@@ -79,6 +81,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "why2025-badge-embedded-graphics"
+version = "0.1.0"
+dependencies = [
+ "embedded-graphics",
+ "why2025-badge-sys",
 ]
 
 [[package]]

@@ -1,5 +1,5 @@
 [package]
-name = "embedded-graphics-why2025-badge"
+name = "why2025-badge-embedded-graphics"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -10,3 +10,4 @@ categories = ["embedded", "no-std", "os", "graphics"]
 
 [dependencies]
 embedded-graphics.workspace = true
+why2025-badge-sys.workspace = true

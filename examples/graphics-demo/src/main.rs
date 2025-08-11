@@ -1,0 +1,114 @@
+#![no_std]
+#![no_main]
+
+use embedded_graphics::{
+    mono_font::{MonoTextStyle, ascii::FONT_6X10},
+    pixelcolor::Rgb565,
+    prelude::*,
+    primitives::{
+        Circle, PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, StrokeAlignment, Triangle,
+    },
+    text::{Alignment, Text},
+};
+use why2025_badge_embedded_graphics::Why2025BadgeWindow;
+
+#[unsafe(no_mangle)]
+pub extern "C" fn main() -> i32 {
+    unsafe {
+        why2025_badge_sys::printf(b"Hello, world! (from rust)\n\0".as_ptr());
+    }
+    let mut display = Why2025BadgeWindow::new(
+        Size {
+            width: 200,
+            height: 200,
+        },
+        "Graphics Demo",
+    );
+    loop {
+        let val = draw_stuff(&mut display);
+        display.flush();
+        if val.is_err() {
+            unsafe {
+                why2025_badge_sys::printf(b"Error drawing to display\n\0".as_ptr());
+            }
+        } else {
+            unsafe {
+                why2025_badge_sys::printf(b"Drawing complete\n\0".as_ptr());
+            }
+        }
+    }
+}
+
+fn draw_stuff(display: &mut Why2025BadgeWindow) -> Result<(), ()> {
+    // This function is just a placeholder to show where you would put additional drawing logic.
+    // You can add more shapes, text, or other graphics here.
+
+    // Create styles used by the drawing operations.
+    let thin_stroke = PrimitiveStyle::with_stroke(Rgb565::BLUE, 1);
+    let thick_stroke = PrimitiveStyle::with_stroke(Rgb565::RED, 3);
+    let border_stroke = PrimitiveStyleBuilder::new()
+        .stroke_color(Rgb565::YELLOW)
+        .stroke_width(3)
+        .stroke_alignment(StrokeAlignment::Inside)
+        .build();
+    let fill = PrimitiveStyle::with_fill(Rgb565::GREEN);
+    let character_style = MonoTextStyle::new(&FONT_6X10, Rgb565::WHITE);
+
+    let yoffset = 10;
+
+    unsafe {
+        why2025_badge_sys::printf(b"BBBBBB\n\0".as_ptr());
+    }
+    // Draw a 3px wide outline around the display.
+    display
+        .bounding_box()
+        .into_styled(border_stroke)
+        .draw(display)?;
+
+    unsafe {
+        why2025_badge_sys::printf(b"CCCCCC\n\0".as_ptr());
+    }
+
+    // Draw a triangle.
+    Triangle::new(
+        Point::new(16, 16 + yoffset),
+        Point::new(16 + 16, 16 + yoffset),
+        Point::new(16 + 8, yoffset),
+    )
+    .into_styled(thin_stroke)
+    .draw(display)?;
+
+    // Draw a filled square
+    Rectangle::new(Point::new(52, yoffset), Size::new(16, 16))
+        .into_styled(fill)
+        .draw(display)?;
+
+    // Draw a circle with a 3px wide stroke.
+    Circle::new(Point::new(88, yoffset), 17)
+        .into_styled(thick_stroke)
+        .draw(display)?;
+
+    unsafe {
+        why2025_badge_sys::printf(b"DDDDDD\n\0".as_ptr());
+    }
+
+    // Draw centered text.
+    let text = "embedded-graphics";
+    Text::with_alignment(
+        text,
+        display.bounding_box().center() + Point::new(0, 15),
+        character_style,
+        Alignment::Center,
+    )
+    .draw(display)?;
+    unsafe {
+        why2025_badge_sys::printf(b"EEEEEEE\n\0".as_ptr());
+    }
+
+    Ok(())
+}
+
+#[panic_handler]
+fn panic(_info: &core::panic::PanicInfo) -> ! {
+    loop {}
+}

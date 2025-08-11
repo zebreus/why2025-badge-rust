@@ -22,5 +22,6 @@ lto = "fat"
 panic = 'abort'
 lto = "thin"
 
-[dependencies]
+[workspace.dependencies]
 embedded-graphics = "0.8.1"
+why2025-badge-sys = { path = "why2025-badge-sys" }

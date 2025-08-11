@@ -7,3 +7,6 @@ license.workspace = true
 repository.workspace = true
 keywords = ["why2025", "badge"]
 categories = ["embedded", "no-std", "os"]
+
+[dependencies]
+why2025-badge-sys.workspace = true

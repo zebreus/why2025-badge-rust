@@ -33,7 +33,7 @@ RUST_ENUMS=(
 BINDGEN_COMMAND=(
     bindgen
     headers/all.h
-    -o src/lib.rs
+    -o src/lib.rs.tmp
     --use-array-pointers-in-arguments
     --use-core
     --rust-edition 2024
@@ -41,8 +41,8 @@ BINDGEN_COMMAND=(
     --generate-cstr
     --impl-debug
     --default-enum-style rust
-    --depfile depfile.txt
     # --dump-preprocessed-input
+    --no-size_t-is-usize
     --generate-inline-functions
     --rustfmt-configuration-file $(pwd)/../rustfmt.toml
     --allowlist-item stdout
@@ -103,9 +103,18 @@ echo "#include \"missing.h\"" >> headers/all.h
 echo "#include \"esp-termios.h\"" >> headers/all.h
 echo "#include \"gcc-builtins.h\"" >> headers/all.h
 
-export BINDGEN_EXTRA_CLANG_ARGS="-isystem headers"
+export BINDGEN_EXTRA_CLANG_ARGS="-isystem headers -target riscv32-esp-elf"
 
 "${BINDGEN_COMMAND[@]}"
+
+cat <<EOF > src/lib.rs
+#![no_std]
+#![allow(nonstandard_style)]
+#![allow(non_camel_case_types)]
+
+EOF
+cat src/lib.rs.tmp >> src/lib.rs
+rm src/lib.rs.tmp
 
 function check_functions {
     local functions=("$@")

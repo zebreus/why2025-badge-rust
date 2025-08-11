@@ -1,0 +1,12 @@
+[package]
+name = "embedded-graphics-why2025-badge"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["why2025", "badge"]
+categories = ["embedded", "no-std", "os", "graphics"]
+
+[dependencies]
+embedded-graphics.workspace = true

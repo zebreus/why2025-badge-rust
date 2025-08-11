@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["examples/hello-world"]
+members = ["examples/hello-world", "embedded-graphics-why2025-badge"]
 
 [workspace.package]
 version = "0.1.0"
@@ -17,3 +17,6 @@ lto = "fat"
 [profile.dev]
 panic = 'abort'
 lto = "thin"
+
+[dependencies]
+embedded-graphics = "0.8.1"

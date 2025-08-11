@@ -1,4 +1,7 @@
 #![no_std]
+extern crate alloc;
+
+use alloc::string::{String, ToString};
 use core::ptr::null_mut;
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::{geometry::Size, pixelcolor::Rgb888, prelude::*};
@@ -19,15 +22,58 @@ pub struct Why2025BadgeWindow {
     framebuffer: *mut framebuffer_t,
 }
 
+pub struct Why2025BadgeWindowConfig {
+    size: Size,
+    title: String,
+    fullscreen: bool,
+}
+
+impl Why2025BadgeWindowConfig {
+    /// Config for a new floating Window
+    pub fn new_floating(size: Size, title: &str) -> Self {
+        Self {
+            size,
+            title: title.to_string(),
+            fullscreen: false,
+        }
+    }
+    /// Config for a new fullscreen Window
+    pub fn new_fullscreen() -> Self {
+        Self {
+            size: Size {
+                width: 700,
+                height: 700,
+            },
+            title: String::new(),
+            fullscreen: true,
+        }
+    }
+    pub fn title(mut self, title: &str) -> Self {
+        self.title = title.to_string();
+        self
+    }
+    pub fn size(mut self, size: Size) -> Self {
+        self.size = size;
+        self
+    }
+}
+
 impl Why2025BadgeWindow {
-    /// Creates a new Window.
-    // TODO: Add an option for flags
-    pub fn new(size: Size, title: &str) -> Self {
+    /// Creates a new floating Window
+    pub fn new_floating(size: Size, title: &str) -> Self {
+        Self::new(Why2025BadgeWindowConfig::new_floating(size, title))
+    }
+    /// Creates a new fullscreen Window
+    pub fn new_fullscreen() -> Self {
+        Self::new(Why2025BadgeWindowConfig::new_fullscreen())
+    }
+    /// Creates a new Window with the given configuration.
+    pub fn new(config: Why2025BadgeWindowConfig) -> Self {
         let size = window_size_t {
-            w: size.width as i32,
-            h: size.height as i32,
+            w: config.size.width as i32,
+            h: config.size.height as i32,
         };
-        let title_bytes = title.as_bytes();
+        let title_bytes = config.title.as_bytes();
         assert!(
             title_bytes.len() < 63,
             "Title must be less than 63 bytes long"
@@ -45,7 +91,13 @@ impl Why2025BadgeWindow {
             window_create(
                 this.title.as_ptr() as *const u8,
                 size.clone(),
-                window_flag_t::WINDOW_FLAG_DOUBLE_BUFFERED,
+                window_flag_t::WINDOW_FLAG_DOUBLE_BUFFERED
+                    | (if config.fullscreen {
+                        window_flag_t::WINDOW_FLAG_UNDECORATED
+                            | window_flag_t::WINDOW_FLAG_FULLSCREEN
+                    } else {
+                        window_flag_t::WINDOW_FLAG_NONE
+                    }),
             )
         };
 

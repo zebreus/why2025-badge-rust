@@ -3,6 +3,6 @@
     "rust-analyzer.check.allTargets": false,
     "rust-analyzer.check.extraArgs": [
         "--target",
-        "riscv32imafc-unknown-none-elf"
+        "x86_64-unknown-linux-gnu"
     ]
 }

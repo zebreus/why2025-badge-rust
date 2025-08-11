@@ -10,7 +10,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 authors = ["Zebreus"]
 license = "AGPL-3.0"
@@ -26,8 +26,8 @@ panic = 'abort'
 lto = "thin"
 
 [workspace.dependencies]
-why2025-badge-sys = { path = "why2025-badge-sys", version = "0.1.0" }
-why2025-badge-embedded-graphics = { path = "why2025-badge-embedded-graphics", version = "0.1.0" }
+why2025-badge-sys = { path = "why2025-badge-sys", version = "0.2.0" }
+why2025-badge-embedded-graphics = { path = "why2025-badge-embedded-graphics", version = "0.2.0" }
 embedded-graphics = "0.8.1"
 mousefood = { git = "https://github.com/j-g00da/mousefood.git", default-features = false, features = [
     "fonts",

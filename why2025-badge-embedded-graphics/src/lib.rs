@@ -41,8 +41,8 @@ impl Why2025BadgeWindowConfig {
     pub fn new_fullscreen() -> Self {
         Self {
             size: Size {
-                width: 700,
-                height: 700,
+                width: 720,
+                height: 720,
             },
             title: String::new(),
             fullscreen: true,

@@ -107,12 +107,7 @@ export BINDGEN_EXTRA_CLANG_ARGS="-isystem headers -target riscv32-esp-elf"
 
 "${BINDGEN_COMMAND[@]}"
 
-cat <<EOF > src/lib.rs
-#![no_std]
-#![allow(nonstandard_style)]
-#![allow(non_camel_case_types)]
-
-EOF
+cat lib.rs.template > src/lib.rs
 cat src/lib.rs.tmp >> src/lib.rs
 rm src/lib.rs.tmp
 

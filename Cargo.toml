@@ -1,6 +1,10 @@
 [workspace]
 resolver = "3"
-members = ["examples/hello-world", "embedded-graphics-why2025-badge"]
+members = [
+    "examples/hello-world",
+    "embedded-graphics-why2025-badge",
+    "why2025-badge-sys",
+]
 
 [workspace.package]
 version = "0.1.0"

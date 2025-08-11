@@ -1,0 +1,5 @@
+== Hello World
+
+Minimal example for using rust on the WHY2025 badge
+
+This example only works when used in this workspace. If you want to start a project, use [rust_starter](https://github.com/zebreus/why2025-rust-starter) instead, as that is standalone.

@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+extern crate alloc;
 
 use embedded_graphics::{
     mono_font::{MonoTextStyle, ascii::FONT_6X10},
@@ -17,7 +18,7 @@ pub extern "C" fn main() -> i32 {
     unsafe {
         why2025_badge_sys::printf(b"Hello, world! (from rust)\n\0".as_ptr());
     }
-    let mut display = Why2025BadgeWindow::new(
+    let mut display = Why2025BadgeWindow::new_floating(
         Size {
             width: 200,
             height: 200,
@@ -108,7 +109,30 @@ fn draw_stuff(display: &mut Why2025BadgeWindow) -> Result<(), ()> {
     Ok(())
 }
 
+// Allocator and panic handler setup
+use talc::{ClaimOnOom, Span, Talc, Talck};
+
+const HEAP_SIZE: usize = 1024 * 300; // 300KB heap size
+static mut HEAP: [u8; HEAP_SIZE] = [0u8; HEAP_SIZE];
+#[global_allocator]
+static ALLOCATOR: Talck<spin::Mutex<()>, ClaimOnOom> =
+    Talc::new(unsafe { ClaimOnOom::new(Span::from_array((&raw const HEAP).cast_mut())) }).lock();
+
 #[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
+fn panic(panic_info: &core::panic::PanicInfo) -> ! {
+    unsafe {
+        let maybe_msg = alloc::string::ToString::to_string(&panic_info.message());
+        let msg = maybe_msg.as_ptr();
+        why2025_badge_sys::printf(b"panic: %s\n\0".as_ptr(), msg);
+        if let Some(location) = panic_info.location() {
+            why2025_badge_sys::printf(
+                b"in %s:%d\n\0".as_ptr(),
+                location.file().as_ptr(),
+                location.line() as i32,
+            );
+        } else {
+            why2025_badge_sys::printf(b"no location information available :(\n\0".as_ptr());
+        }
+    }
     loop {}
 }

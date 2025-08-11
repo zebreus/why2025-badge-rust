@@ -10,3 +10,5 @@ categories = ["embedded", "no-std", "os"]
 
 [dependencies]
 why2025-badge-sys.workspace = true
+talc.workspace = true
+spin.workspace = true

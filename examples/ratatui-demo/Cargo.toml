@@ -1,6 +1,6 @@
 [package]
 version.workspace = true
-name = "graphics-demo"
+name = "ratatui-demo"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -12,5 +12,10 @@ categories = ["embedded", "no-std", "os"]
 why2025-badge-sys.workspace = true
 why2025-badge-embedded-graphics.workspace = true
 embedded-graphics.workspace = true
+mousefood.workspace = true
+ratatui-core.workspace = true
+embedded-graphics-unicodefonts.workspace = true
+ratatui.workspace = true
 talc.workspace = true
 spin.workspace = true
+rand.workspace = true

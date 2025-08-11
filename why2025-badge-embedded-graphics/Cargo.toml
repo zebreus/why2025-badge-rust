@@ -5,6 +5,7 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "An embedded graphics driver for the WHY2025 badge"
 keywords = ["why2025", "badge"]
 categories = ["embedded", "no-std", "os", "graphics"]
 

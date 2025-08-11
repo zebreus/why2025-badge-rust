@@ -25,5 +25,5 @@ lto = "thin"
 
 [workspace.dependencies]
 embedded-graphics = "0.8.1"
-why2025-badge-sys = { path = "why2025-badge-sys" }
-why2025-badge-embedded-graphics = { path = "why2025-badge-embedded-graphics" }
+why2025-badge-sys = { path = "why2025-badge-sys", version = "0.1.0" }
+why2025-badge-embedded-graphics = { path = "why2025-badge-embedded-graphics", version = "0.1.0" }

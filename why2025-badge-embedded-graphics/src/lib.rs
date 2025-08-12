@@ -115,6 +115,10 @@ impl Why2025BadgeWindow {
         this
     }
 
+    pub fn handle(&self) -> window_handle_t {
+        self.window
+    }
+
     pub fn flush(&mut self) {
         unsafe { window_present(self.window, false, null_mut(), 0) };
     }

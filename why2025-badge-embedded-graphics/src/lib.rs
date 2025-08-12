@@ -2,6 +2,7 @@
 extern crate alloc;
 
 use alloc::string::{String, ToString};
+use core::time::Duration;
 use core::{ffi::c_char, ptr::null_mut};
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::{geometry::Size, pixelcolor::Rgb888, prelude::*};
@@ -118,8 +119,8 @@ impl Why2025BadgeWindow {
         self.window
     }
 
-    pub fn poll(&self, block: bool, timeout_msec: u32) -> Option<Event> {
-        Event::from_raw(unsafe {  why2025_badge_sys::window_event_poll(self.window, block, timeout_msec) })
+    pub fn events(&self) -> EventPump {
+        EventPump(self.window)
     }
 
     pub fn flush(&mut self) {
@@ -175,6 +176,17 @@ pub struct KeyboardEvent {
     pub down: bool,
     pub repeat: bool,
 }
+
+pub struct EventPump(window_handle_t);
+
+impl EventPump {
+    pub fn poll(&self, block: bool, delay: Duration) -> Option<Event> {
+        Event::from_raw(unsafe {
+            why2025_badge_sys::window_event_poll(self.0, block, delay.as_millis() as u32)
+        })
+    }
+}
+
 
 #[derive(Debug, Clone)]
 pub enum Event {

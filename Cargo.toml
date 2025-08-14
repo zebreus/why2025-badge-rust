@@ -7,6 +7,7 @@ members = [
     "examples/ratatui-demo",
     "why2025-badge-embedded-graphics",
     "why2025-badge-sys",
+    "why2025-badge",
 ]
 
 [workspace.package]
@@ -26,6 +27,7 @@ panic = 'abort'
 lto = "thin"
 
 [workspace.dependencies]
+why2025-badge = { path = "why2025-badge", version = "0.2.0" }
 why2025-badge-sys = { path = "why2025-badge-sys", version = "0.2.0" }
 why2025-badge-embedded-graphics = { path = "why2025-badge-embedded-graphics", version = "0.2.0" }
 embedded-graphics = "0.8.1"

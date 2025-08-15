@@ -1,6 +1,7 @@
 use std::path::Path;
 use anyhow::{Result, Context};
-
+use serde::Serialize;
+use cargo_util_schemas::manifest::TomlManifest;
 
 #[derive(Debug, Serialize)]
 pub struct Metadata {
@@ -57,12 +58,12 @@ impl Metadata {
     }
     
     pub fn to_json(&self) -> Result<String> {
-        serde_json::to_string_pretty(self)
+        serde_json::to_string_pretty(self).context("failed to serialize metadata")
     }
 
     pub fn generate(&self, target_dir: &Path) -> Result<()> {
-        std::fs::write(target_dir.join("metadata.json"), self)?;
-        std::fs::write(target_dir.join("version.txt"), self)?;
+        std::fs::write(target_dir.join("metadata.json"), self.to_json()?)?;
+        std::fs::write(target_dir.join("version.txt"), self.version)?;
         Ok(())
     }
 }

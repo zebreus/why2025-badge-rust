@@ -63,7 +63,7 @@ impl Metadata {
 
     pub fn generate(&self, target_dir: &Path) -> Result<()> {
         std::fs::write(target_dir.join("metadata.json"), self.to_json()?)?;
-        std::fs::write(target_dir.join("version.txt"), self.version)?;
+        std::fs::write(target_dir.join("version.txt"), &self.version)?;
         Ok(())
     }
 }

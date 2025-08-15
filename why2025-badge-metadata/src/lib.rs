@@ -68,6 +68,6 @@ impl Metadata {
     }
 }
 
-pub fn generate(manifest: &Path, target_dir: &Path) -> Result<()> {
-    Metadata::parse(manifest)?.generate(target_dir)
+pub fn generate(manifest: AsRef<Path>, target_dir: AsRef<Path>) -> Result<()> {
+    Metadata::parse(manifest.as_ref())?.generate(target_dir.as_ref())
 }

@@ -16,3 +16,7 @@ extern int sig2str(int signum, char *str);
 extern int str2sig(const char *restrict str, int *restrict pnum);
 // Included in symbols as a function but is actually a value
 // extern void _ctype_(void);
+
+// Missing for some reason, but included in symbols.yml
+extern char *gets(char *s);
+extern int open(const char *pathname, int flags, ...);

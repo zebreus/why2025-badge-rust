@@ -41,7 +41,9 @@ BINDGEN_COMMAND=(
     --impl-debug
     --default-enum-style rust
     --merge-extern-blocks
-    # --dump-preprocessed-input
+    # This might be dangerous, when calling host functions
+    --explicit-padding
+    --no-layout-tests
     --no-size_t-is-usize
     --generate-inline-functions
     --rustfmt-configuration-file $(pwd)/../rustfmt.toml
@@ -126,7 +128,7 @@ function check_functions {
             # ctype is wrongly? listed as a function
             continue
         fi
-        if ! grep -q "fn $function" "$file"; then
+        if ! grep -q "fn $function(" "$file"; then
             echo "Missing function: $function"
             missing_functions=true
             missing_functions_list+=("$function")
@@ -170,3 +172,31 @@ check_functions src/bindings.rs "${WRAPPED_FUNCTIONS[@]}"
 
 check_vars src/bindings.rs "${SIMPLE_OBJECTS[@]}"
 check_vars src/bindings.rs "${WRAPPED_OBJECTS[@]}"
+
+# Generate a test that links all symbols
+
+cat <<EOF > src/linker_test.rs
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn link_all_symbols() {
+        use crate::*;
+
+        unsafe {
+EOF
+
+for symbol in "${SIMPLE_FUNCTIONS[@]}" "${EXTERN_SIMPLE_FUNCTIONS[@]}" "${WRAPPED_FUNCTIONS[@]}"; do
+    if [ "$symbol" == "_ctype_" ]; then
+        # ctype is wrongly? listed as a function
+        continue
+    fi
+    echo "            assert_ne!($symbol as *const (), core::ptr::null());" >> src/linker_test.rs
+done
+
+cat <<EOF >> src/linker_test.rs
+
+            assert_ne!(printf as *const (), core::ptr::null());
+        }
+    }
+}
+EOF

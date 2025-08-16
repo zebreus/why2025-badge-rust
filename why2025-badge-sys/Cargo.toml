@@ -10,3 +10,7 @@ keywords = ["why2025", "badge"]
 categories = ["embedded", "no-std", "os", "graphics"]
 
 [dependencies]
+
+[target.'cfg(not(target_arch = "riscv32"))'.dependencies]
+libc = { version = "0.2", default-features = false }
+curl-sys = { version = "0.4.83", default-features = false }

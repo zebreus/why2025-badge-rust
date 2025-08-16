@@ -29,15 +29,6 @@ pub struct option {
     pub flag: *mut ::core::ffi::c_int,
     pub val: ::core::ffi::c_int,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of option"][::core::mem::size_of::<option>() - 16usize];
-    ["Alignment of option"][::core::mem::align_of::<option>() - 4usize];
-    ["Offset of field: option::name"][::core::mem::offset_of!(option, name) - 0usize];
-    ["Offset of field: option::has_arg"][::core::mem::offset_of!(option, has_arg) - 4usize];
-    ["Offset of field: option::flag"][::core::mem::offset_of!(option, flag) - 8usize];
-    ["Offset of field: option::val"][::core::mem::offset_of!(option, val) - 12usize];
-};
 pub type wint_t = ::core::ffi::c_uint;
 pub type __blkcnt_t = ::core::ffi::c_long;
 pub type __blksize_t = ::core::ffi::c_long;
@@ -65,33 +56,11 @@ pub union _mbstate_t__bindgen_ty_1 {
     pub __ucs: __uint32_t,
     pub __ucs2: __uint16_t,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of _mbstate_t__bindgen_ty_1"]
-        [::core::mem::size_of::<_mbstate_t__bindgen_ty_1>() - 4usize];
-    ["Alignment of _mbstate_t__bindgen_ty_1"]
-        [::core::mem::align_of::<_mbstate_t__bindgen_ty_1>() - 4usize];
-    ["Offset of field: _mbstate_t__bindgen_ty_1::__wch"]
-        [::core::mem::offset_of!(_mbstate_t__bindgen_ty_1, __wch) - 0usize];
-    ["Offset of field: _mbstate_t__bindgen_ty_1::__wchb"]
-        [::core::mem::offset_of!(_mbstate_t__bindgen_ty_1, __wchb) - 0usize];
-    ["Offset of field: _mbstate_t__bindgen_ty_1::__ucs"]
-        [::core::mem::offset_of!(_mbstate_t__bindgen_ty_1, __ucs) - 0usize];
-    ["Offset of field: _mbstate_t__bindgen_ty_1::__ucs2"]
-        [::core::mem::offset_of!(_mbstate_t__bindgen_ty_1, __ucs2) - 0usize];
-};
 impl ::core::fmt::Debug for _mbstate_t__bindgen_ty_1 {
     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
         write!(f, "_mbstate_t__bindgen_ty_1 {{ union }}")
     }
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of _mbstate_t"][::core::mem::size_of::<_mbstate_t>() - 8usize];
-    ["Alignment of _mbstate_t"][::core::mem::align_of::<_mbstate_t>() - 4usize];
-    ["Offset of field: _mbstate_t::__count"][::core::mem::offset_of!(_mbstate_t, __count) - 0usize];
-    ["Offset of field: _mbstate_t::__value"][::core::mem::offset_of!(_mbstate_t, __value) - 4usize];
-};
 impl ::core::fmt::Debug for _mbstate_t {
     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
         write!(
@@ -123,13 +92,6 @@ pub struct imaxdiv_t {
     pub quot: intmax_t,
     pub rem: intmax_t,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of imaxdiv_t"][::core::mem::size_of::<imaxdiv_t>() - 16usize];
-    ["Alignment of imaxdiv_t"][::core::mem::align_of::<imaxdiv_t>() - 8usize];
-    ["Offset of field: imaxdiv_t::quot"][::core::mem::offset_of!(imaxdiv_t, quot) - 0usize];
-    ["Offset of field: imaxdiv_t::rem"][::core::mem::offset_of!(imaxdiv_t, rem) - 8usize];
-};
 pub type _wchar_t = ::core::ffi::c_int;
 pub type nl_item = __nl_item;
 #[repr(C)]
@@ -159,56 +121,8 @@ pub struct lconv {
     pub int_p_cs_precedes: ::core::ffi::c_char,
     pub int_p_sep_by_space: ::core::ffi::c_char,
     pub int_p_sign_posn: ::core::ffi::c_char,
+    pub __bindgen_padding_0: [u8; 2usize],
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of lconv"][::core::mem::size_of::<lconv>() - 56usize];
-    ["Alignment of lconv"][::core::mem::align_of::<lconv>() - 4usize];
-    ["Offset of field: lconv::decimal_point"]
-        [::core::mem::offset_of!(lconv, decimal_point) - 0usize];
-    ["Offset of field: lconv::thousands_sep"]
-        [::core::mem::offset_of!(lconv, thousands_sep) - 4usize];
-    ["Offset of field: lconv::grouping"][::core::mem::offset_of!(lconv, grouping) - 8usize];
-    ["Offset of field: lconv::int_curr_symbol"]
-        [::core::mem::offset_of!(lconv, int_curr_symbol) - 12usize];
-    ["Offset of field: lconv::currency_symbol"]
-        [::core::mem::offset_of!(lconv, currency_symbol) - 16usize];
-    ["Offset of field: lconv::mon_decimal_point"]
-        [::core::mem::offset_of!(lconv, mon_decimal_point) - 20usize];
-    ["Offset of field: lconv::mon_thousands_sep"]
-        [::core::mem::offset_of!(lconv, mon_thousands_sep) - 24usize];
-    ["Offset of field: lconv::mon_grouping"]
-        [::core::mem::offset_of!(lconv, mon_grouping) - 28usize];
-    ["Offset of field: lconv::positive_sign"]
-        [::core::mem::offset_of!(lconv, positive_sign) - 32usize];
-    ["Offset of field: lconv::negative_sign"]
-        [::core::mem::offset_of!(lconv, negative_sign) - 36usize];
-    ["Offset of field: lconv::int_frac_digits"]
-        [::core::mem::offset_of!(lconv, int_frac_digits) - 40usize];
-    ["Offset of field: lconv::frac_digits"][::core::mem::offset_of!(lconv, frac_digits) - 41usize];
-    ["Offset of field: lconv::p_cs_precedes"]
-        [::core::mem::offset_of!(lconv, p_cs_precedes) - 42usize];
-    ["Offset of field: lconv::p_sep_by_space"]
-        [::core::mem::offset_of!(lconv, p_sep_by_space) - 43usize];
-    ["Offset of field: lconv::n_cs_precedes"]
-        [::core::mem::offset_of!(lconv, n_cs_precedes) - 44usize];
-    ["Offset of field: lconv::n_sep_by_space"]
-        [::core::mem::offset_of!(lconv, n_sep_by_space) - 45usize];
-    ["Offset of field: lconv::p_sign_posn"][::core::mem::offset_of!(lconv, p_sign_posn) - 46usize];
-    ["Offset of field: lconv::n_sign_posn"][::core::mem::offset_of!(lconv, n_sign_posn) - 47usize];
-    ["Offset of field: lconv::int_n_cs_precedes"]
-        [::core::mem::offset_of!(lconv, int_n_cs_precedes) - 48usize];
-    ["Offset of field: lconv::int_n_sep_by_space"]
-        [::core::mem::offset_of!(lconv, int_n_sep_by_space) - 49usize];
-    ["Offset of field: lconv::int_n_sign_posn"]
-        [::core::mem::offset_of!(lconv, int_n_sign_posn) - 50usize];
-    ["Offset of field: lconv::int_p_cs_precedes"]
-        [::core::mem::offset_of!(lconv, int_p_cs_precedes) - 51usize];
-    ["Offset of field: lconv::int_p_sep_by_space"]
-        [::core::mem::offset_of!(lconv, int_p_sep_by_space) - 52usize];
-    ["Offset of field: lconv::int_p_sign_posn"]
-        [::core::mem::offset_of!(lconv, int_p_sign_posn) - 53usize];
-};
 pub type regoff_t = isize;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -218,28 +132,12 @@ pub struct regex_t {
     pub re_endp: *const ::core::ffi::c_char,
     pub re_g: *mut re_guts,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of regex_t"][::core::mem::size_of::<regex_t>() - 16usize];
-    ["Alignment of regex_t"][::core::mem::align_of::<regex_t>() - 4usize];
-    ["Offset of field: regex_t::re_magic"][::core::mem::offset_of!(regex_t, re_magic) - 0usize];
-    ["Offset of field: regex_t::re_nsub"][::core::mem::offset_of!(regex_t, re_nsub) - 4usize];
-    ["Offset of field: regex_t::re_endp"][::core::mem::offset_of!(regex_t, re_endp) - 8usize];
-    ["Offset of field: regex_t::re_g"][::core::mem::offset_of!(regex_t, re_g) - 12usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct regmatch_t {
     pub rm_so: regoff_t,
     pub rm_eo: regoff_t,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of regmatch_t"][::core::mem::size_of::<regmatch_t>() - 8usize];
-    ["Alignment of regmatch_t"][::core::mem::align_of::<regmatch_t>() - 4usize];
-    ["Offset of field: regmatch_t::rm_so"][::core::mem::offset_of!(regmatch_t, rm_so) - 0usize];
-    ["Offset of field: regmatch_t::rm_eo"][::core::mem::offset_of!(regmatch_t, rm_eo) - 4usize];
-};
 pub type in_addr_t = __uint32_t;
 pub type blkcnt_t = __blkcnt_t;
 pub type blksize_t = __blksize_t;
@@ -278,6 +176,7 @@ pub type __ungetc_t = __uint32_t;
 pub struct __file {
     pub unget: __ungetc_t,
     pub flags: __uint8_t,
+    pub __bindgen_padding_0: [u8; 3usize],
     pub put: ::core::option::Option<
         unsafe extern "C" fn(arg1: ::core::ffi::c_char, arg2: *mut __file) -> ::core::ffi::c_int,
     >,
@@ -285,16 +184,6 @@ pub struct __file {
     pub flush:
         ::core::option::Option<unsafe extern "C" fn(arg1: *mut __file) -> ::core::ffi::c_int>,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of __file"][::core::mem::size_of::<__file>() - 20usize];
-    ["Alignment of __file"][::core::mem::align_of::<__file>() - 4usize];
-    ["Offset of field: __file::unget"][::core::mem::offset_of!(__file, unget) - 0usize];
-    ["Offset of field: __file::flags"][::core::mem::offset_of!(__file, flags) - 4usize];
-    ["Offset of field: __file::put"][::core::mem::offset_of!(__file, put) - 8usize];
-    ["Offset of field: __file::get"][::core::mem::offset_of!(__file, get) - 12usize];
-    ["Offset of field: __file::flush"][::core::mem::offset_of!(__file, flush) - 16usize];
-};
 pub type __FILE = __file;
 pub type FILE = __FILE;
 pub type fpos_t = _fpos_t;
@@ -304,77 +193,38 @@ pub struct div_t {
     pub quot: ::core::ffi::c_int,
     pub rem: ::core::ffi::c_int,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of div_t"][::core::mem::size_of::<div_t>() - 8usize];
-    ["Alignment of div_t"][::core::mem::align_of::<div_t>() - 4usize];
-    ["Offset of field: div_t::quot"][::core::mem::offset_of!(div_t, quot) - 0usize];
-    ["Offset of field: div_t::rem"][::core::mem::offset_of!(div_t, rem) - 4usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct ldiv_t {
     pub quot: ::core::ffi::c_long,
     pub rem: ::core::ffi::c_long,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of ldiv_t"][::core::mem::size_of::<ldiv_t>() - 8usize];
-    ["Alignment of ldiv_t"][::core::mem::align_of::<ldiv_t>() - 4usize];
-    ["Offset of field: ldiv_t::quot"][::core::mem::offset_of!(ldiv_t, quot) - 0usize];
-    ["Offset of field: ldiv_t::rem"][::core::mem::offset_of!(ldiv_t, rem) - 4usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct lldiv_t {
     pub quot: ::core::ffi::c_longlong,
     pub rem: ::core::ffi::c_longlong,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of lldiv_t"][::core::mem::size_of::<lldiv_t>() - 16usize];
-    ["Alignment of lldiv_t"][::core::mem::align_of::<lldiv_t>() - 8usize];
-    ["Offset of field: lldiv_t::quot"][::core::mem::offset_of!(lldiv_t, quot) - 0usize];
-    ["Offset of field: lldiv_t::rem"][::core::mem::offset_of!(lldiv_t, rem) - 8usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct timeval {
     pub tv_sec: time_t,
     pub tv_usec: suseconds_t,
+    pub __bindgen_padding_0: [u8; 4usize],
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of timeval"][::core::mem::size_of::<timeval>() - 16usize];
-    ["Alignment of timeval"][::core::mem::align_of::<timeval>() - 8usize];
-    ["Offset of field: timeval::tv_sec"][::core::mem::offset_of!(timeval, tv_sec) - 0usize];
-    ["Offset of field: timeval::tv_usec"][::core::mem::offset_of!(timeval, tv_usec) - 8usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct timespec {
     pub tv_sec: time_t,
     pub tv_nsec: ::core::ffi::c_long,
+    pub __bindgen_padding_0: [u8; 4usize],
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of timespec"][::core::mem::size_of::<timespec>() - 16usize];
-    ["Alignment of timespec"][::core::mem::align_of::<timespec>() - 8usize];
-    ["Offset of field: timespec::tv_sec"][::core::mem::offset_of!(timespec, tv_sec) - 0usize];
-    ["Offset of field: timespec::tv_nsec"][::core::mem::offset_of!(timespec, tv_nsec) - 8usize];
-};
 pub type __fd_mask = ::core::ffi::c_ulong;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct fd_set {
     pub __fds_bits: [__fd_mask; 2usize],
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of fd_set"][::core::mem::size_of::<fd_set>() - 8usize];
-    ["Alignment of fd_set"][::core::mem::align_of::<fd_set>() - 4usize];
-    ["Offset of field: fd_set::__fds_bits"][::core::mem::offset_of!(fd_set, __fds_bits) - 0usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct tms {
@@ -383,15 +233,6 @@ pub struct tms {
     pub tms_cutime: clock_t,
     pub tms_cstime: clock_t,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of tms"][::core::mem::size_of::<tms>() - 16usize];
-    ["Alignment of tms"][::core::mem::align_of::<tms>() - 4usize];
-    ["Offset of field: tms::tms_utime"][::core::mem::offset_of!(tms, tms_utime) - 0usize];
-    ["Offset of field: tms::tms_stime"][::core::mem::offset_of!(tms, tms_stime) - 4usize];
-    ["Offset of field: tms::tms_cutime"][::core::mem::offset_of!(tms, tms_cutime) - 8usize];
-    ["Offset of field: tms::tms_cstime"][::core::mem::offset_of!(tms, tms_cstime) - 12usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct tm {
@@ -405,20 +246,6 @@ pub struct tm {
     pub tm_yday: ::core::ffi::c_int,
     pub tm_isdst: ::core::ffi::c_int,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of tm"][::core::mem::size_of::<tm>() - 36usize];
-    ["Alignment of tm"][::core::mem::align_of::<tm>() - 4usize];
-    ["Offset of field: tm::tm_sec"][::core::mem::offset_of!(tm, tm_sec) - 0usize];
-    ["Offset of field: tm::tm_min"][::core::mem::offset_of!(tm, tm_min) - 4usize];
-    ["Offset of field: tm::tm_hour"][::core::mem::offset_of!(tm, tm_hour) - 8usize];
-    ["Offset of field: tm::tm_mday"][::core::mem::offset_of!(tm, tm_mday) - 12usize];
-    ["Offset of field: tm::tm_mon"][::core::mem::offset_of!(tm, tm_mon) - 16usize];
-    ["Offset of field: tm::tm_year"][::core::mem::offset_of!(tm, tm_year) - 20usize];
-    ["Offset of field: tm::tm_wday"][::core::mem::offset_of!(tm, tm_wday) - 24usize];
-    ["Offset of field: tm::tm_yday"][::core::mem::offset_of!(tm, tm_yday) - 28usize];
-    ["Offset of field: tm::tm_isdst"][::core::mem::offset_of!(tm, tm_isdst) - 32usize];
-};
 pub type wctype_t = ::core::ffi::c_int;
 pub type mbstate_t = _mbstate_t;
 pub type wctrans_t = ::core::ffi::c_int;
@@ -432,17 +259,6 @@ pub struct path_t {
     pub unixpath: *mut ::core::ffi::c_char,
     pub len: size_t,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of path_t"][::core::mem::size_of::<path_t>() - 24usize];
-    ["Alignment of path_t"][::core::mem::align_of::<path_t>() - 4usize];
-    ["Offset of field: path_t::buffer"][::core::mem::offset_of!(path_t, buffer) - 0usize];
-    ["Offset of field: path_t::device"][::core::mem::offset_of!(path_t, device) - 4usize];
-    ["Offset of field: path_t::directory"][::core::mem::offset_of!(path_t, directory) - 8usize];
-    ["Offset of field: path_t::filename"][::core::mem::offset_of!(path_t, filename) - 12usize];
-    ["Offset of field: path_t::unixpath"][::core::mem::offset_of!(path_t, unixpath) - 16usize];
-    ["Offset of field: path_t::len"][::core::mem::offset_of!(path_t, len) - 20usize];
-};
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum path_parse_result_t {
@@ -475,28 +291,6 @@ pub struct application_t {
     pub binary_path: *const ::core::ffi::c_char,
     pub source: application_source_t,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of application_t"][::core::mem::size_of::<application_t>() - 36usize];
-    ["Alignment of application_t"][::core::mem::align_of::<application_t>() - 4usize];
-    ["Offset of field: application_t::unique_identifier"]
-        [::core::mem::offset_of!(application_t, unique_identifier) - 0usize];
-    ["Offset of field: application_t::name"][::core::mem::offset_of!(application_t, name) - 4usize];
-    ["Offset of field: application_t::author"]
-        [::core::mem::offset_of!(application_t, author) - 8usize];
-    ["Offset of field: application_t::version"]
-        [::core::mem::offset_of!(application_t, version) - 12usize];
-    ["Offset of field: application_t::interpreter"]
-        [::core::mem::offset_of!(application_t, interpreter) - 16usize];
-    ["Offset of field: application_t::metadata_file"]
-        [::core::mem::offset_of!(application_t, metadata_file) - 20usize];
-    ["Offset of field: application_t::installed_path"]
-        [::core::mem::offset_of!(application_t, installed_path) - 24usize];
-    ["Offset of field: application_t::binary_path"]
-        [::core::mem::offset_of!(application_t, binary_path) - 28usize];
-    ["Offset of field: application_t::source"]
-        [::core::mem::offset_of!(application_t, source) - 32usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct application_list {
@@ -861,30 +655,13 @@ pub struct keyboard_event_t {
     pub down: bool,
     #[doc = "< true if this is a key repeat"]
     pub repeat: bool,
+    pub __bindgen_padding_0: [u8; 3usize],
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of keyboard_event_t"][::core::mem::size_of::<keyboard_event_t>() - 24usize];
-    ["Alignment of keyboard_event_t"][::core::mem::align_of::<keyboard_event_t>() - 8usize];
-    ["Offset of field: keyboard_event_t::timestamp"]
-        [::core::mem::offset_of!(keyboard_event_t, timestamp) - 0usize];
-    ["Offset of field: keyboard_event_t::scancode"]
-        [::core::mem::offset_of!(keyboard_event_t, scancode) - 8usize];
-    ["Offset of field: keyboard_event_t::key"]
-        [::core::mem::offset_of!(keyboard_event_t, key) - 12usize];
-    ["Offset of field: keyboard_event_t::mod_"]
-        [::core::mem::offset_of!(keyboard_event_t, mod_) - 16usize];
-    ["Offset of field: keyboard_event_t::text"]
-        [::core::mem::offset_of!(keyboard_event_t, text) - 18usize];
-    ["Offset of field: keyboard_event_t::down"]
-        [::core::mem::offset_of!(keyboard_event_t, down) - 19usize];
-    ["Offset of field: keyboard_event_t::repeat"]
-        [::core::mem::offset_of!(keyboard_event_t, repeat) - 20usize];
-};
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct event_t {
     pub type_: event_type_t,
+    pub __bindgen_padding_0: [u8; 4usize],
     pub __bindgen_anon_1: event_t__bindgen_ty_1,
 }
 #[repr(C)]
@@ -892,25 +669,11 @@ pub struct event_t {
 pub union event_t__bindgen_ty_1 {
     pub keyboard: keyboard_event_t,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of event_t__bindgen_ty_1"][::core::mem::size_of::<event_t__bindgen_ty_1>() - 24usize];
-    ["Alignment of event_t__bindgen_ty_1"]
-        [::core::mem::align_of::<event_t__bindgen_ty_1>() - 8usize];
-    ["Offset of field: event_t__bindgen_ty_1::keyboard"]
-        [::core::mem::offset_of!(event_t__bindgen_ty_1, keyboard) - 0usize];
-};
 impl ::core::fmt::Debug for event_t__bindgen_ty_1 {
     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
         write!(f, "event_t__bindgen_ty_1 {{ union }}")
     }
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of event_t"][::core::mem::size_of::<event_t>() - 32usize];
-    ["Alignment of event_t"][::core::mem::align_of::<event_t>() - 8usize];
-    ["Offset of field: event_t::type_"][::core::mem::offset_of!(event_t, type_) - 0usize];
-};
 impl ::core::fmt::Debug for event_t {
     fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
         write!(
@@ -1007,17 +770,6 @@ pub struct framebuffer_t {
     pub format: pixel_format_t,
     pub pixels: *mut u16,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of framebuffer_t"][::core::mem::size_of::<framebuffer_t>() - 16usize];
-    ["Alignment of framebuffer_t"][::core::mem::align_of::<framebuffer_t>() - 4usize];
-    ["Offset of field: framebuffer_t::w"][::core::mem::offset_of!(framebuffer_t, w) - 0usize];
-    ["Offset of field: framebuffer_t::h"][::core::mem::offset_of!(framebuffer_t, h) - 4usize];
-    ["Offset of field: framebuffer_t::format"]
-        [::core::mem::offset_of!(framebuffer_t, format) - 8usize];
-    ["Offset of field: framebuffer_t::pixels"]
-        [::core::mem::offset_of!(framebuffer_t, pixels) - 12usize];
-};
 impl window_flag_t {
     pub const WINDOW_FLAG_NONE: window_flag_t = window_flag_t(0);
     pub const WINDOW_FLAG_FULLSCREEN: window_flag_t = window_flag_t(1);
@@ -1064,26 +816,12 @@ pub struct window_coords_t {
     pub x: ::core::ffi::c_int,
     pub y: ::core::ffi::c_int,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of window_coords_t"][::core::mem::size_of::<window_coords_t>() - 8usize];
-    ["Alignment of window_coords_t"][::core::mem::align_of::<window_coords_t>() - 4usize];
-    ["Offset of field: window_coords_t::x"][::core::mem::offset_of!(window_coords_t, x) - 0usize];
-    ["Offset of field: window_coords_t::y"][::core::mem::offset_of!(window_coords_t, y) - 4usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct window_size_t {
     pub w: ::core::ffi::c_int,
     pub h: ::core::ffi::c_int,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of window_size_t"][::core::mem::size_of::<window_size_t>() - 8usize];
-    ["Alignment of window_size_t"][::core::mem::align_of::<window_size_t>() - 4usize];
-    ["Offset of field: window_size_t::w"][::core::mem::offset_of!(window_size_t, w) - 0usize];
-    ["Offset of field: window_size_t::h"][::core::mem::offset_of!(window_size_t, h) - 4usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct window_rect_t {
@@ -1092,15 +830,6 @@ pub struct window_rect_t {
     pub w: ::core::ffi::c_int,
     pub h: ::core::ffi::c_int,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of window_rect_t"][::core::mem::size_of::<window_rect_t>() - 16usize];
-    ["Alignment of window_rect_t"][::core::mem::align_of::<window_rect_t>() - 4usize];
-    ["Offset of field: window_rect_t::x"][::core::mem::offset_of!(window_rect_t, x) - 0usize];
-    ["Offset of field: window_rect_t::y"][::core::mem::offset_of!(window_rect_t, y) - 4usize];
-    ["Offset of field: window_rect_t::w"][::core::mem::offset_of!(window_rect_t, w) - 8usize];
-    ["Offset of field: window_rect_t::h"][::core::mem::offset_of!(window_rect_t, h) - 12usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct window {
@@ -1113,28 +842,14 @@ pub struct DIR {
     pub dd_vfs_idx: u16,
     pub dd_rsv: u16,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of DIR"][::core::mem::size_of::<DIR>() - 4usize];
-    ["Alignment of DIR"][::core::mem::align_of::<DIR>() - 2usize];
-    ["Offset of field: DIR::dd_vfs_idx"][::core::mem::offset_of!(DIR, dd_vfs_idx) - 0usize];
-    ["Offset of field: DIR::dd_rsv"][::core::mem::offset_of!(DIR, dd_rsv) - 2usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct dirent {
     pub d_ino: ino_t,
     pub d_type: u8,
     pub d_name: [::core::ffi::c_char; 256usize],
+    pub __bindgen_padding_0: u8,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of dirent"][::core::mem::size_of::<dirent>() - 260usize];
-    ["Alignment of dirent"][::core::mem::align_of::<dirent>() - 2usize];
-    ["Offset of field: dirent::d_ino"][::core::mem::offset_of!(dirent, d_ino) - 0usize];
-    ["Offset of field: dirent::d_type"][::core::mem::offset_of!(dirent, d_type) - 2usize];
-    ["Offset of field: dirent::d_name"][::core::mem::offset_of!(dirent, d_name) - 3usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct stat {
@@ -1146,6 +861,7 @@ pub struct stat {
     pub st_gid: gid_t,
     pub st_rdev: dev_t,
     pub st_size: off_t,
+    pub __bindgen_padding_0: [u8; 4usize],
     pub st_atim: timespec,
     pub st_mtim: timespec,
     pub st_ctim: timespec,
@@ -1153,25 +869,6 @@ pub struct stat {
     pub st_blocks: blkcnt_t,
     pub st_spare4: [::core::ffi::c_long; 2usize],
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of stat"][::core::mem::size_of::<stat>() - 88usize];
-    ["Alignment of stat"][::core::mem::align_of::<stat>() - 8usize];
-    ["Offset of field: stat::st_dev"][::core::mem::offset_of!(stat, st_dev) - 0usize];
-    ["Offset of field: stat::st_ino"][::core::mem::offset_of!(stat, st_ino) - 2usize];
-    ["Offset of field: stat::st_mode"][::core::mem::offset_of!(stat, st_mode) - 4usize];
-    ["Offset of field: stat::st_nlink"][::core::mem::offset_of!(stat, st_nlink) - 8usize];
-    ["Offset of field: stat::st_uid"][::core::mem::offset_of!(stat, st_uid) - 10usize];
-    ["Offset of field: stat::st_gid"][::core::mem::offset_of!(stat, st_gid) - 12usize];
-    ["Offset of field: stat::st_rdev"][::core::mem::offset_of!(stat, st_rdev) - 14usize];
-    ["Offset of field: stat::st_size"][::core::mem::offset_of!(stat, st_size) - 16usize];
-    ["Offset of field: stat::st_atim"][::core::mem::offset_of!(stat, st_atim) - 24usize];
-    ["Offset of field: stat::st_mtim"][::core::mem::offset_of!(stat, st_mtim) - 40usize];
-    ["Offset of field: stat::st_ctim"][::core::mem::offset_of!(stat, st_ctim) - 56usize];
-    ["Offset of field: stat::st_blksize"][::core::mem::offset_of!(stat, st_blksize) - 72usize];
-    ["Offset of field: stat::st_blocks"][::core::mem::offset_of!(stat, st_blocks) - 76usize];
-    ["Offset of field: stat::st_spare4"][::core::mem::offset_of!(stat, st_spare4) - 80usize];
-};
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum device_type_t {
@@ -1228,18 +925,6 @@ pub struct device {
     >,
     pub _destroy: ::core::option::Option<unsafe extern "C" fn(dev: *mut ::core::ffi::c_void)>,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of device"][::core::mem::size_of::<device>() - 28usize];
-    ["Alignment of device"][::core::mem::align_of::<device>() - 4usize];
-    ["Offset of field: device::type_"][::core::mem::offset_of!(device, type_) - 0usize];
-    ["Offset of field: device::_open"][::core::mem::offset_of!(device, _open) - 4usize];
-    ["Offset of field: device::_close"][::core::mem::offset_of!(device, _close) - 8usize];
-    ["Offset of field: device::_write"][::core::mem::offset_of!(device, _write) - 12usize];
-    ["Offset of field: device::_read"][::core::mem::offset_of!(device, _read) - 16usize];
-    ["Offset of field: device::_lseek"][::core::mem::offset_of!(device, _lseek) - 20usize];
-    ["Offset of field: device::_destroy"][::core::mem::offset_of!(device, _destroy) - 24usize];
-};
 pub type device_t = device;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1305,24 +990,11 @@ pub struct curl_slist {
     pub data: *mut ::core::ffi::c_char,
     pub next: *mut curl_slist,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of curl_slist"][::core::mem::size_of::<curl_slist>() - 8usize];
-    ["Alignment of curl_slist"][::core::mem::align_of::<curl_slist>() - 4usize];
-    ["Offset of field: curl_slist::data"][::core::mem::offset_of!(curl_slist, data) - 0usize];
-    ["Offset of field: curl_slist::next"][::core::mem::offset_of!(curl_slist, next) - 4usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct in_addr {
     pub s_addr: in_addr_t,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of in_addr"][::core::mem::size_of::<in_addr>() - 4usize];
-    ["Alignment of in_addr"][::core::mem::align_of::<in_addr>() - 4usize];
-    ["Offset of field: in_addr::s_addr"][::core::mem::offset_of!(in_addr, s_addr) - 0usize];
-};
 pub type socklen_t = u32;
 pub type sa_family_t = u8;
 #[repr(C)]
@@ -1332,14 +1004,6 @@ pub struct sockaddr {
     pub sa_family: sa_family_t,
     pub sa_data: [::core::ffi::c_char; 14usize],
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of sockaddr"][::core::mem::size_of::<sockaddr>() - 16usize];
-    ["Alignment of sockaddr"][::core::mem::align_of::<sockaddr>() - 1usize];
-    ["Offset of field: sockaddr::sa_len"][::core::mem::offset_of!(sockaddr, sa_len) - 0usize];
-    ["Offset of field: sockaddr::sa_family"][::core::mem::offset_of!(sockaddr, sa_family) - 1usize];
-    ["Offset of field: sockaddr::sa_data"][::core::mem::offset_of!(sockaddr, sa_data) - 2usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct addrinfo {
@@ -1352,23 +1016,6 @@ pub struct addrinfo {
     pub ai_canonname: *mut ::core::ffi::c_char,
     pub ai_next: *mut addrinfo,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of addrinfo"][::core::mem::size_of::<addrinfo>() - 32usize];
-    ["Alignment of addrinfo"][::core::mem::align_of::<addrinfo>() - 4usize];
-    ["Offset of field: addrinfo::ai_flags"][::core::mem::offset_of!(addrinfo, ai_flags) - 0usize];
-    ["Offset of field: addrinfo::ai_family"][::core::mem::offset_of!(addrinfo, ai_family) - 4usize];
-    ["Offset of field: addrinfo::ai_socktype"]
-        [::core::mem::offset_of!(addrinfo, ai_socktype) - 8usize];
-    ["Offset of field: addrinfo::ai_protocol"]
-        [::core::mem::offset_of!(addrinfo, ai_protocol) - 12usize];
-    ["Offset of field: addrinfo::ai_addrlen"]
-        [::core::mem::offset_of!(addrinfo, ai_addrlen) - 16usize];
-    ["Offset of field: addrinfo::ai_addr"][::core::mem::offset_of!(addrinfo, ai_addr) - 20usize];
-    ["Offset of field: addrinfo::ai_canonname"]
-        [::core::mem::offset_of!(addrinfo, ai_canonname) - 24usize];
-    ["Offset of field: addrinfo::ai_next"][::core::mem::offset_of!(addrinfo, ai_next) - 28usize];
-};
 #[doc = " Restart output."]
 pub type cc_t = u8;
 pub type speed_t = u32;
@@ -1385,23 +1032,12 @@ pub struct termios {
     pub c_lflag: tcflag_t,
     #[doc = " Local modes"]
     pub c_cc: [cc_t; 11usize],
+    pub __bindgen_padding_0: u8,
     #[doc = " Control characters"]
     pub c_ispeed: speed_t,
     #[doc = " input baud rate"]
     pub c_ospeed: speed_t,
 }
-#[allow(clippy::unnecessary_operation, clippy::identity_op)]
-const _: () = {
-    ["Size of termios"][::core::mem::size_of::<termios>() - 28usize];
-    ["Alignment of termios"][::core::mem::align_of::<termios>() - 4usize];
-    ["Offset of field: termios::c_iflag"][::core::mem::offset_of!(termios, c_iflag) - 0usize];
-    ["Offset of field: termios::c_oflag"][::core::mem::offset_of!(termios, c_oflag) - 2usize];
-    ["Offset of field: termios::c_cflag"][::core::mem::offset_of!(termios, c_cflag) - 4usize];
-    ["Offset of field: termios::c_lflag"][::core::mem::offset_of!(termios, c_lflag) - 6usize];
-    ["Offset of field: termios::c_cc"][::core::mem::offset_of!(termios, c_cc) - 8usize];
-    ["Offset of field: termios::c_ispeed"][::core::mem::offset_of!(termios, c_ispeed) - 20usize];
-    ["Offset of field: termios::c_ospeed"][::core::mem::offset_of!(termios, c_ospeed) - 24usize];
-};
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct re_guts {

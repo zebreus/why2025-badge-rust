@@ -1594,6 +1594,12 @@ unsafe extern "C" {
         str_: *const ::core::ffi::c_char,
         pnum: *mut ::core::ffi::c_int,
     ) -> ::core::ffi::c_int;
+    pub fn gets(s: *mut ::core::ffi::c_char) -> *mut ::core::ffi::c_char;
+    pub fn open(
+        pathname: *const ::core::ffi::c_char,
+        flags: ::core::ffi::c_int,
+        ...
+    ) -> ::core::ffi::c_int;
     #[doc = " @brief Gets the parameters of the terminal\n\n @param fd file descriptor of the terminal\n @param p output termios structure\n @return 0 when successful, -1 otherwise with errno set"]
     pub fn tcgetattr(fd: ::core::ffi::c_int, p: *mut termios) -> ::core::ffi::c_int;
     #[doc = " @brief Sets the parameters of the terminal\n\n @param fd file descriptor of the terminal\n @param optional_actions optional actions\n @param p input termios structure\n @return 0 when successful, -1 otherwise with errno set"]

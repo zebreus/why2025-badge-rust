@@ -2,12 +2,12 @@
 extern crate alloc;
 
 use alloc::string::{String, ToString};
-use core::ptr::null_mut;
+use core::time::Duration;
+use core::{ffi::c_char, ptr::null_mut};
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::{geometry::Size, pixelcolor::Rgb888, prelude::*};
 use why2025_badge_sys::{
-    framebuffer_t, pixel_format_t, window_create, window_flag_t, window_framebuffer_create,
-    window_handle_t, window_present, window_size_t,
+    event_t, event_type, framebuffer_t, key_code_t, key_mod_t, keyboard_event_t, keyboard_scancode_t, pixel_format_t, window_create, window_flag_t, window_framebuffer_create, window_handle_t, window_present, window_size_t
 };
 
 const fn rgb888_to_rgb565(r: u8, g: u8, b: u8) -> u16 {
@@ -115,6 +115,14 @@ impl Why2025BadgeWindow {
         this
     }
 
+    pub fn handle(&self) -> window_handle_t {
+        self.window
+    }
+
+    pub fn events(&self) -> EventPump {
+        EventPump(self.window)
+    }
+
     pub fn flush(&mut self) {
         unsafe { window_present(self.window, false, null_mut(), 0) };
     }
@@ -157,3 +165,63 @@ impl DrawTarget for Why2025BadgeWindow {
         Ok(())
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct KeyboardEvent {
+    pub timestamp: u64,
+    pub scancode: keyboard_scancode_t,
+    pub key: key_code_t,
+    pub modifier: key_mod_t,
+    pub text: c_char,
+    pub down: bool,
+    pub repeat: bool,
+}
+
+pub struct EventPump(window_handle_t);
+
+impl EventPump {
+    pub fn poll(&self, block: bool, delay: Duration) -> Option<Event> {
+        Event::from_raw(unsafe {
+            why2025_badge_sys::window_event_poll(self.0, block, delay.as_millis() as u32)
+        })
+    }
+}
+
+
+#[derive(Debug, Clone)]
+pub enum Event {
+    Quit,
+    KeyDown(KeyboardEvent),
+    KeyUp(KeyboardEvent),
+    WindowResize,
+}
+
+impl KeyboardEvent {
+    pub fn from_raw(e: keyboard_event_t) -> Self {
+        Self {
+            timestamp: e.timestamp,
+            scancode: e.scancode,
+            key: e.key,
+            modifier: e.mod_,
+            text: e.text,
+            down: e.down,
+            repeat: e.repeat,
+        }
+    }
+}
+
+impl Event {
+    pub fn from_raw(e: event_t) -> Option<Self> {
+        fn key(e: event_t) -> KeyboardEvent {
+            KeyboardEvent::from_raw(unsafe { e.__bindgen_anon_1.keyboard })
+        }
+        match e.type_ {
+            event_type::EVENT_NONE => None,
+            event_type::EVENT_QUIT => Some(Self::Quit),
+            event_type::EVENT_KEY_UP => Some(Self::KeyUp(key(e))),
+            event_type::EVENT_KEY_DOWN => Some(Self::KeyDown(key(e))),
+            event_type::EVENT_WINDOW_RESIZE => Some(Self::WindowResize),
+        }
+    }
+}
+

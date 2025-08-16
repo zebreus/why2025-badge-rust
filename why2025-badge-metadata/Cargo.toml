@@ -1,0 +1,17 @@
+[package]
+name = "why2025-badge-metadata"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Metadata generation for why2025-badge"
+repository.workspace = true
+keywords = ["why2025", "badge"]
+categories = ["embedded", "no-std", "os", "graphics"]
+
+[dependencies]
+anyhow = "1.0.99"
+cargo-util-schemas = "0.9.0"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.142"
+toml = "0.9.5"

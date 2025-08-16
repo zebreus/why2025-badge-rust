@@ -7,6 +7,7 @@ target = "riscv32imafc-unknown-none-elf"
 [target.riscv32imafc-unknown-none-elf]
 rustflags = [
     "-Crelocation-model=pic",
+    "-Clinker=ld.lld-19",
     "-Clink-arg=--shared",
     "-Clink-arg=--retain-symbols-file=resources/retain.txt",
     "-Clink-arg=--gc-sections",

@@ -22,12 +22,12 @@
 mod bindings;
 
 #[cfg(not(target_arch = "riscv32"))]
-mod linker_test;
+mod emulated;
 #[cfg(not(target_arch = "riscv32"))]
-mod missing_symbols;
+mod linker_test;
 mod types;
 
 pub use bindings::*;
 pub use types::*;
 
-pub use missing_symbols::diprintf;
+pub use emulated::diprintf;

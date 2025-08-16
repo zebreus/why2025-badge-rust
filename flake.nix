@@ -47,10 +47,31 @@
         devShell = pkgs.mkShell {
           LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
           RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
+          LD_LIBRARY_PATH =
+            with pkgs;
+            lib.makeLibraryPath [
+              # For the emulated runtime
+              libGL
+              libxkbcommon
+              wayland
+              libz
+              xorg.libX11
+              xorg.libXcursor
+            ];
 
           buildInputs = [
             rustToolchain
             pkgs.rust-analyzer-nightly
+            # For building the badge sys crate
+            pkgs.rust-bindgen
+            pkgs.yq
+            # For the emulated runtime
+            pkgs.libz
+            pkgs.libGL
+            pkgs.libxkbcommon
+            pkgs.wayland
+            pkgs.xorg.libX11
+            pkgs.xorg.libXcursor
           ];
         };
 

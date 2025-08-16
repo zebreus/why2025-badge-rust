@@ -89,7 +89,7 @@ impl Why2025BadgeWindow {
 
         let window = unsafe {
             window_create(
-                this.title.as_ptr() as *const u8,
+                this.title.as_ptr() as *const i8,
                 size.clone(),
                 window_flag_t::WINDOW_FLAG_DOUBLE_BUFFERED
                     | (if config.fullscreen {

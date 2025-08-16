@@ -33,7 +33,6 @@ RUST_ENUMS=(
 BINDGEN_COMMAND=(
     bindgen
     headers/all.h
-    -o src/lib.rs.tmp
     --use-array-pointers-in-arguments
     --use-core
     --rust-edition 2024
@@ -41,6 +40,7 @@ BINDGEN_COMMAND=(
     --generate-cstr
     --impl-debug
     --default-enum-style rust
+    --merge-extern-blocks
     # --dump-preprocessed-input
     --no-size_t-is-usize
     --generate-inline-functions
@@ -105,13 +105,19 @@ echo "#include \"gcc-builtins.h\"" >> headers/all.h
 
 export BINDGEN_EXTRA_CLANG_ARGS="-isystem headers -target riscv32-esp-elf"
 
-"${BINDGEN_COMMAND[@]}"
+"${BINDGEN_COMMAND[@]}" -o src/generated.rs --generate 'functions,methods,constructors,destructors,types,vars'
 
-cat lib.rs.template > src/lib.rs
-cat src/lib.rs.tmp >> src/lib.rs
-rm src/lib.rs.tmp
+# Split in types and functions
+sed -Ez      's|unsafe extern "C" \{\n(    [^\n]*\n)+}\n||g' src/generated.rs > src/types.rs
+echo $'use crate::types::*;\n' > src/bindings.rs
+grep -Pazo '(?s)unsafe extern "C" \{\n(    [^\n]*\n)+}\n' src/generated.rs | tr -d '\0' >> src/bindings.rs
+
+# Remove the unsplit file
+rm src/generated.rs
 
 function check_functions {
+    local file="$1"
+    shift
     local functions=("$@")
     local missing_functions=false
     local missing_functions_list=()
@@ -120,7 +126,7 @@ function check_functions {
             # ctype is wrongly? listed as a function
             continue
         fi
-        if ! grep -q "fn $function" src/lib.rs; then
+        if ! grep -q "fn $function" "$file"; then
             echo "Missing function: $function"
             missing_functions=true
             missing_functions_list+=("$function")
@@ -136,11 +142,13 @@ function check_functions {
     fi
 }
 function check_vars {
+    local file="$1"
+    shift
     local vars=("$@")
     local missing_vars=false
     local missing_vars_list=()
     for var in "${vars[@]}"; do
-        if ! grep -q "$var:" src/lib.rs; then
+        if ! grep -aq "$var:" "$file"; then
             echo "Missing variable: $var"
             missing_vars=true
             missing_vars_list+=("$var")
@@ -156,9 +164,9 @@ function check_vars {
     fi
 }
 
-check_functions "${SIMPLE_FUNCTIONS[@]}"
-check_functions "${EXTERN_SIMPLE_FUNCTIONS[@]}"
-check_functions "${WRAPPED_FUNCTIONS[@]}"
+check_functions src/bindings.rs "${SIMPLE_FUNCTIONS[@]}"
+check_functions src/bindings.rs "${EXTERN_SIMPLE_FUNCTIONS[@]}"
+check_functions src/bindings.rs "${WRAPPED_FUNCTIONS[@]}"
 
-check_vars "${SIMPLE_OBJECTS[@]}"
-check_vars "${WRAPPED_OBJECTS[@]}"
+check_vars src/bindings.rs "${SIMPLE_OBJECTS[@]}"
+check_vars src/bindings.rs "${WRAPPED_OBJECTS[@]}"

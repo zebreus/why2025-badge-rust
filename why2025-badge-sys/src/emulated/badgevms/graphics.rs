@@ -42,6 +42,8 @@ struct WindowData {
     receiver: std::sync::mpsc::Receiver<event_t>,
     /// When the window is ready to be used
     ready_at: Option<std::time::Instant>,
+    /// Position and size of the window when it is not in fullscreen mode.
+    floating_location: Option<(Option<(usize, usize)>, (usize, usize))>,
 }
 impl WindowData {
     /// Wait until the window is ready to be used.
@@ -51,6 +53,70 @@ impl WindowData {
             return;
         };
         std::thread::sleep_until(ready_at);
+    }
+
+    fn set_position(&mut self, position: (usize, usize)) {
+        self.window
+            .set_position(position.0 as isize, position.1 as isize);
+    }
+
+    fn get_position(&self) -> (usize, usize) {
+        self.wait_until_ready();
+        let position = self.window.get_position();
+        (position.0 as usize, position.1 as usize)
+    }
+
+    fn set_size(&mut self, size: (usize, usize)) -> (usize, usize) {
+        if self.fullscreen {
+            // If we are in fullscreen mode, we cannot change the size
+            // But we can save the size for later when we go back to floating mode
+            self.floating_location = Some((self.floating_location.and_then(|(pos, _)| pos), size));
+            return self.get_size();
+        }
+        // Obtain handles for the X11 window and display
+        let raw_handle = self.window.window_handle().unwrap().as_raw();
+        let RawWindowHandle::Xlib(window_handle) = raw_handle else {
+            panic!("Not a Xlib window handle");
+        };
+        let x11_window = window_handle.window;
+        let display = self.window.display_handle().unwrap().as_raw();
+        let RawDisplayHandle::Xlib(display_handle) = display else {
+            panic!("Not a Xlib display handle");
+        };
+        let x11_display = display_handle.display.unwrap().as_ptr() as *mut x11_dl::xlib::Display;
+
+        let old_size = self.window.get_size();
+        unsafe { ((XLIB).XResizeWindow)(x11_display, x11_window, size.0 as u32, size.1 as u32) };
+
+        // Wait until the window has been resized
+        let one_second_later = std::time::Instant::now() + std::time::Duration::from_secs(1);
+        loop {
+            let current_size = self.window.get_size();
+            rescale_windowbuffer(self, Some(current_size));
+            present_windowbuffer(self, Some(current_size));
+            // println!("Current size: {:?}", current_size);
+            if current_size.0 == size.0 && current_size.1 == size.1 {
+                break current_size;
+            }
+            if current_size.0 != old_size.0 || current_size.1 != old_size.1 {
+                // If the size didn't change, we can stop trying to resize
+                break current_size;
+            }
+            if std::time::Instant::now() > one_second_later {
+                // If we waited for more than a second, we give up
+                eprintln!(
+                    "Failed to resize window {} to {}x{} in time",
+                    x11_window, size.0, size.1
+                );
+                break current_size;
+            }
+        }
+    }
+
+    fn get_size(&self) -> (usize, usize) {
+        self.wait_until_ready();
+        let size = self.window.get_size();
+        (size.0 as usize, size.1 as usize)
     }
 }
 /// A few calls to get information about the window depend on the window being ready.
@@ -70,6 +136,9 @@ static WINDOWS: LazyLock<Arc<RwLock<Vec<Option<Arc<RwLock<WindowData>>>>>>> = La
 
 static XLIB: LazyLock<x11_dl::xlib::Xlib> =
     LazyLock::new(|| x11_dl::xlib::Xlib::open().expect("Failed to open Xlib library"));
+
+static FULLSCREEN_WIDTH: usize = 700;
+static FULLSCREEN_HEIGHT: usize = 700;
 
 /// Create a new window with the given title and size.
 ///
@@ -104,8 +173,15 @@ pub extern "C" fn window_create(
     let fullscreen =
         (flags & window_flag_t::WINDOW_FLAG_FULLSCREEN) != window_flag_t::WINDOW_FLAG_NONE;
 
+    let window_size = (size.w as usize, size.h as usize);
+    let size = if fullscreen {
+        (FULLSCREEN_WIDTH, FULLSCREEN_HEIGHT)
+    } else {
+        window_size
+    };
+
     let mut options = WindowOptions::default();
-    options.borderless = undecorated;
+    options.borderless = undecorated || fullscreen;
     options.resize = true;
     options.scale = minifb::Scale::X1;
     options.transparency = false;
@@ -114,15 +190,15 @@ pub extern "C" fn window_create(
     options.scale_mode = minifb::ScaleMode::Center;
     options.topmost = topmost;
 
-    let mut window = Window::new(&title, size.w as usize, size.h as usize, options).unwrap();
+    let mut window = Window::new(&title, size.0, size.1, options).unwrap();
     window.set_target_fps(9999999);
     // Basically disable key repeat, as we don't support it in the native bindings.
     window.set_key_repeat_delay(9999999f32);
 
-    let mut buffer565: Vec<u16> = vec![0; size.w as usize * size.h as usize];
+    let mut buffer565: Vec<u16> = vec![0; size.0 * size.1];
     let framebuffer = framebuffer_t {
-        w: size.w as u32,
-        h: size.h as u32,
+        w: size.0 as u32,
+        h: size.1 as u32,
         format: pixel_format_t::BADGEVMS_PIXELFORMAT_RGB565,
         pixels: buffer565.as_mut_ptr(),
     };
@@ -138,10 +214,7 @@ pub extern "C" fn window_create(
     let window: WindowData = WindowData {
         window,
         title: title_bytes,
-        windowbuffer: (
-            vec![0; size.w as usize * size.h as usize],
-            (size.w as usize, size.h as usize),
-        ),
+        windowbuffer: (vec![0; size.0 * size.1], (size.0, size.1)),
         displayed_buffer565: (Vec::new(), (framebuffer.w as usize, framebuffer.h as usize)),
         buffer565,
         framebuffer: framebuffer,
@@ -150,6 +223,11 @@ pub extern "C" fn window_create(
         fullscreen,
         receiver: input_event_receiver,
         ready_at: Some(std::time::Instant::now() + DURATION_UNTIL_WINDOW_READY),
+        floating_location: if fullscreen {
+            Some((None, window_size))
+        } else {
+            None
+        },
     };
 
     let mut windows = WINDOWS.write().unwrap();
@@ -220,9 +298,7 @@ pub extern "C" fn window_position_get(window: window_handle_t) -> window_coords_
     let windows = WINDOWS.read().unwrap();
     let window_data = windows.get(window as usize).unwrap().as_ref().unwrap();
     let window_data = window_data.read().unwrap();
-    window_data.wait_until_ready();
-
-    let position = window_data.window.get_position();
+    let position = window_data.get_position();
     return window_coords_t {
         x: position.0 as i32,
         y: position.1 as i32,
@@ -237,10 +313,8 @@ pub extern "C" fn window_position_set(
     let windows = WINDOWS.read().unwrap();
     let window_data = windows.get(window as usize).unwrap().as_ref().unwrap();
     let mut window_data = window_data.write().unwrap();
-    window_data
-        .window
-        .set_position(coords.x as isize, coords.y as isize);
-    let new_position = window_data.window.get_position();
+    window_data.set_position((coords.x as usize, coords.y as usize));
+    let new_position = window_data.get_position();
     return window_coords_t {
         x: new_position.0 as i32,
         y: new_position.1 as i32,
@@ -252,8 +326,7 @@ pub extern "C" fn window_size_get(window: window_handle_t) -> window_size_t {
     let windows = WINDOWS.read().unwrap();
     let window_data = windows.get(window as usize).unwrap().as_ref().unwrap();
     let window_data = window_data.read().unwrap();
-    window_data.wait_until_ready();
-    let position = window_data.window.get_size();
+    let position = window_data.get_size();
     return window_size_t {
         w: position.0 as i32,
         h: position.1 as i32,
@@ -274,48 +347,11 @@ pub extern "C" fn window_size_set(window: window_handle_t, size: window_size_t) 
     let window_data = windows.get(window as usize).unwrap().as_ref().unwrap();
     let mut window_data = window_data.write().unwrap();
 
-    // Obtain handles for the X11 window and display
-    let raw_handle = window_data.window.window_handle().unwrap().as_raw();
-    let RawWindowHandle::Xlib(window_handle) = raw_handle else {
-        panic!("Not a Xlib window handle");
-    };
-    let x11_window = window_handle.window;
-    let display = window_data.window.display_handle().unwrap().as_raw();
-    let RawDisplayHandle::Xlib(display_handle) = display else {
-        panic!("Not a Xlib display handle");
-    };
-    let x11_display = display_handle.display.unwrap().as_ptr() as *mut x11_dl::xlib::Display;
-
-    let old_size = window_data.window.get_size();
-    unsafe { ((XLIB).XResizeWindow)(x11_display, x11_window, size.w as u32, size.h as u32) };
-
-    // Wait until the window has been resized
-    let one_second_later = std::time::Instant::now() + std::time::Duration::from_secs(1);
-    let current_size = loop {
-        let current_size = window_data.window.get_size();
-        rescale_windowbuffer(&mut window_data, Some(current_size));
-        present_windowbuffer(&mut window_data, Some(current_size));
-        // println!("Current size: {:?}", current_size);
-        if current_size.0 == size.w as usize && current_size.1 == size.h as usize {
-            break current_size;
-        }
-        if current_size.0 != old_size.0 || current_size.1 != old_size.1 {
-            // If the size didn't change, we can stop trying to resize
-            break current_size;
-        }
-        if std::time::Instant::now() > one_second_later {
-            // If we waited for more than a second, we give up
-            eprintln!(
-                "Failed to resize window {} to {}x{} in time",
-                x11_window, size.w, size.h
-            );
-            break current_size;
-        }
-    };
+    let size = window_data.set_size((size.w as usize, size.h as usize));
 
     return window_size_t {
-        w: current_size.0 as i32,
-        h: current_size.1 as i32,
+        w: size.0 as i32,
+        h: size.1 as i32,
     };
 }
 /// Get the currently set window flags.
@@ -354,9 +390,29 @@ pub extern "C" fn window_flags_set(window: window_handle_t, flags: window_flag_t
         let window_data = windows.get(window as usize).unwrap().as_ref().unwrap();
         let mut window_data = window_data.write().unwrap();
 
-        window_data.topmost = topmost;
-        window_data.fullscreen = fullscreen;
-        window_data.window.topmost(topmost);
+        if fullscreen && !window_data.fullscreen {
+            // If we are going fullscreen, we need to set the size to the fullscreen size
+            let size = window_data.get_size();
+            window_data.floating_location = Some((Some(window_data.get_position()), size));
+            window_data.set_size((FULLSCREEN_WIDTH, FULLSCREEN_HEIGHT));
+            window_data.fullscreen = true;
+        }
+        if !fullscreen && window_data.fullscreen {
+            window_data.fullscreen = false;
+            // If we are going back to floating mode, we need to restore the previous position and size
+            if let Some((position, size)) = window_data.floating_location {
+                if let Some(position) = position {
+                    window_data.set_position(position);
+                }
+                window_data.set_size(size);
+            } else {
+                // If we don't have a previous position and size, we just set it to 300x300 and keep the current position
+                window_data.set_size((300, 300));
+            }
+        }
+        if window_data.topmost != topmost {
+            window_data.topmost = topmost;
+        }
     }
     // TODO: Implement fullscreen
     return window_flags_get(window);
@@ -469,10 +525,10 @@ pub extern "C" fn get_screen_info(
     // TODO: Use real information
     unsafe {
         if !width.is_null() {
-            *width = 700; // Width of the badge
+            *width = FULLSCREEN_WIDTH as i32; // Width of the badge
         }
         if !height.is_null() {
-            *height = 700; // Height of the badge
+            *height = FULLSCREEN_HEIGHT as i32; // Height of the badge
         }
         if !format.is_null() {
             *format = pixel_format_t::BADGEVMS_PIXELFORMAT_RGB565; // Only supported color format

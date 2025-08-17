@@ -1047,6 +1047,8 @@ dependencies = [
  "curl-sys",
  "libc",
  "minifb",
+ "raw-window-handle",
+ "x11-dl",
 ]
 
 [[package]]

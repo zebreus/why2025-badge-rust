@@ -48,6 +48,9 @@ BINDGEN_COMMAND=(
     --generate-inline-functions
     --rustfmt-configuration-file $(pwd)/../rustfmt.toml
     --allowlist-item stdout
+    # Extra types and header-only functions
+    --allowlist-item 'BADGEVMS_KEY_.*' 
+    --allowlist-item 'BADGEVMS_KMOD_.*'
 )
 for function in "${SIMPLE_FUNCTIONS[@]}" "${EXTERN_SIMPLE_FUNCTIONS[@]}" "${WRAPPED_FUNCTIONS[@]}"; do
     BINDGEN_COMMAND+=( --allowlist-function "$function" )

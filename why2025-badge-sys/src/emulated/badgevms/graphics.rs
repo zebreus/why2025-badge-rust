@@ -40,7 +40,23 @@ struct WindowData {
     fullscreen: bool,
     /// Receiver for input events
     receiver: std::sync::mpsc::Receiver<event_t>,
+    /// When the window is ready to be used
+    ready_at: Option<std::time::Instant>,
 }
+impl WindowData {
+    /// Wait until the window is ready to be used.
+    /// This is necessary because the window may not be ready immediately after creation.
+    fn wait_until_ready(&self) {
+        let Some(ready_at) = self.ready_at else {
+            return;
+        };
+        std::thread::sleep_until(ready_at);
+    }
+}
+/// A few calls to get information about the window depend on the window being ready.
+///
+/// This is the duration we wait until we assume the window is ready.
+const DURATION_UNTIL_WINDOW_READY: std::time::Duration = std::time::Duration::from_millis(150);
 
 // This is fine.
 unsafe impl Sync for WindowData {}
@@ -133,6 +149,7 @@ pub extern "C" fn window_create(
         undecorated,
         fullscreen,
         receiver: input_event_receiver,
+        ready_at: Some(std::time::Instant::now() + DURATION_UNTIL_WINDOW_READY),
     };
 
     let mut windows = WINDOWS.write().unwrap();
@@ -203,6 +220,8 @@ pub extern "C" fn window_position_get(window: window_handle_t) -> window_coords_
     let windows = WINDOWS.read().unwrap();
     let window_data = windows.get(window as usize).unwrap().as_ref().unwrap();
     let window_data = window_data.read().unwrap();
+    window_data.wait_until_ready();
+
     let position = window_data.window.get_position();
     return window_coords_t {
         x: position.0 as i32,
@@ -233,6 +252,7 @@ pub extern "C" fn window_size_get(window: window_handle_t) -> window_size_t {
     let windows = WINDOWS.read().unwrap();
     let window_data = windows.get(window as usize).unwrap().as_ref().unwrap();
     let window_data = window_data.read().unwrap();
+    window_data.wait_until_ready();
     let position = window_data.window.get_size();
     return window_size_t {
         w: position.0 as i32,

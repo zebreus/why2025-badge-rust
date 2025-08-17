@@ -18,6 +18,8 @@
 #![allow(non_camel_case_types)]
 #![feature(c_variadic)]
 #![feature(linkage)]
+#![cfg(not(target_arch = "riscv32"))]
+#![feature(thread_sleep_until)]
 
 mod bindings;
 

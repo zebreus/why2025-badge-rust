@@ -44,7 +44,7 @@ BINDGEN_COMMAND=(
     # This might be dangerous, when calling host functions
     --explicit-padding
     --no-layout-tests
-    --no-size_t-is-usize
+    # --no-size_t-is-usize
     --generate-inline-functions
     --rustfmt-configuration-file $(pwd)/../rustfmt.toml
     --allowlist-item stdout

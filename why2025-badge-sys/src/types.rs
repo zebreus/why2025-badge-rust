@@ -293,10 +293,9 @@ pub type __int_least64_t = ::core::ffi::c_longlong;
 pub type __intmax_t = ::core::ffi::c_longlong;
 pub type __uintmax_t = ::core::ffi::c_ulonglong;
 pub type locale_t = ::core::ffi::c_int;
-pub type size_t = ::core::ffi::c_uint;
 pub type wchar_t = ::core::ffi::c_int;
-pub type fenv_t = size_t;
-pub type fexcept_t = size_t;
+pub type fenv_t = usize;
+pub type fexcept_t = usize;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct option {
@@ -404,7 +403,7 @@ pub type regoff_t = isize;
 #[derive(Debug, Copy, Clone)]
 pub struct regex_t {
     pub re_magic: ::core::ffi::c_uint,
-    pub re_nsub: size_t,
+    pub re_nsub: usize,
     pub re_endp: *const ::core::ffi::c_char,
     pub re_g: *mut re_guts,
 }
@@ -420,7 +419,6 @@ pub type blksize_t = __blksize_t;
 pub type clock_t = ::core::ffi::c_ulong;
 pub type time_t = __int_least64_t;
 pub type ino_t = __ino_t;
-pub type ssize_t = _ssize_t;
 pub type off_t = __off_t;
 pub type dev_t = __dev_t;
 pub type uid_t = __uid_t;
@@ -533,7 +531,7 @@ pub struct path_t {
     pub directory: *mut ::core::ffi::c_char,
     pub filename: *mut ::core::ffi::c_char,
     pub unixpath: *mut ::core::ffi::c_char,
-    pub len: size_t,
+    pub len: usize,
 }
 #[repr(i32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -1180,16 +1178,16 @@ pub struct device {
             dev: *mut ::core::ffi::c_void,
             fd: ::core::ffi::c_int,
             buf: *const ::core::ffi::c_void,
-            count: size_t,
-        ) -> ssize_t,
+            count: usize,
+        ) -> isize,
     >,
     pub _read: ::core::option::Option<
         unsafe extern "C" fn(
             dev: *mut ::core::ffi::c_void,
             fd: ::core::ffi::c_int,
             buf: *mut ::core::ffi::c_void,
-            count: size_t,
-        ) -> ssize_t,
+            count: usize,
+        ) -> isize,
     >,
     pub _lseek: ::core::option::Option<
         unsafe extern "C" fn(
@@ -1197,7 +1195,7 @@ pub struct device {
             fd: ::core::ffi::c_int,
             offset: off_t,
             whence: ::core::ffi::c_int,
-        ) -> ssize_t,
+        ) -> isize,
     >,
     pub _destroy: ::core::option::Option<unsafe extern "C" fn(dev: *mut ::core::ffi::c_void)>,
 }

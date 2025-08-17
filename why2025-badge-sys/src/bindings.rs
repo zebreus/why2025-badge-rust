@@ -152,10 +152,10 @@ unsafe extern "C" {
     pub fn iconv(
         arg1: iconv_t,
         arg2: *mut *mut ::core::ffi::c_char,
-        arg3: *mut size_t,
+        arg3: *mut usize,
         arg4: *mut *mut ::core::ffi::c_char,
-        arg5: *mut size_t,
-    ) -> size_t;
+        arg5: *mut usize,
+    ) -> usize;
     pub fn iconv_close(arg1: iconv_t) -> ::core::ffi::c_int;
     pub fn fpgetround() -> fp_rnd;
     pub fn fpsetround(arg1: fp_rnd) -> fp_rnd;
@@ -424,12 +424,12 @@ unsafe extern "C" {
         arg1: ::core::ffi::c_int,
         arg2: *const regex_t,
         arg3: *mut ::core::ffi::c_char,
-        arg4: size_t,
-    ) -> size_t;
+        arg4: usize,
+    ) -> usize;
     pub fn regexec(
         arg1: *const regex_t,
         arg2: *const ::core::ffi::c_char,
-        arg3: size_t,
+        arg3: usize,
         arg4: *mut [regmatch_t; 0usize],
         arg5: ::core::ffi::c_int,
     ) -> ::core::ffi::c_int;
@@ -516,7 +516,7 @@ unsafe extern "C" {
     ) -> ::core::ffi::c_int;
     pub fn asnprintf(
         str_: *mut ::core::ffi::c_char,
-        lenp: *mut size_t,
+        lenp: *mut usize,
         fmt: *const ::core::ffi::c_char,
         ...
     ) -> *mut ::core::ffi::c_char;
@@ -585,7 +585,7 @@ unsafe extern "C" {
     pub fn fdopen(arg1: ::core::ffi::c_int, arg2: *const ::core::ffi::c_char) -> *mut FILE;
     pub fn fmemopen(
         buf: *mut ::core::ffi::c_void,
-        size: size_t,
+        size: usize,
         mode: *const ::core::ffi::c_char,
     ) -> *mut FILE;
     pub fn fseek(
@@ -608,22 +608,22 @@ unsafe extern "C" {
     ) -> ::core::ffi::c_int;
     pub fn rewind(stream: *mut FILE);
     pub fn setbuf(stream: *mut FILE, buf: *mut ::core::ffi::c_char);
-    pub fn setbuffer(stream: *mut FILE, buf: *mut ::core::ffi::c_char, size: size_t);
+    pub fn setbuffer(stream: *mut FILE, buf: *mut ::core::ffi::c_char, size: usize);
     pub fn setlinebuf(stream: *mut FILE);
     pub fn setvbuf(
         stream: *mut FILE,
         buf: *mut ::core::ffi::c_char,
         mode: ::core::ffi::c_int,
-        size: size_t,
+        size: usize,
     ) -> ::core::ffi::c_int;
     pub fn getline(
         lineptr: *mut *mut ::core::ffi::c_char,
-        n: *mut size_t,
+        n: *mut usize,
         stream: *mut FILE,
     ) -> _ssize_t;
     pub fn getdelim(
         lineptr: *mut *mut ::core::ffi::c_char,
-        n: *mut size_t,
+        n: *mut usize,
         delim: ::core::ffi::c_int,
         stream: *mut FILE,
     ) -> _ssize_t;
@@ -633,14 +633,14 @@ unsafe extern "C" {
             unsafe extern "C" fn(
                 cookie: *mut ::core::ffi::c_void,
                 buf: *mut ::core::ffi::c_void,
-                n: size_t,
+                n: usize,
             ) -> _ssize_t,
         >,
         writefn: ::core::option::Option<
             unsafe extern "C" fn(
                 cookie: *mut ::core::ffi::c_void,
                 buf: *const ::core::ffi::c_void,
-                n: size_t,
+                n: usize,
             ) -> _ssize_t,
         >,
         seekfn: ::core::option::Option<
@@ -669,8 +669,8 @@ unsafe extern "C" {
     pub fn bsearch(
         __key: *const ::core::ffi::c_void,
         __base: *const ::core::ffi::c_void,
-        __nmemb: size_t,
-        __size: size_t,
+        __nmemb: usize,
+        __size: usize,
         _compar: __compar_fn_t,
     ) -> *mut ::core::ffi::c_void;
     pub fn calloc(arg1: ::core::ffi::c_uint, arg2: ::core::ffi::c_uint)
@@ -688,23 +688,23 @@ unsafe extern "C" {
     pub fn llabs(arg1: ::core::ffi::c_longlong) -> ::core::ffi::c_longlong;
     pub fn lldiv(__numer: ::core::ffi::c_longlong, __denom: ::core::ffi::c_longlong) -> lldiv_t;
     pub fn malloc(arg1: ::core::ffi::c_uint) -> *mut ::core::ffi::c_void;
-    pub fn mblen(arg1: *const ::core::ffi::c_char, arg2: size_t) -> ::core::ffi::c_int;
-    pub fn mbstowcs(arg1: *mut wchar_t, arg2: *const ::core::ffi::c_char, arg3: size_t) -> size_t;
+    pub fn mblen(arg1: *const ::core::ffi::c_char, arg2: usize) -> ::core::ffi::c_int;
+    pub fn mbstowcs(arg1: *mut wchar_t, arg2: *const ::core::ffi::c_char, arg3: usize) -> usize;
     pub fn mbtowc(
         arg1: *mut wchar_t,
         arg2: *const ::core::ffi::c_char,
-        arg3: size_t,
+        arg3: usize,
     ) -> ::core::ffi::c_int;
     pub fn qsort(
         __base: *mut ::core::ffi::c_void,
-        __nmemb: size_t,
-        __size: size_t,
+        __nmemb: usize,
+        __size: usize,
         _compar: __compar_fn_t,
     );
     pub fn qsort_r(
         __base: *mut ::core::ffi::c_void,
-        __nmemb: size_t,
-        __size: size_t,
+        __nmemb: usize,
+        __size: usize,
         _compar: ::core::option::Option<
             unsafe extern "C" fn(
                 arg1: *const ::core::ffi::c_void,
@@ -723,8 +723,8 @@ unsafe extern "C" {
     ) -> *mut ::core::ffi::c_void;
     pub fn reallocarray(
         arg1: *mut ::core::ffi::c_void,
-        arg2: size_t,
-        arg3: size_t,
+        arg2: usize,
+        arg3: usize,
     ) -> *mut ::core::ffi::c_void;
     pub fn rpmatch(response: *const ::core::ffi::c_char) -> ::core::ffi::c_int;
     pub fn srand(__seed: ::core::ffi::c_uint);
@@ -797,7 +797,7 @@ unsafe extern "C" {
         __loc: locale_t,
     ) -> ::core::ffi::c_ulonglong;
     pub fn system(__string: *const ::core::ffi::c_char) -> ::core::ffi::c_int;
-    pub fn wcstombs(arg1: *mut ::core::ffi::c_char, arg2: *const wchar_t, arg3: size_t) -> size_t;
+    pub fn wcstombs(arg1: *mut ::core::ffi::c_char, arg2: *const wchar_t, arg3: usize) -> usize;
     pub fn wctomb(arg1: *mut ::core::ffi::c_char, arg2: wchar_t) -> ::core::ffi::c_int;
     pub fn l64a(__input: ::core::ffi::c_long) -> *mut ::core::ffi::c_char;
     pub fn gcvt(
@@ -836,7 +836,7 @@ unsafe extern "C" {
         arg3: ::core::ffi::c_uint,
     );
     pub fn bzero(arg1: *mut ::core::ffi::c_void, arg2: ::core::ffi::c_uint);
-    pub fn explicit_bzero(arg1: *mut ::core::ffi::c_void, arg2: size_t);
+    pub fn explicit_bzero(arg1: *mut ::core::ffi::c_void, arg2: usize);
     pub fn ffs(arg1: ::core::ffi::c_int) -> ::core::ffi::c_int;
     pub fn ffsl(arg1: ::core::ffi::c_long) -> ::core::ffi::c_int;
     pub fn ffsll(arg1: ::core::ffi::c_longlong) -> ::core::ffi::c_int;
@@ -868,7 +868,7 @@ unsafe extern "C" {
     pub fn strncasecmp_l(
         arg1: *const ::core::ffi::c_char,
         arg2: *const ::core::ffi::c_char,
-        arg3: size_t,
+        arg3: usize,
         arg4: locale_t,
     ) -> ::core::ffi::c_int;
     pub fn memccpy(
@@ -894,9 +894,9 @@ unsafe extern "C" {
     ) -> *mut ::core::ffi::c_void;
     pub fn memmem(
         arg1: *const ::core::ffi::c_void,
-        arg2: size_t,
+        arg2: usize,
         arg3: *const ::core::ffi::c_void,
-        arg4: size_t,
+        arg4: usize,
     ) -> *mut ::core::ffi::c_void;
     pub fn memmove(
         arg1: *mut ::core::ffi::c_void,
@@ -911,7 +911,7 @@ unsafe extern "C" {
     pub fn memrchr(
         arg1: *const ::core::ffi::c_void,
         arg2: ::core::ffi::c_int,
-        arg3: size_t,
+        arg3: usize,
     ) -> *mut ::core::ffi::c_void;
     pub fn memset(
         arg1: *mut ::core::ffi::c_void,
@@ -973,7 +973,7 @@ unsafe extern "C" {
     pub fn strerror_r(
         arg1: ::core::ffi::c_int,
         arg2: *mut ::core::ffi::c_char,
-        arg3: size_t,
+        arg3: usize,
     ) -> *mut ::core::ffi::c_char;
     pub fn strlcat(
         arg1: *mut ::core::ffi::c_char,
@@ -1006,11 +1006,11 @@ unsafe extern "C" {
         arg1: *const ::core::ffi::c_char,
         arg2: ::core::ffi::c_uint,
     ) -> *mut ::core::ffi::c_char;
-    pub fn strnlen(arg1: *const ::core::ffi::c_char, arg2: size_t) -> size_t;
+    pub fn strnlen(arg1: *const ::core::ffi::c_char, arg2: usize) -> usize;
     pub fn strnstr(
         arg1: *const ::core::ffi::c_char,
         arg2: *const ::core::ffi::c_char,
-        arg3: size_t,
+        arg3: usize,
     ) -> *mut ::core::ffi::c_char;
     pub fn strpbrk(
         arg1: *const ::core::ffi::c_char,
@@ -1054,18 +1054,18 @@ unsafe extern "C" {
     pub fn strxfrm_l(
         arg1: *mut ::core::ffi::c_char,
         arg2: *const ::core::ffi::c_char,
-        arg3: size_t,
+        arg3: usize,
         arg4: locale_t,
-    ) -> size_t;
+    ) -> usize;
     pub fn timingsafe_bcmp(
         arg1: *const ::core::ffi::c_void,
         arg2: *const ::core::ffi::c_void,
-        arg3: size_t,
+        arg3: usize,
     ) -> ::core::ffi::c_int;
     pub fn timingsafe_memcmp(
         arg1: *const ::core::ffi::c_void,
         arg2: *const ::core::ffi::c_void,
-        arg3: size_t,
+        arg3: usize,
     ) -> ::core::ffi::c_int;
     pub fn select(
         __n: ::core::ffi::c_int,
@@ -1096,17 +1096,17 @@ unsafe extern "C" {
     pub fn mktime(_timeptr: *mut tm) -> time_t;
     pub fn strftime(
         _s: *mut ::core::ffi::c_char,
-        _maxsize: size_t,
+        _maxsize: usize,
         _fmt: *const ::core::ffi::c_char,
         _t: *const tm,
-    ) -> size_t;
+    ) -> usize;
     pub fn strftime_l(
         _s: *mut ::core::ffi::c_char,
-        _maxsize: size_t,
+        _maxsize: usize,
         _fmt: *const ::core::ffi::c_char,
         _t: *const tm,
         _l: locale_t,
-    ) -> size_t;
+    ) -> usize;
     pub fn strptime(
         arg1: *const ::core::ffi::c_char,
         arg2: *const ::core::ffi::c_char,
@@ -1121,7 +1121,7 @@ unsafe extern "C" {
     pub fn time(_timer: *mut time_t) -> time_t;
     pub static mut environ: *mut *mut ::core::ffi::c_char;
     pub fn close(__fildes: ::core::ffi::c_int) -> ::core::ffi::c_int;
-    pub fn getentropy(arg1: *mut ::core::ffi::c_void, arg2: size_t) -> ::core::ffi::c_int;
+    pub fn getentropy(arg1: *mut ::core::ffi::c_void, arg2: usize) -> ::core::ffi::c_int;
     pub fn getpid() -> pid_t;
     pub fn isatty(__fildes: ::core::ffi::c_int) -> ::core::ffi::c_int;
     pub fn link(
@@ -1133,47 +1133,44 @@ unsafe extern "C" {
         __offset: off_t,
         __whence: ::core::ffi::c_int,
     ) -> off_t;
-    pub fn read(
-        __fd: ::core::ffi::c_int,
-        __buf: *mut ::core::ffi::c_void,
-        __nbyte: size_t,
-    ) -> ssize_t;
+    pub fn read(__fd: ::core::ffi::c_int, __buf: *mut ::core::ffi::c_void, __nbyte: usize)
+    -> isize;
     pub fn rmdir(__path: *const ::core::ffi::c_char) -> ::core::ffi::c_int;
     pub fn sleep(__seconds: ::core::ffi::c_uint) -> ::core::ffi::c_uint;
-    pub fn swab(arg1: *const ::core::ffi::c_void, arg2: *mut ::core::ffi::c_void, arg3: ssize_t);
+    pub fn swab(arg1: *const ::core::ffi::c_void, arg2: *mut ::core::ffi::c_void, arg3: isize);
     pub fn unlink(__path: *const ::core::ffi::c_char) -> ::core::ffi::c_int;
     pub fn usleep(__useconds: useconds_t) -> ::core::ffi::c_int;
     pub fn write(
         __fd: ::core::ffi::c_int,
         __buf: *const ::core::ffi::c_void,
-        __nbyte: size_t,
-    ) -> ssize_t;
+        __nbyte: usize,
+    ) -> isize;
     pub fn btowc(arg1: ::core::ffi::c_int) -> wint_t;
     pub fn fwide(arg1: *mut __FILE, arg2: ::core::ffi::c_int) -> ::core::ffi::c_int;
-    pub fn mbrlen(arg1: *const ::core::ffi::c_char, arg2: size_t, arg3: *mut mbstate_t) -> size_t;
+    pub fn mbrlen(arg1: *const ::core::ffi::c_char, arg2: usize, arg3: *mut mbstate_t) -> usize;
     pub fn mbrtowc(
         arg1: *mut wchar_t,
         arg2: *const ::core::ffi::c_char,
-        arg3: size_t,
+        arg3: usize,
         arg4: *mut mbstate_t,
-    ) -> size_t;
+    ) -> usize;
     pub fn mbsinit(arg1: *const mbstate_t) -> ::core::ffi::c_int;
     pub fn mbsnrtowcs(
         arg1: *mut wchar_t,
         arg2: *mut *const ::core::ffi::c_char,
-        arg3: size_t,
-        arg4: size_t,
+        arg3: usize,
+        arg4: usize,
         arg5: *mut mbstate_t,
-    ) -> size_t;
+    ) -> usize;
     pub fn mbsrtowcs(
         arg1: *mut wchar_t,
         arg2: *mut *const ::core::ffi::c_char,
-        arg3: size_t,
+        arg3: usize,
         arg4: *mut mbstate_t,
-    ) -> size_t;
+    ) -> usize;
     pub fn wcpcpy(arg1: *mut wchar_t, arg2: *const wchar_t) -> *mut wchar_t;
-    pub fn wcpncpy(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: size_t) -> *mut wchar_t;
-    pub fn wcrtomb(arg1: *mut ::core::ffi::c_char, arg2: wchar_t, arg3: *mut mbstate_t) -> size_t;
+    pub fn wcpncpy(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: usize) -> *mut wchar_t;
+    pub fn wcrtomb(arg1: *mut ::core::ffi::c_char, arg2: wchar_t, arg3: *mut mbstate_t) -> usize;
     pub fn wcscasecmp(arg1: *const wchar_t, arg2: *const wchar_t) -> ::core::ffi::c_int;
     pub fn wcscasecmp_l(
         arg1: *const wchar_t,
@@ -1196,59 +1193,59 @@ unsafe extern "C" {
         arg3: locale_t,
     ) -> ::core::ffi::c_int;
     pub fn wcscpy(arg1: *mut wchar_t, arg2: *const wchar_t) -> *mut wchar_t;
-    pub fn wcscspn(arg1: *const wchar_t, arg2: *const wchar_t) -> size_t;
+    pub fn wcscspn(arg1: *const wchar_t, arg2: *const wchar_t) -> usize;
     pub fn wcsdup(arg1: *const wchar_t) -> *mut wchar_t;
     pub fn wcsftime(
         arg1: *mut wchar_t,
-        arg2: size_t,
+        arg2: usize,
         arg3: *const wchar_t,
         arg4: *const tm,
-    ) -> size_t;
+    ) -> usize;
     pub fn wcsftime_l(
         arg1: *mut wchar_t,
-        arg2: size_t,
+        arg2: usize,
         arg3: *const wchar_t,
         arg4: *const tm,
         arg5: locale_t,
-    ) -> size_t;
-    pub fn wcslcat(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: size_t) -> size_t;
-    pub fn wcslcpy(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: size_t) -> size_t;
+    ) -> usize;
+    pub fn wcslcat(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: usize) -> usize;
+    pub fn wcslcpy(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: usize) -> usize;
     pub fn wcslen(arg1: *const ::core::ffi::c_int) -> ::core::ffi::c_uint;
     pub fn wcsncasecmp(
         arg1: *const wchar_t,
         arg2: *const wchar_t,
-        arg3: size_t,
+        arg3: usize,
     ) -> ::core::ffi::c_int;
     pub fn wcsncasecmp_l(
         arg1: *const wchar_t,
         arg2: *const wchar_t,
-        arg3: size_t,
+        arg3: usize,
         arg4: locale_t,
     ) -> ::core::ffi::c_int;
-    pub fn wcsncat(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: size_t) -> *mut wchar_t;
+    pub fn wcsncat(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: usize) -> *mut wchar_t;
     pub fn wcsncmp(
         arg1: *const ::core::ffi::c_int,
         arg2: *const ::core::ffi::c_int,
         arg3: ::core::ffi::c_uint,
     ) -> ::core::ffi::c_int;
-    pub fn wcsncpy(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: size_t) -> *mut wchar_t;
-    pub fn wcsnlen(arg1: *const wchar_t, arg2: size_t) -> size_t;
+    pub fn wcsncpy(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: usize) -> *mut wchar_t;
+    pub fn wcsnlen(arg1: *const wchar_t, arg2: usize) -> usize;
     pub fn wcsnrtombs(
         arg1: *mut ::core::ffi::c_char,
         arg2: *mut *const wchar_t,
-        arg3: size_t,
-        arg4: size_t,
+        arg3: usize,
+        arg4: usize,
         arg5: *mut mbstate_t,
-    ) -> size_t;
+    ) -> usize;
     pub fn wcspbrk(arg1: *const wchar_t, arg2: *const wchar_t) -> *mut wchar_t;
     pub fn wcsrchr(arg1: *const wchar_t, arg2: wchar_t) -> *mut wchar_t;
     pub fn wcsrtombs(
         arg1: *mut ::core::ffi::c_char,
         arg2: *mut *const wchar_t,
-        arg3: size_t,
+        arg3: usize,
         arg4: *mut mbstate_t,
-    ) -> size_t;
-    pub fn wcsspn(arg1: *const wchar_t, arg2: *const wchar_t) -> size_t;
+    ) -> usize;
+    pub fn wcsspn(arg1: *const wchar_t, arg2: *const wchar_t) -> usize;
     pub fn wcsstr(arg1: *const wchar_t, arg2: *const wchar_t) -> *mut wchar_t;
     pub fn wcstod(arg1: *const wchar_t, arg2: *mut *mut wchar_t) -> f64;
     pub fn wcstod_l(arg1: *const wchar_t, arg2: *mut *mut wchar_t, arg3: locale_t) -> f64;
@@ -1305,14 +1302,14 @@ unsafe extern "C" {
         arg3: ::core::ffi::c_int,
         arg4: locale_t,
     ) -> ::core::ffi::c_ulonglong;
-    pub fn wcswidth(arg1: *const wchar_t, arg2: size_t) -> ::core::ffi::c_int;
-    pub fn wcsxfrm(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: size_t) -> size_t;
+    pub fn wcswidth(arg1: *const wchar_t, arg2: usize) -> ::core::ffi::c_int;
+    pub fn wcsxfrm(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: usize) -> usize;
     pub fn wcsxfrm_l(
         arg1: *mut wchar_t,
         arg2: *const wchar_t,
-        arg3: size_t,
+        arg3: usize,
         arg4: locale_t,
-    ) -> size_t;
+    ) -> usize;
     pub fn wctob(arg1: wint_t) -> ::core::ffi::c_int;
     pub fn wcwidth(arg1: wchar_t) -> ::core::ffi::c_int;
     pub fn wmemchr(
@@ -1335,8 +1332,8 @@ unsafe extern "C" {
         arg2: *const ::core::ffi::c_int,
         arg3: ::core::ffi::c_uint,
     ) -> *mut ::core::ffi::c_int;
-    pub fn wmempcpy(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: size_t) -> *mut wchar_t;
-    pub fn wmemset(arg1: *mut wchar_t, arg2: wchar_t, arg3: size_t) -> *mut wchar_t;
+    pub fn wmempcpy(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: usize) -> *mut wchar_t;
+    pub fn wmemset(arg1: *mut wchar_t, arg2: wchar_t, arg3: usize) -> *mut wchar_t;
     pub fn iswalnum(arg1: wint_t) -> ::core::ffi::c_int;
     pub fn iswalpha(arg1: wint_t) -> ::core::ffi::c_int;
     pub fn iswblank(arg1: wint_t) -> ::core::ffi::c_int;
@@ -1501,7 +1498,7 @@ unsafe extern "C" {
     pub fn ota_get_invalid_version(version: *mut ::core::ffi::c_char) -> bool;
     pub fn process_create(
         path: *const ::core::ffi::c_char,
-        stack_size: size_t,
+        stack_size: usize,
         argc: ::core::ffi::c_int,
         argv: *mut *mut ::core::ffi::c_char,
     ) -> pid_t;

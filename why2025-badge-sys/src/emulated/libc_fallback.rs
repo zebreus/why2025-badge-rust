@@ -6,6 +6,8 @@
 use crate::types::*;
 use crate::{atof, isascii};
 
+type size_t = usize;
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn atoff(__nptr: *const ::core::ffi::c_char) -> f32 {

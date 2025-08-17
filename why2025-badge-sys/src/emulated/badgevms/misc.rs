@@ -1,5 +1,7 @@
 use crate::types::*;
 
+type size_t = usize;
+
 #[unsafe(no_mangle)]
 pub extern "C" fn process_create(
     path: *const ::core::ffi::c_char,

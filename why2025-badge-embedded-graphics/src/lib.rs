@@ -9,8 +9,8 @@ use embedded_graphics::{geometry::Size, pixelcolor::Rgb888, prelude::*};
 use why2025_badge_sys::{
     framebuffer_t, pixel_format_t, window_coords_t, window_create, window_flag_t, window_flags_get,
     window_flags_set, window_framebuffer_create, window_framebuffer_size_set, window_handle_t,
-    window_position_get, window_position_set, window_present, window_size_set, window_size_t,
-    window_title_set,
+    window_position_get, window_position_set, window_present, window_size_get, window_size_set,
+    window_size_t, window_title_set,
 };
 
 const fn rgb888_to_rgb565(r: u8, g: u8, b: u8) -> u16 {
@@ -43,8 +43,8 @@ impl Why2025BadgeWindowConfig {
     pub fn new_fullscreen() -> Self {
         Self {
             size: Size {
-                width: 720,
-                height: 720,
+                width: 400,
+                height: 400,
             },
             title: String::new(),
             fullscreen: true,
@@ -101,10 +101,12 @@ impl Why2025BadgeWindow {
             )
         };
 
+        let real_size = unsafe { window_size_get(window) };
+
         let framebuffer = unsafe {
             window_framebuffer_create(
                 window,
-                size.clone(),
+                real_size.clone(),
                 pixel_format_t::BADGEVMS_PIXELFORMAT_RGB565,
             )
         };
@@ -128,7 +130,10 @@ impl Why2025BadgeWindow {
         };
         unsafe {
             window_size_set(self.window, new_size);
-            window_framebuffer_size_set(self.window, new_size);
+        }
+        let real_size = unsafe { window_size_get(self.window) };
+        unsafe {
+            window_framebuffer_size_set(self.window, real_size);
         }
     }
 
@@ -169,6 +174,10 @@ impl Why2025BadgeWindow {
                 window_flag_t(flags.0 ^ window_flag_t::WINDOW_FLAG_FULLSCREEN.0),
             )
         };
+        let real_size = unsafe { window_size_get(self.window) };
+        unsafe {
+            window_framebuffer_size_set(self.window, real_size);
+        }
         return flags & window_flag_t::WINDOW_FLAG_FULLSCREEN != window_flag_t::WINDOW_FLAG_NONE;
     }
     /// Check if the window is undecorated (no title bar, no borders)

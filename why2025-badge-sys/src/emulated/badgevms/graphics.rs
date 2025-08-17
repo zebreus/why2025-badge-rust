@@ -73,6 +73,13 @@ impl WindowData {
             self.floating_location = Some((self.floating_location.and_then(|(pos, _)| pos), size));
             return self.get_size();
         }
+
+        let old_size = self.window.get_size();
+        if old_size.0 == size.0 && old_size.1 == size.1 {
+            // No change needed
+            return size;
+        }
+
         // Obtain handles for the X11 window and display
         let raw_handle = self.window.window_handle().unwrap().as_raw();
         let RawWindowHandle::Xlib(window_handle) = raw_handle else {
@@ -85,7 +92,6 @@ impl WindowData {
         };
         let x11_display = display_handle.display.unwrap().as_ptr() as *mut x11_dl::xlib::Display;
 
-        let old_size = self.window.get_size();
         unsafe { ((XLIB).XResizeWindow)(x11_display, x11_window, size.0 as u32, size.1 as u32) };
 
         // Wait until the window has been resized
@@ -137,8 +143,8 @@ static WINDOWS: LazyLock<Arc<RwLock<Vec<Option<Arc<RwLock<WindowData>>>>>>> = La
 static XLIB: LazyLock<x11_dl::xlib::Xlib> =
     LazyLock::new(|| x11_dl::xlib::Xlib::open().expect("Failed to open Xlib library"));
 
-static FULLSCREEN_WIDTH: usize = 700;
-static FULLSCREEN_HEIGHT: usize = 700;
+static FULLSCREEN_WIDTH: usize = 720;
+static FULLSCREEN_HEIGHT: usize = 720;
 
 /// Create a new window with the given title and size.
 ///
@@ -442,6 +448,13 @@ pub extern "C" fn window_framebuffer_size_set(
     let windows = WINDOWS.read().unwrap();
     let window_data = windows.get(window as usize).unwrap().as_ref().unwrap();
     let mut window_data = window_data.write().unwrap();
+    if window_data.framebuffer.w as usize == size.w as usize
+        && window_data.framebuffer.h as usize == size.h as usize
+    {
+        // No change needed
+        return size;
+    }
+
     window_data.framebuffer.w = size.w as u32;
     window_data.framebuffer.h = size.h as u32;
 

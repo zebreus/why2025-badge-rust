@@ -58,10 +58,33 @@ pub extern "C" fn path_free(path: *mut path_t) {
         }
     };
 }
+
+/// Create a directory and all parent directories if they do not exist
+///
+/// Returns true on success, false on failure (including if the path is invalid)
 #[unsafe(no_mangle)]
-pub extern "C" fn mkdir_p(_path: *const c_char) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+pub extern "C" fn mkdir_p(path: *const c_char) -> bool {
+    panic!("Not implemented yet");
+
+    if path.is_null() {
+        return false;
+    }
+    let c_str = unsafe { ::core::ffi::CStr::from_ptr(path) };
+    if c_str.to_bytes().len() == 0 {
+        return false;
+    }
+
+    let path = match ParsedPath::new(&c_str) {
+        Ok(r) => r,
+        Err(_) => return false,
+    };
+
+    let host_directory = path.to_host_directory();
+
+    // mkdir(path, mode)
+    true
 }
+
 #[unsafe(no_mangle)]
 pub extern "C" fn rm_rf(_path: *const c_char) -> bool {
     unimplemented!("Implement this yourself if you need it");

@@ -1,6 +1,8 @@
 use crate::{malloc, types::*};
 use core::ffi::{CStr, c_char};
-use std::fmt::Display;
+use std::{fmt::Display, path::PathBuf};
+
+const BASE_DIRECTORY: &str = "~/.why2025-badge/data";
 
 #[derive(Debug)]
 pub struct ParsedPath {
@@ -172,6 +174,26 @@ impl ParsedPath {
             unixpath: std::ptr::null_mut(),
             len: string.len(),
         };
+    }
+
+    pub fn to_host_directory(&self) -> PathBuf {
+        let mut path = PathBuf::from(BASE_DIRECTORY);
+        path.push(&self.device);
+        for part in self.directory.as_ref().unwrap_or(&String::new()).split(".") {
+            if part.is_empty() {
+                continue;
+            }
+            path.push(part);
+        }
+        path
+    }
+
+    pub fn to_host_file(&self) -> PathBuf {
+        let mut path = self.to_host_directory();
+        if !self.filename.is_empty() {
+            path.push(&self.filename);
+        }
+        path
     }
 }
 

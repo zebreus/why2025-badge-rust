@@ -1,9 +1,5 @@
-use crate::{
-    emulated::badgevms::fs::paths::{ProperParseResult, parse_path_2, parse_path_internal},
-    malloc,
-    types::*,
-};
-use core::ffi::{CStr, c_char};
+use crate::{emulated::badgevms::fs::paths::ParsedPath, malloc, types::*};
+use core::ffi::c_char;
 
 mod paths;
 
@@ -34,7 +30,7 @@ pub extern "C" fn parse_path(path: *const c_char, result: *mut path_t) -> path_p
         return path_parse_result_t::PATH_PARSE_EMPTY_PATH;
     }
 
-    let parse_result = match parse_path_2(&c_str) {
+    let parse_result = match ParsedPath::new(&c_str) {
         Ok(r) => r,
         Err(e) => {
             e.populate_path_t(result);
@@ -86,7 +82,7 @@ pub extern "C" fn path_dirname(path: *const c_char) -> *mut c_char {
         return core::ptr::null_mut();
     }
 
-    let mut parse_result = match parse_path_2(c_str) {
+    let mut parse_result = match ParsedPath::new(c_str) {
         Ok(r) => r,
         Err(_) => return core::ptr::null_mut(),
     };
@@ -117,7 +113,7 @@ pub extern "C" fn path_basename(path: *const c_char) -> *mut c_char {
         return core::ptr::null_mut();
     }
 
-    let parse_result = match parse_path_2(c_str) {
+    let parse_result = match ParsedPath::new(c_str) {
         Ok(r) => r,
         Err(_) => return core::ptr::null_mut(),
     };
@@ -148,7 +144,7 @@ pub extern "C" fn path_devname(path: *const c_char) -> *mut c_char {
         return core::ptr::null_mut();
     }
 
-    let mut parse_result = match parse_path_2(c_str) {
+    let mut parse_result = match ParsedPath::new(c_str) {
         Ok(r) => r,
         Err(_) => return core::ptr::null_mut(),
     };
@@ -194,7 +190,7 @@ pub extern "C" fn path_dirconcat(path: *const c_char, subdir: *const c_char) -> 
         return core::ptr::null_mut();
     }
 
-    let mut parse_result = match parse_path_2(path_c_str) {
+    let mut parse_result = match ParsedPath::new(path_c_str) {
         Ok(r) => r,
         Err(_) => return core::ptr::null_mut(),
     };
@@ -244,7 +240,7 @@ pub extern "C" fn path_fileconcat(path: *const c_char, filename: *const c_char) 
         return core::ptr::null_mut();
     }
 
-    let mut parse_result = match parse_path_2(path_c_str) {
+    let mut parse_result = match ParsedPath::new(path_c_str) {
         Ok(r) => r,
         Err(_) => return core::ptr::null_mut(),
     };
@@ -287,7 +283,7 @@ pub extern "C" fn path_concat(base_path: *const c_char, append_path: *const c_ch
         return core::ptr::null_mut();
     }
 
-    let base_parsed = match parse_path_2(base_path_c_str) {
+    let base_parsed = match ParsedPath::new(base_path_c_str) {
         Ok(r) => r,
         Err(_) => return core::ptr::null_mut(),
     };
@@ -301,7 +297,7 @@ pub extern "C" fn path_concat(base_path: *const c_char, append_path: *const c_ch
     append_path_with_device.extend_from_slice(append_path_c_str.to_bytes_with_nul());
     let append_path_c_str =
         ::core::ffi::CStr::from_bytes_with_nul(&append_path_with_device).unwrap();
-    let append_parsed = match parse_path_2(append_path_c_str) {
+    let append_parsed = match ParsedPath::new(append_path_c_str) {
         Ok(r) => r,
         Err(_) => return core::ptr::null_mut(),
     };
@@ -315,7 +311,7 @@ pub extern "C" fn path_concat(base_path: *const c_char, append_path: *const c_ch
         (None, Some(d)) => Some(d),
         (None, None) => None,
     };
-    let parsed_path = ProperParseResult {
+    let parsed_path = ParsedPath {
         device: base_parsed.device,
         directory: new_directory,
         filename: append_parsed.filename,

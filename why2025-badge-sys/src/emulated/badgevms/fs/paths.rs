@@ -3,7 +3,7 @@ use core::ffi::{CStr, c_char};
 use std::fmt::Display;
 
 #[derive(Debug)]
-pub struct ProperParseResult {
+pub struct ParsedPath {
     pub device: String,
     pub directory: Option<String>,
     pub filename: String,
@@ -118,7 +118,7 @@ impl PathParseError<'_> {
     }
 }
 
-impl Display for ProperParseResult {
+impl Display for ParsedPath {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(dir) = &self.directory {
             write!(f, "{}:[{}]{}", self.device, dir, self.filename)
@@ -128,7 +128,7 @@ impl Display for ProperParseResult {
     }
 }
 
-impl ProperParseResult {
+impl ParsedPath {
     pub fn to_string(&self) -> String {
         format!("{}", self)
     }
@@ -179,13 +179,11 @@ impl ProperParseResult {
 ///
 /// If you got this structure from the parser the path is guaranteed to be fully valid.
 #[derive(Debug)]
-pub struct ParseResult<'a> {
+struct ParseResult<'a> {
     device: *const u8,
     /// This points to the byte after the device name.
     /// Needs to be set to 0 to make device a valid C string.
     colon: *const u8,
-    /// If this pointer is indentical to `colon` there is no directory part.
-    opening_bracket: *const u8,
     directory: *const u8,
     /// If not null, this points to the byte after the directory name.
     /// Needs to be set to 0 to make directory a valid C string.
@@ -204,8 +202,7 @@ impl<'a> ParseResult<'a> {
     // Debug asserts everywhere, although they should not be needed as the parser should only ever hand out valid ParseResults.
     //
     // We can use from_utf8_unchecked here because the parser only allows valid UTF-8 characters in paths.
-
-    pub fn device(&self) -> &'a str {
+    fn device(&self) -> &'a str {
         debug_assert!(!self.device.is_null());
         debug_assert!(!self.colon.is_null());
         let device_length = self.colon as usize - self.device as usize;
@@ -213,23 +210,7 @@ impl<'a> ParseResult<'a> {
             std::str::from_utf8_unchecked(std::slice::from_raw_parts(self.device, device_length))
         }
     }
-    pub fn colon(&self) -> &'a [u8] {
-        debug_assert!(!self.colon.is_null());
-        std::array::from_ref(unsafe { &*self.colon })
-    }
-    pub fn opening_bracket(&self) -> Option<&'a u8> {
-        if self.opening_bracket.is_null() {
-            return None;
-        }
-        Some(unsafe { &*self.opening_bracket })
-    }
-    pub fn closing_bracket(&self) -> Option<&'a u8> {
-        if self.closing_bracket.is_null() {
-            return None;
-        }
-        Some(unsafe { &*self.closing_bracket })
-    }
-    pub fn directory(&self) -> Option<&'a str> {
+    fn directory(&self) -> Option<&'a str> {
         if self.directory.is_null() || self.closing_bracket.is_null() {
             return None;
         }
@@ -241,7 +222,7 @@ impl<'a> ParseResult<'a> {
             )))
         }
     }
-    pub fn filename(&self) -> &'a str {
+    fn filename(&self) -> &'a str {
         if self.filename.is_null() {
             return "";
         }
@@ -254,253 +235,111 @@ impl<'a> ParseResult<'a> {
             ))
         }
     }
-    pub fn terminator(&self) -> &'a u8 {
-        debug_assert!(!self.terminator.is_null());
-        unsafe { &*self.terminator }
-    }
-
-    /// Set the null terminators in the original string to sure that `device`, `directory` and `filename` are valid C strings.
-    ///
-    /// This is unsafe because it modifies the original string even if it is not mutable.
-    pub unsafe fn finalize(&self) {
-        unsafe {
-            if !self.colon.is_null() {
-                *(self.colon as *mut u8) = 0;
-            }
-            if !self.closing_bracket.is_null() {
-                *(self.closing_bracket as *mut u8) = 0;
-            }
-        }
-    }
 }
 
-// impl ParseResult {
-//     fn into_better_format(&self) {
-//         debug_assert!(!self.device.is_null());
-//         let device_len = self.device.
-
-//     }
-// }
-
-// struct BetterDirectoryPart<'a> {
-//     opening_bracket: &'a [u8; 1],
-//     directory: &'a [u8],
-//     closing_bracket: &'a [u8; 1],
-// }
-// struct BetterParseResult<'a> {
-//     device: &'a [u8],
-//     colon: &'a [u8; 1],
-//     // Possibly a directory part with brackets
-//     directory: Option<BetterDirectoryPart<'a>>,
-//     // A character sequence of 0 or more bytes.
-//     filename: &'a [u8],
-//     // Guaranteed to be a single null byte
-//     terminator: &'a [u8; 1],
-// }
-
-pub fn parse_path_internal<'a>(
-    input: &'a core::ffi::CStr,
-) -> Result<ParseResult<'a>, path_parse_result_t> {
-    enum ParseState<'a> {
-        Device(ParseResult<'a>),
-        Filename(ParseResult<'a>),
-        MaybeDirectory(ParseResult<'a>),
-        Directory(ParseResult<'a>),
-        Done(ParseResult<'a>),
-    }
-    let mut state = ParseState::Device(ParseResult {
-        device: std::ptr::null_mut(),
-        colon: std::ptr::null_mut(),
-        opening_bracket: std::ptr::null_mut(),
-        directory: std::ptr::null_mut(),
-        closing_bracket: std::ptr::null_mut(),
-        filename: std::ptr::null_mut(),
-        terminator: std::ptr::null_mut(),
-        _lifetime: core::marker::PhantomData,
-    });
-    for c in input.to_bytes_with_nul().iter() {
-        state = match (state, *c) {
-            (ParseState::Done(_), _) => {
-                unreachable!(
-                    "Encountered another byte after null terminator. This should not be possible here."
-                );
-            }
-            (ParseState::Filename(r) | ParseState::MaybeDirectory(r), 0) => {
-                ParseState::Done(ParseResult { terminator: c, ..r })
-            }
-            (ParseState::Directory(_), 0) => {
-                return Err(path_parse_result_t::PATH_PARSE_UNCLOSED_DIRECTORY);
-            }
-            (ParseState::Device(_), 0) => {
-                return Err(path_parse_result_t::PATH_PARSE_NO_DEVICE);
-            }
-            (ParseState::Device(r), b':') => {
-                if r.device.is_null() {
-                    return Err(path_parse_result_t::PATH_PARSE_EMPTY_DEVICE);
+impl ParsedPath {
+    pub fn new(input: &core::ffi::CStr) -> Result<ParsedPath, PathParseError<'_>> {
+        enum ParseState<'a> {
+            Device(ParseResult<'a>),
+            Filename(ParseResult<'a>),
+            MaybeDirectory(ParseResult<'a>),
+            Directory(ParseResult<'a>),
+            Done(ParseResult<'a>),
+        }
+        let mut state = ParseState::Device(ParseResult {
+            device: std::ptr::null_mut(),
+            colon: std::ptr::null_mut(),
+            directory: std::ptr::null_mut(),
+            closing_bracket: std::ptr::null_mut(),
+            filename: std::ptr::null_mut(),
+            terminator: std::ptr::null_mut(),
+            _lifetime: core::marker::PhantomData,
+        });
+        for c in input.to_bytes_with_nul().iter() {
+            state = match (state, *c) {
+                (ParseState::Done(_), _) => {
+                    unreachable!(
+                        "Encountered another byte after null terminator. This should not be possible here."
+                    );
                 }
-                ParseState::MaybeDirectory(ParseResult { colon: c, ..r })
-            }
-            (
-                ParseState::Device(r),
-                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-' | b'$',
-            ) => {
-                if r.device.is_null() {
-                    ParseState::Device(ParseResult { device: c, ..r })
-                } else {
-                    ParseState::Device(r)
+                (ParseState::Filename(r) | ParseState::MaybeDirectory(r), 0) => {
+                    ParseState::Done(ParseResult { terminator: c, ..r })
                 }
-            }
-            (ParseState::Device(_), _) => {
-                return Err(path_parse_result_t::PATH_PARSE_INVALID_DEVICE_CHAR);
-            }
-            (ParseState::MaybeDirectory(r), b'[') => ParseState::Directory(ParseResult {
-                opening_bracket: c,
-                ..r
-            }),
-            (ParseState::Directory(r), b']') => ParseState::Filename(ParseResult {
-                closing_bracket: c,
-                ..r
-            }),
-            (
-                ParseState::Directory(r),
-                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-' | b'$' | b'.',
-            ) => {
-                if r.directory.is_null() {
-                    ParseState::Directory(ParseResult { directory: c, ..r })
-                } else {
-                    ParseState::Directory(r)
+                (ParseState::Directory(_), 0) => {
+                    return Err(PathParseError::UnclosedDirectory { path: input });
                 }
-            }
-            (ParseState::Directory(_), _) => {
-                return Err(path_parse_result_t::PATH_PARSE_INVALID_DIR_CHAR);
-            }
-            (
-                ParseState::Filename(r) | ParseState::MaybeDirectory(r),
-                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-' | b'$' | b'.',
-            ) => {
-                if r.filename.is_null() {
-                    ParseState::Filename(ParseResult { filename: c, ..r })
-                } else {
-                    ParseState::Filename(r)
+                (ParseState::Device(_), 0) => {
+                    return Err(PathParseError::NoDevice { path: input });
                 }
-            }
-            (ParseState::Filename(_) | ParseState::MaybeDirectory(_), _) => {
-                return Err(path_parse_result_t::PATH_PARSE_INVALID_FILE_CHAR);
+                (ParseState::Device(r), b':') => {
+                    if r.device.is_null() {
+                        return Err(PathParseError::EmptyDevice { path: input });
+                    }
+                    ParseState::MaybeDirectory(ParseResult { colon: c, ..r })
+                }
+                (
+                    ParseState::Device(r),
+                    b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-' | b'$',
+                ) => {
+                    if r.device.is_null() {
+                        ParseState::Device(ParseResult { device: c, ..r })
+                    } else {
+                        ParseState::Device(r)
+                    }
+                }
+                (ParseState::Device(_), _) => {
+                    return Err(PathParseError::InvalidDeviceChar { path: input });
+                }
+                (ParseState::MaybeDirectory(r), b'[') => ParseState::Directory(r),
+                (ParseState::Directory(r), b']') => ParseState::Filename(ParseResult {
+                    closing_bracket: c,
+                    ..r
+                }),
+                (
+                    ParseState::Directory(r),
+                    b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-' | b'$' | b'.',
+                ) => {
+                    if r.directory.is_null() {
+                        ParseState::Directory(ParseResult { directory: c, ..r })
+                    } else {
+                        ParseState::Directory(r)
+                    }
+                }
+                (ParseState::Directory(_), _) => {
+                    return Err(PathParseError::InvalidDirChar { path: input });
+                }
+                (
+                    ParseState::Filename(r) | ParseState::MaybeDirectory(r),
+                    b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-' | b'$' | b'.',
+                ) => {
+                    if r.filename.is_null() {
+                        ParseState::Filename(ParseResult { filename: c, ..r })
+                    } else {
+                        ParseState::Filename(r)
+                    }
+                }
+                (ParseState::Filename(r) | ParseState::MaybeDirectory(r), _) => {
+                    let directory_index = if r.directory.is_null() {
+                        None
+                    } else {
+                        Some(r.directory as usize - r.device as usize)
+                    };
+                    return Err(PathParseError::InvalidFileChar {
+                        path: input,
+                        directory_index,
+                    });
+                }
             }
         }
-    }
 
-    let ParseState::Done(result) = state else {
-        unreachable!("Path parsing did not end in a done state. This is not possible.")
-    };
-    Ok(result)
-}
-
-pub fn parse_path_2<'a>(input: &'a core::ffi::CStr) -> Result<ProperParseResult, PathParseError> {
-    enum ParseState<'a> {
-        Device(ParseResult<'a>),
-        Filename(ParseResult<'a>),
-        MaybeDirectory(ParseResult<'a>),
-        Directory(ParseResult<'a>),
-        Done(ParseResult<'a>),
+        let ParseState::Done(result) = state else {
+            unreachable!("Path parsing did not end in a done state. This is not possible.")
+        };
+        let result = ParsedPath {
+            device: result.device().to_string(),
+            directory: result.directory().map(|d| d.to_string()),
+            filename: result.filename().to_string(),
+        };
+        Ok(result)
     }
-    let mut state = ParseState::Device(ParseResult {
-        device: std::ptr::null_mut(),
-        colon: std::ptr::null_mut(),
-        opening_bracket: std::ptr::null_mut(),
-        directory: std::ptr::null_mut(),
-        closing_bracket: std::ptr::null_mut(),
-        filename: std::ptr::null_mut(),
-        terminator: std::ptr::null_mut(),
-        _lifetime: core::marker::PhantomData,
-    });
-    for c in input.to_bytes_with_nul().iter() {
-        state = match (state, *c) {
-            (ParseState::Done(_), _) => {
-                unreachable!(
-                    "Encountered another byte after null terminator. This should not be possible here."
-                );
-            }
-            (ParseState::Filename(r) | ParseState::MaybeDirectory(r), 0) => {
-                ParseState::Done(ParseResult { terminator: c, ..r })
-            }
-            (ParseState::Directory(_), 0) => {
-                return Err(PathParseError::UnclosedDirectory { path: input });
-            }
-            (ParseState::Device(_), 0) => {
-                return Err(PathParseError::NoDevice { path: input });
-            }
-            (ParseState::Device(r), b':') => {
-                if r.device.is_null() {
-                    return Err(PathParseError::EmptyDevice { path: input });
-                }
-                ParseState::MaybeDirectory(ParseResult { colon: c, ..r })
-            }
-            (
-                ParseState::Device(r),
-                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-' | b'$',
-            ) => {
-                if r.device.is_null() {
-                    ParseState::Device(ParseResult { device: c, ..r })
-                } else {
-                    ParseState::Device(r)
-                }
-            }
-            (ParseState::Device(_), _) => {
-                return Err(PathParseError::InvalidDeviceChar { path: input });
-            }
-            (ParseState::MaybeDirectory(r), b'[') => ParseState::Directory(ParseResult {
-                opening_bracket: c,
-                ..r
-            }),
-            (ParseState::Directory(r), b']') => ParseState::Filename(ParseResult {
-                closing_bracket: c,
-                ..r
-            }),
-            (
-                ParseState::Directory(r),
-                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-' | b'$' | b'.',
-            ) => {
-                if r.directory.is_null() {
-                    ParseState::Directory(ParseResult { directory: c, ..r })
-                } else {
-                    ParseState::Directory(r)
-                }
-            }
-            (ParseState::Directory(_), _) => {
-                return Err(PathParseError::InvalidDirChar { path: input });
-            }
-            (
-                ParseState::Filename(r) | ParseState::MaybeDirectory(r),
-                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-' | b'$' | b'.',
-            ) => {
-                if r.filename.is_null() {
-                    ParseState::Filename(ParseResult { filename: c, ..r })
-                } else {
-                    ParseState::Filename(r)
-                }
-            }
-            (ParseState::Filename(r) | ParseState::MaybeDirectory(r), _) => {
-                let directory_index = if r.directory.is_null() {
-                    None
-                } else {
-                    Some(r.directory as usize - r.device as usize)
-                };
-                return Err(PathParseError::InvalidFileChar {
-                    path: input,
-                    directory_index,
-                });
-            }
-        }
-    }
-
-    let ParseState::Done(result) = state else {
-        unreachable!("Path parsing did not end in a done state. This is not possible.")
-    };
-    let result = ProperParseResult {
-        device: result.device().to_string(),
-        directory: result.directory().map(|d| d.to_string()),
-        filename: result.filename().to_string(),
-    };
-    Ok(result)
 }

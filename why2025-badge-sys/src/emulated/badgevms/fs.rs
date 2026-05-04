@@ -82,8 +82,31 @@ pub extern "C" fn mkdir_p(path: *const c_char) -> bool {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn rm_rf(_path: *const c_char) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+pub extern "C" fn rm_rf(path: *const c_char) -> bool {
+    if path.is_null() {
+        return false;
+    }
+    let c_str = unsafe { ::core::ffi::CStr::from_ptr(path) };
+    if c_str.to_bytes().len() == 0 {
+        return false;
+    }
+
+    let parsed_path = match ParsedPath::new(&c_str) {
+        Ok(parsed_path) => parsed_path,
+        Err(_) => return true,
+    };
+
+    let host_path = parsed_path.to_host_file();
+    let metadata = match fs::metadata(&host_path) {
+        Ok(metadata) => metadata,
+        Err(error) => return error.kind() == std::io::ErrorKind::NotFound,
+    };
+
+    if metadata.is_dir() {
+        fs::remove_dir_all(host_path).is_ok()
+    } else {
+        fs::remove_file(host_path).is_ok()
+    }
 }
 
 /// Get the filename name from a path
@@ -405,6 +428,59 @@ mod tests {
         assert!(!mkdir_p(core::ptr::null()));
         assert!(!mkdir_p(b"[dir.subdir]file.ext\0".as_ptr() as *const c_char));
         assert!(!temporary_directory.path().exists());
+    }
+
+    #[test]
+    fn test_rm_rf_removes_file_and_missing_target_is_success() {
+        let temporary_directory = TemporaryTestDirectory::new("rm-rf-file");
+        let _base_directory = super::paths::set_base_directory_for_tests(
+            temporary_directory.path().clone(),
+        );
+
+        let file_path = CStr::from_bytes_with_nul(b"DEV:[dir.subdir]file.ext\0").unwrap();
+        let parsed_path = match ParsedPath::new(file_path) {
+            Ok(parsed_path) => parsed_path,
+            Err(_) => panic!("test setup should use a valid badge file path"),
+        };
+        fs::create_dir_all(parsed_path.to_host_directory()).unwrap();
+        fs::write(parsed_path.to_host_file(), b"hello").unwrap();
+
+        assert!(rm_rf(file_path.as_ptr()));
+        assert!(!parsed_path.to_host_file().exists());
+
+        assert!(rm_rf(file_path.as_ptr()));
+    }
+
+    #[test]
+    fn test_rm_rf_removes_directories_recursively() {
+        let temporary_directory = TemporaryTestDirectory::new("rm-rf-directory");
+        let _base_directory = super::paths::set_base_directory_for_tests(
+            temporary_directory.path().clone(),
+        );
+
+        let directory_path = CStr::from_bytes_with_nul(b"DEV:[dir.subdir]\0").unwrap();
+        let parsed_path = match ParsedPath::new(directory_path) {
+            Ok(parsed_path) => parsed_path,
+            Err(_) => panic!("test setup should use a valid badge directory path"),
+        };
+        let host_directory = parsed_path.to_host_directory();
+        fs::create_dir_all(host_directory.join("nested")).unwrap();
+        fs::write(host_directory.join("child.txt"), b"child").unwrap();
+        fs::write(
+            host_directory.join("nested").join("grandchild.txt"),
+            b"grandchild",
+        )
+        .unwrap();
+
+        assert!(rm_rf(directory_path.as_ptr()));
+        assert!(!host_directory.exists());
+    }
+
+    #[test]
+    fn test_rm_rf_rejects_empty_input_and_ignores_invalid_paths() {
+        assert!(!rm_rf(core::ptr::null()));
+        assert!(!rm_rf(b"\0".as_ptr() as *const c_char));
+        assert!(rm_rf(b"[dir.subdir]file.ext\0".as_ptr() as *const c_char));
     }
 
     #[test]

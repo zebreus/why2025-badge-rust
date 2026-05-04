@@ -13,13 +13,12 @@
 //! * [window_framebuffer_create]
 //! * [window_present]
 
-// #![no_std]
+#![cfg_attr(target_arch = "riscv32", no_std)]
 #![allow(nonstandard_style)]
 #![allow(non_camel_case_types)]
 #![feature(c_variadic)]
 #![feature(linkage)]
-#![cfg(not(target_arch = "riscv32"))]
-#![feature(thread_sleep_until)]
+#![cfg_attr(not(target_arch = "riscv32"), feature(thread_sleep_until))]
 
 mod bindings;
 
@@ -32,4 +31,5 @@ mod types;
 pub use bindings::*;
 pub use types::*;
 
+#[cfg(not(target_arch = "riscv32"))]
 pub use emulated::diprintf;

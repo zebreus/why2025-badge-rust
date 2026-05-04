@@ -1,5 +1,5 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(target_arch = "riscv32", no_std)]
+#![cfg_attr(target_arch = "riscv32", no_main)]
 extern crate alloc;
 
 use embedded_graphics::{mono_font::ascii::FONT_7X13, prelude::*};
@@ -7,10 +7,20 @@ use mousefood::{TerminalAlignment, prelude::*};
 use ratatui::{Frame, Terminal, widgets::Paragraph};
 use why2025_badge_embedded_graphics::Why2025BadgeWindow;
 
+#[cfg(target_arch = "riscv32")]
 #[unsafe(no_mangle)]
 pub extern "C" fn main() -> i32 {
+    run()
+}
+
+#[cfg(not(target_arch = "riscv32"))]
+fn main() {
+    std::process::exit(run());
+}
+
+fn run() -> i32 {
     unsafe {
-        why2025_badge_sys::printf(b"Hello, world! (from rust)\n\0".as_ptr());
+        why2025_badge_sys::printf(b"Hello, world! (from rust)\n\0".as_ptr().cast());
     }
     let mut display = Why2025BadgeWindow::new_floating(
         Size {
@@ -21,7 +31,7 @@ pub extern "C" fn main() -> i32 {
     );
 
     unsafe {
-        why2025_badge_sys::printf(b"Frame drawn A\n\0".as_ptr());
+        why2025_badge_sys::printf(b"Frame drawn A\n\0".as_ptr().cast());
     }
 
     let config = EmbeddedBackendConfig {
@@ -35,18 +45,18 @@ pub extern "C" fn main() -> i32 {
         horizontal_alignment: TerminalAlignment::Center,
     };
     unsafe {
-        why2025_badge_sys::printf(b"Frame drawn B\n\0".as_ptr());
+        why2025_badge_sys::printf(b"Frame drawn B\n\0".as_ptr().cast());
     }
     let backend = EmbeddedBackend::new(&mut display, config);
 
     unsafe {
-        why2025_badge_sys::printf(b"Frame drawn C\n\0".as_ptr());
+        why2025_badge_sys::printf(b"Frame drawn C\n\0".as_ptr().cast());
     }
     let mut terminal = Terminal::new(backend).unwrap();
 
     loop {
         unsafe {
-            why2025_badge_sys::printf(b"Frame drawn D\n\0".as_ptr());
+            why2025_badge_sys::printf(b"Frame drawn D\n\0".as_ptr().cast());
         }
         terminal.draw(draw).unwrap();
     }
@@ -60,14 +70,19 @@ fn draw(frame: &mut Frame) {
 }
 
 // Allocator and panic handler setup
+#[cfg(target_arch = "riscv32")]
 use talc::{ClaimOnOom, Span, Talc, Talck};
 
+#[cfg(target_arch = "riscv32")]
 const HEAP_SIZE: usize = 1024 * 300; // 300KB heap size
+#[cfg(target_arch = "riscv32")]
 static mut HEAP: [u8; HEAP_SIZE] = [0u8; HEAP_SIZE];
+#[cfg(target_arch = "riscv32")]
 #[global_allocator]
 static ALLOCATOR: Talck<spin::Mutex<()>, ClaimOnOom> =
     Talc::new(unsafe { ClaimOnOom::new(Span::from_array((&raw const HEAP).cast_mut())) }).lock();
 
+#[cfg(target_arch = "riscv32")]
 #[panic_handler]
 fn panic(panic_info: &core::panic::PanicInfo) -> ! {
     unsafe {

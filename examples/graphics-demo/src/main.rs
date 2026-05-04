@@ -1,5 +1,7 @@
-#![no_std]
-#![no_main]
+#![cfg_attr(target_arch = "riscv32", no_std)]
+#![cfg_attr(target_arch = "riscv32", no_main)]
+
+#[cfg(target_arch = "riscv32")]
 extern crate alloc;
 
 use embedded_graphics::{
@@ -13,10 +15,20 @@ use embedded_graphics::{
 };
 use why2025_badge_embedded_graphics::Why2025BadgeWindow;
 
+#[cfg(target_arch = "riscv32")]
 #[unsafe(no_mangle)]
 pub extern "C" fn main() -> i32 {
+    run()
+}
+
+#[cfg(not(target_arch = "riscv32"))]
+fn main() {
+    std::process::exit(run());
+}
+
+fn run() -> i32 {
     unsafe {
-        why2025_badge_sys::printf(b"Hello, world! (from rust)\n\0".as_ptr());
+        why2025_badge_sys::printf(b"Hello, world! (from rust)\n\0".as_ptr().cast());
     }
     let mut display = Why2025BadgeWindow::new_floating(
         Size {
@@ -30,11 +42,11 @@ pub extern "C" fn main() -> i32 {
         display.flush();
         if val.is_err() {
             unsafe {
-                why2025_badge_sys::printf(b"Error drawing to display\n\0".as_ptr());
+                why2025_badge_sys::printf(b"Error drawing to display\n\0".as_ptr().cast());
             }
         } else {
             unsafe {
-                why2025_badge_sys::printf(b"Drawing complete\n\0".as_ptr());
+                why2025_badge_sys::printf(b"Drawing complete\n\0".as_ptr().cast());
             }
         }
     }
@@ -58,7 +70,7 @@ fn draw_stuff(display: &mut Why2025BadgeWindow) -> Result<(), ()> {
     let yoffset = 10;
 
     unsafe {
-        why2025_badge_sys::printf(b"BBBBBB\n\0".as_ptr());
+        why2025_badge_sys::printf(b"BBBBBB\n\0".as_ptr().cast());
     }
     // Draw a 3px wide outline around the display.
     display
@@ -67,7 +79,7 @@ fn draw_stuff(display: &mut Why2025BadgeWindow) -> Result<(), ()> {
         .draw(display)?;
 
     unsafe {
-        why2025_badge_sys::printf(b"CCCCCC\n\0".as_ptr());
+        why2025_badge_sys::printf(b"CCCCCC\n\0".as_ptr().cast());
     }
 
     // Draw a triangle.
@@ -90,7 +102,7 @@ fn draw_stuff(display: &mut Why2025BadgeWindow) -> Result<(), ()> {
         .draw(display)?;
 
     unsafe {
-        why2025_badge_sys::printf(b"DDDDDD\n\0".as_ptr());
+        why2025_badge_sys::printf(b"DDDDDD\n\0".as_ptr().cast());
     }
 
     // Draw centered text.
@@ -103,21 +115,26 @@ fn draw_stuff(display: &mut Why2025BadgeWindow) -> Result<(), ()> {
     )
     .draw(display)?;
     unsafe {
-        why2025_badge_sys::printf(b"EEEEEEE\n\0".as_ptr());
+        why2025_badge_sys::printf(b"EEEEEEE\n\0".as_ptr().cast());
     }
 
     Ok(())
 }
 
 // Allocator and panic handler setup
+#[cfg(target_arch = "riscv32")]
 use talc::{ClaimOnOom, Span, Talc, Talck};
 
+#[cfg(target_arch = "riscv32")]
 const HEAP_SIZE: usize = 1024 * 300; // 300KB heap size
+#[cfg(target_arch = "riscv32")]
 static mut HEAP: [u8; HEAP_SIZE] = [0u8; HEAP_SIZE];
+#[cfg(target_arch = "riscv32")]
 #[global_allocator]
 static ALLOCATOR: Talck<spin::Mutex<()>, ClaimOnOom> =
     Talc::new(unsafe { ClaimOnOom::new(Span::from_array((&raw const HEAP).cast_mut())) }).lock();
 
+#[cfg(target_arch = "riscv32")]
 #[panic_handler]
 fn panic(panic_info: &core::panic::PanicInfo) -> ! {
     unsafe {

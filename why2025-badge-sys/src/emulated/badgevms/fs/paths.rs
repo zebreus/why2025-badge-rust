@@ -1,8 +1,50 @@
 use crate::{malloc, types::*};
 use core::ffi::{CStr, c_char};
+#[cfg(test)]
+use std::cell::RefCell;
 use std::{fmt::Display, path::PathBuf};
 
-const BASE_DIRECTORY: &str = "~/.why2025-badge/data";
+const BASE_DIRECTORY: &str = ".why2025-badge/data";
+
+#[cfg(test)]
+thread_local! {
+    static TEST_BASE_DIRECTORY: RefCell<Option<PathBuf>> = RefCell::new(None);
+}
+
+fn base_directory() -> PathBuf {
+    #[cfg(test)]
+    if let Some(base_directory) = TEST_BASE_DIRECTORY.with(|value| value.borrow().clone()) {
+        return base_directory;
+    }
+
+    std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .map(|home_directory| home_directory.join(BASE_DIRECTORY))
+        .unwrap_or_else(|| PathBuf::from(BASE_DIRECTORY))
+}
+
+#[cfg(test)]
+pub(crate) fn set_base_directory_for_tests(
+    base_directory: impl Into<PathBuf>,
+) -> TestBaseDirectoryGuard {
+    let previous = TEST_BASE_DIRECTORY.with(|value| value.replace(Some(base_directory.into())));
+    TestBaseDirectoryGuard { previous }
+}
+
+#[cfg(test)]
+pub(crate) struct TestBaseDirectoryGuard {
+    previous: Option<PathBuf>,
+}
+
+#[cfg(test)]
+impl Drop for TestBaseDirectoryGuard {
+    fn drop(&mut self) {
+        let previous = self.previous.take();
+        TEST_BASE_DIRECTORY.with(|value| {
+            value.replace(previous);
+        });
+    }
+}
 
 #[derive(Debug)]
 pub struct ParsedPath {
@@ -177,7 +219,7 @@ impl ParsedPath {
     }
 
     pub fn to_host_directory(&self) -> PathBuf {
-        let mut path = PathBuf::from(BASE_DIRECTORY);
+        let mut path = base_directory();
         path.push(&self.device);
         for part in self.directory.as_ref().unwrap_or(&String::new()).split(".") {
             if part.is_empty() {

@@ -1,5 +1,6 @@
 use crate::{emulated::badgevms::fs::paths::ParsedPath, malloc, types::*};
 use core::ffi::c_char;
+use std::fs;
 
 mod paths;
 
@@ -64,8 +65,6 @@ pub extern "C" fn path_free(path: *mut path_t) {
 /// Returns true on success, false on failure (including if the path is invalid)
 #[unsafe(no_mangle)]
 pub extern "C" fn mkdir_p(path: *const c_char) -> bool {
-    panic!("Not implemented yet");
-
     if path.is_null() {
         return false;
     }
@@ -74,15 +73,12 @@ pub extern "C" fn mkdir_p(path: *const c_char) -> bool {
         return false;
     }
 
-    let path = match ParsedPath::new(&c_str) {
-        Ok(r) => r,
+    let parsed_path = match ParsedPath::new(&c_str) {
+        Ok(parsed_path) => parsed_path,
         Err(_) => return false,
     };
 
-    let host_directory = path.to_host_directory();
-
-    // mkdir(path, mode)
-    true
+    fs::create_dir_all(parsed_path.to_host_directory()).is_ok()
 }
 
 #[unsafe(no_mangle)]
@@ -353,9 +349,63 @@ pub extern "C" fn path_concat(base_path: *const c_char, append_path: *const c_ch
 
 #[cfg(test)]
 mod tests {
-    use std::ffi::CStr;
+    use std::{ffi::CStr, fs, path::PathBuf, time::{SystemTime, UNIX_EPOCH}};
 
     use super::*;
+
+    struct TemporaryTestDirectory {
+        path: PathBuf,
+    }
+
+    impl TemporaryTestDirectory {
+        fn new(test_name: &str) -> Self {
+            let unique_suffix = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("system time should be after the unix epoch")
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!(
+                "why2025-badge-sys-{test_name}-{}-{unique_suffix}",
+                std::process::id()
+            ));
+            let _ = fs::remove_dir_all(&path);
+            Self { path }
+        }
+
+        fn path(&self) -> &PathBuf {
+            &self.path
+        }
+    }
+
+    impl Drop for TemporaryTestDirectory {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.path);
+        }
+    }
+
+    #[test]
+    fn test_mkdir_p_creates_nested_host_directories() {
+        let temporary_directory = TemporaryTestDirectory::new("mkdir-p-nested");
+        let _base_directory = super::paths::set_base_directory_for_tests(
+            temporary_directory.path().clone(),
+        );
+
+        assert!(mkdir_p(b"DEV:[dir.subdir]file.ext\0".as_ptr() as *const c_char));
+        assert!(temporary_directory.path().join("DEV").join("dir").join("subdir").is_dir());
+
+        assert!(mkdir_p(b"DEV:[dir.subdir]file.ext\0".as_ptr() as *const c_char));
+    }
+
+    #[test]
+    fn test_mkdir_p_rejects_invalid_paths() {
+        let temporary_directory = TemporaryTestDirectory::new("mkdir-p-invalid");
+        let _base_directory = super::paths::set_base_directory_for_tests(
+            temporary_directory.path().clone(),
+        );
+
+        assert!(!mkdir_p(core::ptr::null()));
+        assert!(!mkdir_p(b"[dir.subdir]file.ext\0".as_ptr() as *const c_char));
+        assert!(!temporary_directory.path().exists());
+    }
 
     #[test]
     fn test_parse_path_full() {

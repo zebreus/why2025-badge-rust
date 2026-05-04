@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set -e
 
+FIRMWARE_REPO_URL="https://gitlab.com/why2025/team-badge/firmware"
+
 if test -d firmware; then
-    cd firmware
-    git fetch
-    git checkout origin/main
-    cd -
+    git -C firmware remote set-url origin "$FIRMWARE_REPO_URL"
+    git -C firmware fetch origin
+    git -C firmware checkout origin/main
 else
-    # Using a fork, because we need a small patch to the headers
-    git clone https://gitlab.com/zebreus/firmware firmware
-    git checkout origin/main
+    git clone "$FIRMWARE_REPO_URL" firmware
+    git -C firmware checkout origin/main
 fi
 
 FILES=( $(yq --raw-output '.include[]' firmware/badgevms/symbols.yml ) )
@@ -67,6 +67,29 @@ for enum in "${BITFIELD_ENUMS[@]}" ; do
     BINDGEN_COMMAND+=( --bitfield-enum "$enum" )
 done
 
+function ensure_include_after_pragma_once() {
+    local file="$1"
+    local include_line="$2"
+
+    if grep -Fqx "$include_line" "$file"; then
+        return 0
+    fi
+
+    awk -v include_line="$include_line" '
+        { print }
+        /^#pragma once$/ {
+            print ""
+            print include_line
+        }
+    ' "$file" > "$file.tmp"
+    mv "$file.tmp" "$file"
+}
+
+function patch_headers_for_bindgen() {
+    ensure_include_after_pragma_once headers/wrapped_funcs.h "#include <netinet/in.h>"
+    ensure_include_after_pragma_once headers/sys/socket.h "#include <netinet/in.h>"
+}
+
 function prepare_headers() {
     rm -rf headers
     mkdir -p headers
@@ -87,6 +110,10 @@ function prepare_headers() {
             exit 1
         fi
     done
+
+    # Upstream currently relies on transitive includes for in_addr/in6_addr.
+    # Patch the copied headers locally so bindgen sees self-contained headers.
+    patch_headers_for_bindgen
 }
 
 prepare_headers
@@ -102,6 +129,8 @@ echo "#define __BSD_VISIBLE 1" >> headers/all.h
 for file in "${FILES[@]}"; do
     echo "#include \"$file\"" >> headers/all.h
 done
+# Pull in __assert_func from the upstream SDK headers.
+echo "#include \"assert.h\"" >> headers/all.h
 # Include some missing defines
 echo "#include \"missing.h\"" >> headers/all.h
 # So the tcgetattr function provided by the badge libc uses the termios struct from the esp-idf libc

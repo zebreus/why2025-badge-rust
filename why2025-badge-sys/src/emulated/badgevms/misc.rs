@@ -20,6 +20,10 @@ pub extern "C" fn thread_create(
     unimplemented!("Implement this yourself if you need it");
 }
 #[unsafe(no_mangle)]
+pub extern "C" fn wait(block: bool, timeout_msec: u32) -> pid_t {
+    unimplemented!("Implement this yourself if you need it");
+}
+#[unsafe(no_mangle)]
 pub extern "C" fn die(reason: *const ::core::ffi::c_char) {
     unimplemented!("Implement this yourself if you need it");
 }

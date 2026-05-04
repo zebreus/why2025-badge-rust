@@ -242,6 +242,7 @@ unsafe extern "C" {
     pub fn isnan(arg1: f64) -> ::core::ffi::c_int;
     pub fn isnanf(arg1: f32) -> ::core::ffi::c_int;
     pub fn finitel(arg1: u128) -> ::core::ffi::c_int;
+    pub fn __issignalingf(f: f32) -> ::core::ffi::c_int;
     pub fn infinity() -> f64;
     pub fn nan(arg1: *const ::core::ffi::c_char) -> f64;
     pub fn copysign(arg1: f64, arg2: f64) -> f64;
@@ -1120,6 +1121,7 @@ unsafe extern "C" {
     ) -> *mut ::core::ffi::c_char;
     pub fn time(_timer: *mut time_t) -> time_t;
     pub static mut environ: *mut *mut ::core::ffi::c_char;
+    pub fn _exit(__status: ::core::ffi::c_int) -> !;
     pub fn close(__fildes: ::core::ffi::c_int) -> ::core::ffi::c_int;
     pub fn getentropy(arg1: *mut ::core::ffi::c_void, arg2: usize) -> ::core::ffi::c_int;
     pub fn getpid() -> pid_t;
@@ -1494,8 +1496,8 @@ unsafe extern "C" {
     ) -> bool;
     pub fn ota_session_commit(session: ota_handle_t) -> bool;
     pub fn ota_session_abort(session: ota_handle_t) -> bool;
-    pub fn ota_get_running_version(version: *mut ::core::ffi::c_char) -> bool;
-    pub fn ota_get_invalid_version(version: *mut ::core::ffi::c_char) -> bool;
+    pub fn ota_get_running_version(version: *mut *mut ::core::ffi::c_char) -> bool;
+    pub fn ota_get_invalid_version(version: *mut *mut ::core::ffi::c_char) -> bool;
     pub fn process_create(
         path: *const ::core::ffi::c_char,
         stack_size: usize,
@@ -1528,6 +1530,10 @@ unsafe extern "C" {
     pub fn wifi_station_get_rssi(station: wifi_station_handle) -> ::core::ffi::c_int;
     pub fn wifi_station_get_mode(station: wifi_station_handle) -> wifi_auth_mode_t;
     pub fn wifi_station_wps(station: wifi_station_handle) -> bool;
+    pub fn wifi_set_connection_parameters(
+        ssid: *const ::core::ffi::c_char,
+        password: *const ::core::ffi::c_char,
+    ) -> bool;
     pub fn curl_easy_init() -> *mut CURL;
     pub fn curl_easy_setopt(curl: *mut CURL, option: CURLoption, ...) -> CURLcode;
     pub fn curl_easy_perform(curl: *mut CURL) -> CURLcode;
@@ -1571,6 +1577,12 @@ unsafe extern "C" {
         hints: *const addrinfo,
         res: *mut *mut addrinfo,
     ) -> ::core::ffi::c_int;
+    pub fn __assert_func(
+        arg1: *const ::core::ffi::c_char,
+        arg2: ::core::ffi::c_int,
+        arg3: *const ::core::ffi::c_char,
+        arg4: *const ::core::ffi::c_char,
+    ) -> !;
     #[doc = " The signature seems to be like this. idk why it's not in our headers"]
     pub fn diprintf(
         a: ::core::ffi::c_int,
@@ -1623,7 +1635,10 @@ unsafe extern "C" {
     pub fn __fixunsdfsi(a: f64) -> u32;
     pub fn __floatdisf(a: i64) -> f32;
     pub fn __floatsidf(a: i32) -> f64;
+    pub fn __floatundidf(a: u64) -> f64;
+    pub fn __floatundisf(a: u64) -> f32;
     pub fn __floatunsidf(a: u32) -> f64;
+    pub fn __nedf2(a: f64, b: f64) -> ::core::ffi::c_int;
     pub fn __divdi3(a: i64, b: i64) -> i64;
     pub fn __udivdi3(a: u64, b: u64) -> u64;
     pub fn __umoddi3(a: u64, b: u64) -> u64;

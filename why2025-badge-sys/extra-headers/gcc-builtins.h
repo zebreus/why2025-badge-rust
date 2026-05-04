@@ -35,7 +35,11 @@ extern uint32_t __fixunsdfsi(double a);
 
 extern float    __floatdisf(int64_t a);
 extern double   __floatsidf(int32_t a);
+extern double   __floatundidf(uint64_t a);
+extern float    __floatundisf(uint64_t a);
 extern double   __floatunsidf(uint32_t a);
+
+extern int      __nedf2(double a, double b);
 
 /* Double-precision division for 64-bit integers */
 extern int64_t  __divdi3(int64_t a, int64_t b);

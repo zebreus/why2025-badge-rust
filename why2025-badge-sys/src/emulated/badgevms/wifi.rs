@@ -67,6 +67,13 @@ pub extern "C" fn wifi_station_wps(station: wifi_station_handle) -> bool {
     unimplemented!("Implement this yourself if you need it");
 }
 #[unsafe(no_mangle)]
+pub extern "C" fn wifi_set_connection_parameters(
+    ssid: *const ::core::ffi::c_char,
+    password: *const ::core::ffi::c_char,
+) -> bool {
+    unimplemented!("Implement this yourself if you need it");
+}
+#[unsafe(no_mangle)]
 pub extern "C" fn get_mac_address() -> *const ::core::ffi::c_char {
     unimplemented!("Implement this yourself if you need it");
 }

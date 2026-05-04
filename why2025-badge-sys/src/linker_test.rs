@@ -623,6 +623,7 @@ mod tests {
             assert_ne!(wifi_scan_free_station as *const (), core::ptr::null());
             assert_ne!(wifi_scan_get_num_results as *const (), core::ptr::null());
             assert_ne!(wifi_scan_get_result as *const (), core::ptr::null());
+            assert_ne!(wifi_set_connection_parameters as *const (), core::ptr::null());
             assert_ne!(wifi_station_get_bssid as *const (), core::ptr::null());
             assert_ne!(wifi_station_get_mode as *const (), core::ptr::null());
             assert_ne!(wifi_station_get_primary_channel as *const (), core::ptr::null());
@@ -662,6 +663,7 @@ mod tests {
             assert_ne!(inet_aton as *const (), core::ptr::null());
             assert_ne!(getaddrinfo as *const (), core::ptr::null());
             assert_ne!(__adddf3 as *const (), core::ptr::null());
+            assert_ne!(__assert_func as *const (), core::ptr::null());
             assert_ne!(__clzsi2 as *const (), core::ptr::null());
             assert_ne!(__divdf3 as *const (), core::ptr::null());
             assert_ne!(__divdi3 as *const (), core::ptr::null());
@@ -673,12 +675,16 @@ mod tests {
             assert_ne!(__fixunsdfsi as *const (), core::ptr::null());
             assert_ne!(__floatdisf as *const (), core::ptr::null());
             assert_ne!(__floatsidf as *const (), core::ptr::null());
+            assert_ne!(__floatundidf as *const (), core::ptr::null());
+            assert_ne!(__floatundisf as *const (), core::ptr::null());
             assert_ne!(__floatunsidf as *const (), core::ptr::null());
             assert_ne!(__gedf2 as *const (), core::ptr::null());
             assert_ne!(__gtdf2 as *const (), core::ptr::null());
+            assert_ne!(__issignalingf as *const (), core::ptr::null());
             assert_ne!(__ledf2 as *const (), core::ptr::null());
             assert_ne!(__ltdf2 as *const (), core::ptr::null());
             assert_ne!(__muldf3 as *const (), core::ptr::null());
+            assert_ne!(__nedf2 as *const (), core::ptr::null());
             assert_ne!(__popcountsi2 as *const (), core::ptr::null());
             assert_ne!(__riscv_restore_0 as *const (), core::ptr::null());
             assert_ne!(__riscv_restore_1 as *const (), core::ptr::null());
@@ -711,6 +717,7 @@ mod tests {
             assert_ne!(__truncsfhf2 as *const (), core::ptr::null());
             assert_ne!(__udivdi3 as *const (), core::ptr::null());
             assert_ne!(__umoddi3 as *const (), core::ptr::null());
+            assert_ne!(_exit as *const (), core::ptr::null());
             assert_ne!(_Exit as *const (), core::ptr::null());
             assert_ne!(abort as *const (), core::ptr::null());
             assert_ne!(accept as *const (), core::ptr::null());

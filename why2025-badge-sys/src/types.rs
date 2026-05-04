@@ -1054,6 +1054,8 @@ impl window_flag_t {
     pub const WINDOW_FLAG_MAXIMIZED_RIGHT: window_flag_t = window_flag_t(32);
     pub const WINDOW_FLAG_DOUBLE_BUFFERED: window_flag_t = window_flag_t(64);
     pub const WINDOW_FLAG_LOW_PRIORITY: window_flag_t = window_flag_t(128);
+    pub const WINDOW_FLAG_FLIP_HORIZONTAL: window_flag_t = window_flag_t(256);
+    pub const WINDOW_FLAG_FLIP_VERTICAL: window_flag_t = window_flag_t(512);
 }
 impl ::core::ops::BitOr<window_flag_t> for window_flag_t {
     type Output = Self;
@@ -1154,6 +1156,7 @@ pub enum device_type_t {
     DEVICE_TYPE_ORIENTATION = 5,
     DEVICE_TYPE_SOCKET = 6,
     DEVICE_TYPE_FILESYSTEM = 7,
+    DEVICE_TYPE_GAS = 8,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1219,6 +1222,7 @@ pub enum wifi_connection_status_t {
     WIFI_ERROR = 0,
     WIFI_DISCONNECTED = 1,
     WIFI_CONNECTED = 2,
+    WIFI_ERROR_WRONG_CREDENTIALS = 3,
 }
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]

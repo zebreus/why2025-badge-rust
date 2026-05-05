@@ -5,15 +5,23 @@ use std::cell::RefCell;
 use std::{fmt::Display, path::PathBuf};
 
 const BASE_DIRECTORY: &str = ".why2025-badge/data";
+pub(crate) const BASE_DIRECTORY_ENV_VAR: &str = "WHY2025_BADGE_EMULATED_BASE_DIRECTORY";
 
 #[cfg(test)]
 thread_local! {
     static TEST_BASE_DIRECTORY: RefCell<Option<PathBuf>> = RefCell::new(None);
 }
 
-fn base_directory() -> PathBuf {
+pub(crate) fn base_directory() -> PathBuf {
     #[cfg(test)]
     if let Some(base_directory) = TEST_BASE_DIRECTORY.with(|value| value.borrow().clone()) {
+        return base_directory;
+    }
+
+    if let Some(base_directory) = std::env::var_os(BASE_DIRECTORY_ENV_VAR)
+        .filter(|base_directory| !base_directory.is_empty())
+        .map(PathBuf::from)
+    {
         return base_directory;
     }
 

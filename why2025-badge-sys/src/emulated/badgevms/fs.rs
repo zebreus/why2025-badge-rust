@@ -2,7 +2,7 @@ use crate::{emulated::badgevms::fs::paths::ParsedPath, malloc, types::*};
 use core::ffi::c_char;
 use std::fs;
 
-mod paths;
+pub(crate) mod paths;
 
 /// Parse a path into a path structure
 ///

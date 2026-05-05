@@ -1,4 +1,22 @@
-use crate::types::*;
+use crate::{
+    emulated::badgevms::fs::paths::{BASE_DIRECTORY_ENV_VAR, base_directory},
+    types::*,
+};
+use core::ffi::{CStr, c_void};
+use std::{
+    os::unix::process::CommandExt,
+    process::{Command, Stdio},
+    sync::{Arc, Mutex},
+    thread,
+};
+
+mod runtime;
+
+use runtime::{
+    MIN_STACK_SIZE, cancel_task, collect_command_arguments, current_task_pid, get_num_tasks_inner,
+    lookup_device, register_task, resolve_host_executable, set_current_task_pid, task_exited,
+    wait_for_child,
+};
 
 // Emulated stubs for BadgeVMS task, device, and misc functions.
 //
@@ -86,42 +104,94 @@ pub extern "C" fn process_create(
     argc: ::core::ffi::c_int,
     argv: *mut *mut ::core::ffi::c_char,
 ) -> pid_t {
-    unimplemented!("Implement this yourself if you need it");
+    let _ = stack_size;
+
+    if path.is_null() {
+        return -1;
+    }
+
+    let path = unsafe { CStr::from_ptr(path) };
+    if path.to_bytes().is_empty() {
+        return -1;
+    }
+
+    let Some(host_path) = resolve_host_executable(path) else {
+        return -1;
+    };
+    let Some((argv0, arguments)) = collect_command_arguments(path, argc, argv) else {
+        return -1;
+    };
+
+    let mut command = Command::new(&host_path);
+    command
+        .arg0(&argv0)
+        .args(arguments)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .env(BASE_DIRECTORY_ENV_VAR, base_directory());
+
+    let Ok(child) = command.spawn() else {
+        return -1;
+    };
+
+    let pid = register_task(Some(current_task_pid()));
+    let child = Arc::new(Mutex::new(child));
+    if thread::Builder::new()
+        .name(format!("BadgeVMS process reaper {pid}"))
+        .spawn({
+            let child = Arc::clone(&child);
+            move || {
+                let mut child = child.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+                let _ = child.wait();
+                task_exited(pid);
+            }
+        })
+        .is_err()
+    {
+        let mut child = child.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let _ = child.kill();
+        let _ = child.wait();
+        cancel_task(pid);
+        return -1;
+    }
+
+    pid
 }
 /// Create a new managed BadgeVMS thread that shares the caller's address space.
-///
+
 /// # Exact upstream behavior
-///
+
 /// The public entry point packages the request into a `zeus_command_message_t`, sends it to Zeus,
 /// and then blocks indefinitely waiting for Zeus to reply with a PID via task notification.
-///
+
 /// Unlike `process_create`, this path does not create a fresh `task_thread_t`. Zeus instead calls
 /// `task_thread_ref(command.parent_task_info->thread)` and reuses the parent's thread/heap object.
 /// That has several concrete consequences:
-///
+
 /// - the new thread shares the parent's mapped address space
 /// - the new thread shares the parent's file-handle table
 /// - the new thread shares the parent's resource tables
 /// - thread/heap cleanup is reference-counted, not per-thread
-///
+
 /// `task_thread_ref` increments the parent's refcount unless it has already reached zero. If the
 /// parent heap is already being torn down, `task_thread_ref` returns `NULL`, Zeus logs a warning,
 /// and thread creation fails with `-1`.
-///
+
 /// Zeus still allocates a distinct PID, allocates a distinct `task_info_t`, creates a distinct
 /// `children` queue, stores the caller PID as the parent PID, and spawns a FreeRTOS task named
 /// `Task <pid>` pinned to core `1` at priority `5`.
-///
+
 /// The thread entry point is `generic_thread`, which calls `task_info->thread_entry(task_info->buffer)`.
 /// In other words, the firmware passes `user_data` through the `buffer` field and does not adapt or
 /// wrap it further. There is no null-check on `thread_entry`; a null function pointer would be
 /// invoked directly.
-///
+
 /// If the entry function returns, the firmware logs that return and immediately calls
 /// `vTaskDelete(NULL)`.
-///
+
 /// # Interactions with other features
-///
+
 /// Because threads share the parent's `task_thread_t`, they also participate in the same delayed
 /// teardown path as the parent. If a parent task dies, Hades force-deletes all remaining children
 /// whose recorded parent PID matches the dead task, regardless of whether those children are full
@@ -132,7 +202,31 @@ pub extern "C" fn thread_create(
     user_data: *mut ::core::ffi::c_void,
     stack_size: u16,
 ) -> pid_t {
-    unimplemented!("Implement this yourself if you need it");
+    let Some(thread_entry) = thread_entry else {
+        return -1;
+    };
+
+    let parent_pid = current_task_pid();
+    let pid = register_task(Some(parent_pid));
+    let user_data = user_data as usize;
+    let mut builder = thread::Builder::new().name(format!("Task {pid}"));
+    if stack_size > 0 {
+        builder = builder.stack_size(usize::from(stack_size).max(MIN_STACK_SIZE));
+    }
+
+    if builder
+        .spawn(move || {
+            set_current_task_pid(pid);
+            unsafe { thread_entry(user_data as *mut c_void) };
+            task_exited(pid);
+        })
+        .is_err()
+    {
+        cancel_task(pid);
+        return -1;
+    }
+
+    pid
 }
 /// Wait for a child process or thread to be reaped by the firmware.
 ///
@@ -173,7 +267,7 @@ pub extern "C" fn thread_create(
 /// is no guard for kernel-context callers using the statically initialized `kernel_task`.
 #[unsafe(no_mangle)]
 pub extern "C" fn wait(block: bool, timeout_msec: u32) -> pid_t {
-    unimplemented!("Implement this yourself if you need it");
+    wait_for_child(current_task_pid(), block, timeout_msec).unwrap_or(-1)
 }
 /// Abort the whole system immediately via `esp_system_abort`.
 ///
@@ -187,7 +281,8 @@ pub extern "C" fn wait(block: bool, timeout_msec: u32) -> pid_t {
 /// first. This is a system-wide abort path rather than a process-local termination path.
 #[unsafe(no_mangle)]
 pub extern "C" fn die(reason: *const ::core::ffi::c_char) {
-    unimplemented!("Implement this yourself if you need it");
+    let _ = reason;
+    std::process::abort();
 }
 /// Lower the current managed task's FreeRTOS priority to `TASK_PRIORITY_LOW` (`4`).
 ///
@@ -207,7 +302,7 @@ pub extern "C" fn die(reason: *const ::core::ffi::c_char) {
 /// `task_priority_lower` overrides that current priority immediately.
 #[unsafe(no_mangle)]
 pub extern "C" fn task_priority_lower() {
-    unimplemented!("Implement this yourself if you need it");
+    // Host threads/processes do not have a portable FreeRTOS-equivalent priority model.
 }
 /// Reset the current managed task's FreeRTOS priority to the normal task priority (`5`).
 ///
@@ -225,7 +320,7 @@ pub extern "C" fn task_priority_lower() {
 /// until the compositor raises it again.
 #[unsafe(no_mangle)]
 pub extern "C" fn task_priority_restore() {
-    unimplemented!("Implement this yourself if you need it");
+    // Host threads/processes do not have a portable FreeRTOS-equivalent priority model.
 }
 /// Return the current number of live Zeus-managed tasks.
 ///
@@ -245,7 +340,7 @@ pub extern "C" fn task_priority_restore() {
 ///   yet consumed its PID through `wait`
 #[unsafe(no_mangle)]
 pub extern "C" fn get_num_tasks() -> u32 {
-    unimplemented!("Implement this yourself if you need it");
+    get_num_tasks_inner()
 }
 
 /// Look up a registered global device by its exact string name.
@@ -275,7 +370,19 @@ pub extern "C" fn get_num_tasks() -> u32 {
 /// it does leave those stdio slots pointing at null devices.
 #[unsafe(no_mangle)]
 pub extern "C" fn device_get(name: *const ::core::ffi::c_char) -> *mut device_t {
-    unimplemented!("Implement this yourself if you need it");
+    if name.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let name = unsafe { CStr::from_ptr(name) }
+        .to_string_lossy()
+        .into_owned();
+    let Some(device) = lookup_device(&name) else {
+        eprintln!("The device does not exist: {name}");
+        return std::ptr::null_mut();
+    };
+
+    device
 }
 /// Convert the current PSRAM0 virtual mapping to a physical address.
 ///
@@ -297,5 +404,191 @@ pub extern "C" fn device_get(name: *const ::core::ffi::c_char) -> *mut device_t 
 /// treated as context-sensitive rather than a globally stable translation.
 #[unsafe(no_mangle)]
 pub extern "C" fn vaddr_to_paddr(vaddr: u32) -> u32 {
-    unimplemented!("Implement this yourself if you need it");
+    vaddr
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::emulated::badgevms::fs::paths::set_base_directory_for_tests;
+    use std::{
+        ffi::{CString, OsString},
+        fs,
+        os::unix::{fs::PermissionsExt, process::ExitStatusExt},
+        path::{Path, PathBuf},
+        process::Command,
+        thread,
+        time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+    };
+
+    struct TemporaryTestDirectory {
+        path: PathBuf,
+    }
+
+    impl TemporaryTestDirectory {
+        fn new(test_name: &str) -> Self {
+            let unique_suffix = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("system time should be after the unix epoch")
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!(
+                "why2025-badge-sys-{test_name}-{}-{unique_suffix}",
+                std::process::id()
+            ));
+            let _ = fs::remove_dir_all(&path);
+            Self { path }
+        }
+
+        fn path(&self) -> &Path {
+            &self.path
+        }
+    }
+
+    impl Drop for TemporaryTestDirectory {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.path);
+        }
+    }
+
+    struct TemporaryEnvVar {
+        key: &'static str,
+        previous: Option<OsString>,
+    }
+
+    impl TemporaryEnvVar {
+        fn set(key: &'static str, value: &str) -> Self {
+            let previous = std::env::var_os(key);
+            // These tests are executed with `--test-threads=1`, so process-wide env mutation is
+            // serialized for the duration of the guard.
+            unsafe { std::env::set_var(key, value) };
+            Self { key, previous }
+        }
+    }
+
+    impl Drop for TemporaryEnvVar {
+        fn drop(&mut self) {
+            if let Some(previous) = self.previous.take() {
+                unsafe { std::env::set_var(self.key, previous) };
+            } else {
+                unsafe { std::env::remove_var(self.key) };
+            }
+        }
+    }
+
+    fn install_current_test_binary(base_directory: &Path, host_filename: &str) -> CString {
+        let source = std::env::current_exe().expect("current test binary path");
+        let destination_directory = base_directory.join("APP");
+        fs::create_dir_all(&destination_directory).expect("create APP device directory");
+
+        let destination = destination_directory.join(host_filename);
+        fs::copy(&source, &destination).expect("copy current test binary into emulated filesystem");
+
+        let mut permissions = fs::metadata(&destination)
+            .expect("destination metadata")
+            .permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(&destination, permissions).expect("set executable permissions");
+
+        CString::new(format!("APP:{host_filename}"))
+            .expect("badge path should not contain interior nulls")
+    }
+
+    fn build_process_argv(
+        path: &CStr,
+        test_name: &str,
+    ) -> (Vec<CString>, Vec<*mut ::core::ffi::c_char>) {
+        let argv_owned = vec![
+            CString::new(path.to_bytes()).expect("badge path should not contain interior nulls"),
+            CString::new("--exact").expect("literal argument should not contain interior nulls"),
+            CString::new(test_name).expect("test name should not contain interior nulls"),
+            CString::new("--test-threads=1")
+                .expect("literal argument should not contain interior nulls"),
+        ];
+        let argv = argv_owned
+            .iter()
+            .map(|argument| argument.as_ptr().cast_mut())
+            .collect();
+        (argv_owned, argv)
+    }
+
+    fn wait_for_task_count(expected: u32) {
+        let start = Instant::now();
+        while get_num_tasks() != expected {
+            assert!(
+                start.elapsed() < Duration::from_secs(5),
+                "timed out waiting for task count {expected}, got {}",
+                get_num_tasks()
+            );
+            thread::sleep(Duration::from_millis(10));
+        }
+    }
+
+    unsafe extern "C" fn test_thread_entry(_user_data: *mut c_void) {}
+
+    #[test]
+    fn device_get_returns_tt01_and_rejects_unknown_devices() {
+        assert!(!device_get(c"TT01".as_ptr()).is_null());
+        assert!(device_get(c"DOES_NOT_EXIST".as_ptr()).is_null());
+    }
+
+    #[test]
+    fn thread_create_reaps_before_wait_consumes_pid() {
+        let base_count = get_num_tasks();
+        let pid = thread_create(Some(test_thread_entry), std::ptr::null_mut(), 0);
+
+        assert!(pid > 0);
+        wait_for_task_count(base_count);
+        assert_eq!(wait(true, 0), pid);
+        assert_eq!(get_num_tasks(), base_count);
+    }
+
+    #[test]
+    fn process_create_reaps_before_wait_consumes_pid() {
+        const ENV_NAME: &str = "WHY2025_MISC_PROCESS_CREATE_CHILD";
+        const TEST_NAME: &str = "emulated::badgevms::misc::tests::process_create_reaps_before_wait_consumes_pid";
+
+        if std::env::var_os(ENV_NAME).is_some() {
+            return;
+        }
+
+        let temporary_directory = TemporaryTestDirectory::new("misc-process-create");
+        let _base_directory = set_base_directory_for_tests(temporary_directory.path().to_path_buf());
+        let badge_path = install_current_test_binary(temporary_directory.path(), "misc-process-child");
+        let (_argv_owned, mut argv) = build_process_argv(badge_path.as_c_str(), TEST_NAME);
+        let _child_env = TemporaryEnvVar::set(ENV_NAME, "1");
+
+        let base_count = get_num_tasks();
+        let pid = process_create(
+            badge_path.as_ptr(),
+            0,
+            argv.len() as ::core::ffi::c_int,
+            argv.as_mut_ptr(),
+        );
+
+        assert!(pid > 0);
+        wait_for_task_count(base_count);
+        assert_eq!(wait(true, 0), pid);
+        assert_eq!(get_num_tasks(), base_count);
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn die_aborts_current_process() {
+        const ENV_NAME: &str = "WHY2025_MISC_DIE_TEST";
+        const TEST_NAME: &str = "emulated::badgevms::misc::tests::die_aborts_current_process";
+
+        if std::env::var_os(ENV_NAME).is_some() {
+            die(c"test abort".as_ptr());
+        }
+
+        let output = Command::new(std::env::current_exe().expect("current test binary path"))
+            .arg("--exact")
+            .arg(TEST_NAME)
+            .env(ENV_NAME, "1")
+            .output()
+            .expect("spawn child test process");
+
+        assert!(!output.status.success());
+        assert_eq!(output.status.signal(), Some(libc::SIGABRT));
+    }
 }

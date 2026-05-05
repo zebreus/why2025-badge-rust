@@ -10,7 +10,7 @@ use std::{
     thread,
 };
 
-mod runtime;
+pub(crate) mod runtime;
 
 use runtime::{
     MIN_STACK_SIZE, cancel_task, collect_command_arguments, current_task_pid, get_num_tasks_inner,

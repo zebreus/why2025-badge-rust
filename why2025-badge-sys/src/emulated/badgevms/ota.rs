@@ -1,5 +1,13 @@
 use crate::types::*;
 
+mod runtime;
+
+pub(crate) use runtime::abort_task_owned_ota_session;
+use runtime::{
+    ota_get_invalid_version_inner, ota_get_running_version_inner, ota_session_abort_inner,
+    ota_session_commit_inner, ota_session_open_inner, ota_write_inner,
+};
+
 // Emulated stubs for BadgeVMS OTA functions.
 //
 // The rustdoc on the items in this file is derived from the upstream firmware implementation in
@@ -57,7 +65,7 @@ use crate::types::*;
 /// but only if the session was opened from a managed task in the first place.
 #[unsafe(no_mangle)]
 pub extern "C" fn ota_session_open() -> ota_handle_t {
-    unimplemented!("Implement this yourself if you need it");
+    ota_session_open_inner()
 }
 /// Append one block of image data to the currently open OTA session.
 ///
@@ -93,7 +101,7 @@ pub extern "C" fn ota_write(
     buffer: *mut ::core::ffi::c_void,
     block_size: ::core::ffi::c_int,
 ) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+    ota_write_inner(session, buffer, block_size)
 }
 /// Finalize the pending OTA image and mark its partition for the next boot.
 ///
@@ -141,7 +149,7 @@ pub extern "C" fn ota_write(
 /// user to restart the badge rather than expecting an automatic reboot.
 #[unsafe(no_mangle)]
 pub extern "C" fn ota_session_commit(session: ota_handle_t) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+    ota_session_commit_inner(session)
 }
 /// Abort the singleton OTA session and release its resource bookkeeping.
 ///
@@ -173,7 +181,7 @@ pub extern "C" fn ota_session_commit(session: ota_handle_t) -> bool {
 /// That gives managed tasks a best-effort cleanup path for abandoned OTA sessions.
 #[unsafe(no_mangle)]
 pub extern "C" fn ota_session_abort(session: ota_handle_t) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+    ota_session_abort_inner(session)
 }
 /// Return the version string of the currently running firmware image.
 ///
@@ -214,7 +222,7 @@ pub extern "C" fn ota_session_abort(session: ota_handle_t) -> bool {
 ///   one-pointer style, which no longer matches the implementation in `ota.c`
 #[unsafe(no_mangle)]
 pub extern "C" fn ota_get_running_version(version: *mut *mut ::core::ffi::c_char) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+    ota_get_running_version_inner(version)
 }
 /// Return the version string of the last partition ESP-IDF marked invalid.
 ///
@@ -253,5 +261,5 @@ pub extern "C" fn ota_get_running_version(version: *mut *mut ::core::ffi::c_char
 /// invalid rollback candidate.
 #[unsafe(no_mangle)]
 pub extern "C" fn ota_get_invalid_version(version: *mut *mut ::core::ffi::c_char) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+    ota_get_invalid_version_inner(version)
 }

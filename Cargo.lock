@@ -1048,6 +1048,8 @@ dependencies = [
  "libc",
  "minifb",
  "raw-window-handle",
+ "serde",
+ "serde_json",
  "x11-dl",
 ]
 

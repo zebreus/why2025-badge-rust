@@ -23,6 +23,7 @@
 //!   and the small built-in device registry live here so `misc.rs` can remain a thin exported shim.
 
 use crate::{
+    emulated::badgevms::ota::abort_task_owned_ota_session,
     emulated::badgevms::fs::paths::ParsedPath,
     types::*,
 };
@@ -50,6 +51,7 @@ thread_local! {
 struct TaskState {
     parent_pid: Option<pid_t>,
     children: VecDeque<pid_t>,
+    ota_sessions: Vec<usize>,
 }
 
 #[derive(Debug)]
@@ -135,6 +137,7 @@ impl MiscRuntime {
             TaskState {
                 parent_pid,
                 children: VecDeque::new(),
+                ota_sessions: Vec::new(),
             },
         );
         state.num_tasks = state.num_tasks.saturating_add(1);
@@ -142,33 +145,65 @@ impl MiscRuntime {
     }
 
     fn cancel_task(&self, pid: pid_t) {
-        let mut state = self.lock_state();
-        if state.tasks.remove(&pid).is_some() {
+        let ota_sessions = {
+            let mut state = self.lock_state();
+            let Some(task) = state.tasks.remove(&pid) else {
+                return;
+            };
+
             state.num_tasks = state.num_tasks.saturating_sub(1);
             state.recycled_pids.push(pid);
-        }
+            task.ota_sessions
+        };
+
+        cleanup_ota_sessions(ota_sessions);
     }
 
     fn task_exited(&self, pid: pid_t) {
+        let ota_sessions = {
+            let mut state = self.lock_state();
+            let Some(task) = state.tasks.remove(&pid) else {
+                return;
+            };
+
+            state.num_tasks = state.num_tasks.saturating_sub(1);
+            state.recycled_pids.push(pid);
+
+            if let Some(parent_pid) = task.parent_pid
+                && let Some(parent) = state.tasks.get_mut(&parent_pid)
+            {
+                if parent.children.len() < CHILD_QUEUE_CAPACITY {
+                    parent.children.push_back(pid);
+                } else {
+                    eprintln!("Dropping child exit notification for pid {pid}");
+                }
+            }
+
+            self.child_events.notify_all();
+            task.ota_sessions
+        };
+
+        cleanup_ota_sessions(ota_sessions);
+    }
+
+    fn register_ota_session(&self, owner_pid: pid_t, handle: usize) {
         let mut state = self.lock_state();
-        let Some(task) = state.tasks.remove(&pid) else {
+        let Some(task) = state.tasks.get_mut(&owner_pid) else {
             return;
         };
 
-        state.num_tasks = state.num_tasks.saturating_sub(1);
-        state.recycled_pids.push(pid);
-
-        if let Some(parent_pid) = task.parent_pid
-            && let Some(parent) = state.tasks.get_mut(&parent_pid)
-        {
-            if parent.children.len() < CHILD_QUEUE_CAPACITY {
-                parent.children.push_back(pid);
-            } else {
-                eprintln!("Dropping child exit notification for pid {pid}");
-            }
+        if !task.ota_sessions.contains(&handle) {
+            task.ota_sessions.push(handle);
         }
+    }
 
-        self.child_events.notify_all();
+    fn release_ota_session(&self, owner_pid: pid_t, handle: usize) {
+        let mut state = self.lock_state();
+        let Some(task) = state.tasks.get_mut(&owner_pid) else {
+            return;
+        };
+
+        task.ota_sessions.retain(|owned_handle| *owned_handle != handle);
     }
 
     fn wait_for_child(&self, parent_pid: pid_t, block: bool, timeout_msec: u32) -> Option<pid_t> {
@@ -211,6 +246,19 @@ impl MiscRuntime {
 
 static MISC_RUNTIME: LazyLock<MiscRuntime> = LazyLock::new(MiscRuntime::new);
 
+fn cleanup_ota_sessions(ota_sessions: Vec<usize>) {
+    for handle in ota_sessions {
+        abort_task_owned_ota_session(handle as ota_handle_t);
+    }
+}
+
+pub(crate) fn current_managed_task_pid() -> Option<pid_t> {
+    CURRENT_TASK_PID.with(|current_pid| match current_pid.get() {
+        0 => None,
+        pid => Some(pid),
+    })
+}
+
 pub(crate) fn current_task_pid() -> pid_t {
     CURRENT_TASK_PID.with(|current_pid| {
         let pid = current_pid.get();
@@ -239,6 +287,30 @@ pub(crate) fn task_exited(pid: pid_t) {
     MISC_RUNTIME.task_exited(pid);
 }
 
+pub(crate) fn register_ota_session(owner_pid: Option<pid_t>, handle: ota_handle_t) {
+    if handle.is_null() {
+        return;
+    }
+
+    let Some(owner_pid) = owner_pid else {
+        return;
+    };
+
+    MISC_RUNTIME.register_ota_session(owner_pid, handle as usize);
+}
+
+pub(crate) fn release_ota_session(owner_pid: Option<pid_t>, handle: ota_handle_t) {
+    if handle.is_null() {
+        return;
+    }
+
+    let Some(owner_pid) = owner_pid else {
+        return;
+    };
+
+    MISC_RUNTIME.release_ota_session(owner_pid, handle as usize);
+}
+
 pub(crate) fn wait_for_child(parent_pid: pid_t, block: bool, timeout_msec: u32) -> Option<pid_t> {
     MISC_RUNTIME.wait_for_child(parent_pid, block, timeout_msec)
 }
@@ -253,6 +325,24 @@ pub(crate) fn lookup_device(name: &str) -> Option<*mut device_t> {
         .devices
         .get_mut(name)
         .map(|device| &mut **device as *mut device_t)
+}
+
+#[cfg(test)]
+pub(crate) fn reset_runtime_for_tests() {
+    let mut state = MISC_RUNTIME.lock_state();
+    *state = MiscRuntimeState::default();
+    drop(state);
+    CURRENT_TASK_PID.with(|current_pid| current_pid.set(0));
+}
+
+#[cfg(test)]
+pub(crate) fn ota_session_count_for_task(pid: pid_t) -> usize {
+    let state = MISC_RUNTIME.lock_state();
+    state
+        .tasks
+        .get(&pid)
+        .map(|task| task.ota_sessions.len())
+        .unwrap_or(0)
 }
 
 pub(crate) fn resolve_host_executable(path: &CStr) -> Option<PathBuf> {

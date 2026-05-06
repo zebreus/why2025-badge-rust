@@ -11,11 +11,19 @@
 //!
 //! The public application API is implemented in `firmware/badgevms/application.c`.
 //! It is not backed by a database. Instead, it maintains a hidden process-wide
-//! base directory string, `applications_base_dir`, which is set once at boot by
-//! the private `application_init()` helper from `why2025_firmware.c`.
+//! base directory string, `applications_base_dir`, which is set by the private
+//! `application_init()` helper from `why2025_firmware.c`.
 //!
-//! In the normal firmware boot path that base directory is `APPS:`. Two kinds
-//! of paths are then derived from an application's unique identifier:
+//! In the normal firmware boot path `why2025_firmware.c` first defines the
+//! logical name `APPS:` and then calls `application_init("APPS:", ...)`.
+//! When `SD0` is available, `APPS:` resolves to the search path
+//! `SD0:[BADGEVMS.APPS], FLASH0:[BADGEVMS.APPS]`; otherwise it resolves to
+//! `FLASH0:[BADGEVMS.APPS]` only. `application_init()` copies the literal
+//! string `APPS:` into the hidden buffer, eagerly calls `mkdir_p()` on the
+//! physical flash/SD directories it was passed, and finally calls
+//! `mkdir_p(applications_base_dir)` as well. The storage roots therefore exist
+//! before any public application API is used. Two kinds of paths are then
+//! derived from an application's unique identifier:
 //!
 //! - metadata lives in a flat JSON file at `APPS:<unique_identifier>.json`
 //! - payload files live under a directory at `APPS:[<unique_identifier>]`
@@ -31,6 +39,16 @@
 //! with `why_strdup()` for each string field it finds. `installed_path` is not
 //! loaded from JSON at all; it is recomputed from `unique_identifier` using the
 //! current `applications_base_dir`.
+//!
+//! Because `application_to_json()` always emits all string keys, a field that
+//! was null in memory and then saved is normally reloaded later as a non-null
+//! empty string. That null-versus-empty distinction is therefore not stable
+//! across save/load boundaries.
+//!
+//! `save_application_metadata()` also treats opening the metadata file as the
+//! last meaningful I/O failure point. Once `why_fopen(..., "w")` succeeds, the
+//! implementation ignores the return values from `why_fputs()` and
+//! `why_fclose()`, so late write or flush failures are not surfaced.
 //!
 //! A consequence of that model is that individual string-allocation failures are
 //! often silent: several setters free the old string, assign the result of
@@ -62,6 +80,12 @@ use crate::types::*;
 /// `"Cannot launch %s, no binary path or installed_path?"` and returns `-1`
 /// without freeing the loaded snapshot.
 ///
+/// Because saved metadata usually reloads cleared string fields as non-null
+/// empty strings, an application with a persisted empty `binary_path` does not
+/// trip the `!app->binary_path` guard. It reaches `path_concat()` instead,
+/// which rejects an empty append path and causes the later
+/// `"Could not create a sane path..."` failure path.
+///
 /// Otherwise it computes an absolute path with
 /// `path_concat(app->installed_path, app->binary_path)`. That means the stored
 /// `binary_path` is treated as a path relative to the install directory even
@@ -71,6 +95,8 @@ use crate::types::*;
 /// On success it logs `"Attempting to launch %s"`, calls
 /// `process_create(binary_path, 0, 0, NULL)`, frees only the temporary absolute
 /// path string, and returns the PID or `-1` from `process_create` unchanged.
+/// With the current `process_create` implementation that also means the child
+/// sees `argv[0]` synthesized from the resolved binary path.
 ///
 /// # Important omissions and interactions
 ///
@@ -83,6 +109,11 @@ use crate::types::*;
 /// the spawned task's `application_uid` with `task_set_application_uid()`. A
 /// task started through this API therefore does not automatically participate in
 /// `task_application_is_running()` tracking, even though the startup loader does.
+///
+/// The launcher UI and the compositor both call this function directly. The
+/// launcher uses it for user-selected apps, and the compositor uses it to
+/// relaunch `badgevms_launcher` when no windows exist. Neither caller adds extra
+/// `application_uid` bookkeeping around the launch.
 ///
 /// Because launch works from the JSON metadata file, stale metadata can outlive a
 /// destroyed install directory and still make an application appear launchable
@@ -113,6 +144,11 @@ pub extern "C" fn application_launch(unique_identifier: *const ::core::ffi::c_ch
 /// upstream does not distinguish that case and continues as if the application
 /// were absent.
 ///
+/// Duplicate detection is therefore metadata-only. If `APPS:[<unique_identifier>]`
+/// already exists on disk but `APPS:<unique_identifier>.json` does not,
+/// `application_create()` treats the application as absent and reuses the
+/// existing directory tree.
+///
 /// After that it derives the install directory as `APPS:[<unique_identifier>]`
 /// with `get_application_dir()` and creates it with `mkdir_p()`. The install
 /// directory is created before the `application_t` is allocated and before the
@@ -128,6 +164,9 @@ pub extern "C" fn application_launch(unique_identifier: *const ::core::ffi::c_ch
 ///   field
 /// - serializes the object to JSON and writes it to `APPS:<uid>.json`
 ///
+/// The `source` value is stored and serialized verbatim. There is no range
+/// check against `APPLICATION_SOURCE_MAX`.
+///
 /// The JSON payload contains exactly these keys:
 /// `unique_identifier`, `name`, `author`, `version`, `interpreter`,
 /// `metadata_file`, `binary_path`, and `source`.
@@ -142,6 +181,15 @@ pub extern "C" fn application_launch(unique_identifier: *const ::core::ffi::c_ch
 /// allocations fails but `save_application_metadata()` still succeeds, the
 /// application can be created with some fields silently null in memory and then
 /// persisted as empty strings in JSON.
+///
+/// `unique_identifier` is the exception to that "silent" pattern: if
+/// `why_strdup(unique_identifier)` fails, `save_application_metadata()` rejects
+/// the object because `app->unique_identifier == NULL`, so creation returns
+/// null after freeing the heap object.
+///
+/// Once the metadata file is open, upstream ignores `why_fputs()` and
+/// `why_fclose()` results. A short write or flush failure can therefore still
+/// report success.
 ///
 /// If metadata saving fails after the install directory was already created,
 /// upstream calls `application_free(app)` but does not remove the newly created
@@ -177,15 +225,17 @@ pub extern "C" fn application_create(
 /// concatenates `app->installed_path` and `metadata_file` with `path_concat()`,
 /// then requires the resulting full path to pass `parse_path()`.
 ///
-/// That means the accepted relative forms are exactly the ones understood by
-/// `path_concat()`:
-///
-/// - `file.ext`
-/// - `[dir.subdir]file.ext`
+/// More precisely, `path_concat()` accepts a device-less append path with an
+/// optional leading `[dir.subdir]` segment and an optional trailing filename.
+/// Practical examples that pass are `file.ext`, `[dir.subdir]file.ext`, and the
+/// directory-only form `[dir.subdir]`. Empty brackets such as `[]file.ext` are
+/// also accepted and behave like `file.ext`.
 ///
 /// Device-qualified paths, slash-separated Unix-style paths, malformed bracket
 /// forms, and strings containing characters outside BadgeVMS path syntax are all
-/// rejected.
+/// rejected. If `app->installed_path` itself is null, validation of any non-null
+/// `metadata_file` also fails because `path_concat()` returns null and
+/// `parse_path(NULL, ...)` reports an empty path.
 ///
 /// On a valid request upstream:
 ///
@@ -201,8 +251,15 @@ pub extern "C" fn application_create(
 /// failure leaves the caller's `application_t` changed even though the function
 /// returns `false`.
 ///
+/// Passing `metadata_file = NULL` is the supported clear operation.
+/// `why_strdup(NULL)` returns null, and a successful save rewrites the JSON
+/// field as `""`.
+///
 /// If `why_strdup()` fails, upstream stores null and still attempts to save. A
 /// successful save in that case persists the field as an empty JSON string.
+///
+/// Once the metadata file is open, late write or close failures are ignored for
+/// the same reason described in the module-level storage model above.
 ///
 /// BadgeVMS itself does not interpret the contents or existence of this file.
 /// The setter only stores the relative path string.
@@ -228,14 +285,27 @@ pub extern "C" fn application_set_metadata(
 ///
 /// The stored value is relative, not absolute. Launch later reconstructs the
 /// executable path with `path_concat(app->installed_path, app->binary_path)`.
+/// The exact accepted relative-path grammar is the same as for
+/// `application_set_metadata()`: device-less, with an optional bracketed
+/// directory prefix and an optional filename.
 ///
 /// # Subtleties
 ///
 /// The same mutation-before-save behavior applies here: if JSON rewriting fails,
 /// the caller's in-memory snapshot has already changed.
 ///
+/// Passing `binary_path = NULL` clears the field in memory and, on successful
+/// save, rewrites the JSON field as `""`. Passing an actual empty string is not
+/// accepted by the setter: `validate_path()` rejects it because `path_concat()`
+/// refuses empty append paths.
+///
 /// Individual allocation failure is again silent. A failed `why_strdup()` can be
 /// persisted as an empty-string binary path if the later JSON write succeeds.
+/// Once loaded back from disk, that empty JSON string becomes a non-null empty
+/// C string, which is why `application_launch()` can reach its later
+/// `path_concat()` failure path instead of failing the initial null check.
+///
+/// Once the metadata file is open, late write or close failures are ignored.
 ///
 /// The launcher filters its application list partly on whether `binary_path` is
 /// non-null and non-empty, so changing this field directly affects what appears
@@ -264,9 +334,13 @@ pub extern "C" fn application_set_binary_path(
 ///
 /// # Subtleties
 ///
+/// Passing `version = NULL` clears the in-memory pointer, and a successful save
+/// rewrites the JSON field as `""`.
+///
 /// As with the path setters, the in-memory object is modified before saving, and
 /// a failed `why_strdup()` can still be serialized as an empty string if writing
 /// the JSON file succeeds.
+/// Late write or close failures after opening the metadata file are ignored.
 ///
 /// The OTA updater uses this setter after successful downloads, so this field is
 /// the firmware's authoritative installed-version record.
@@ -282,8 +356,10 @@ pub extern "C" fn application_set_version(
 /// Upstream behavior is structurally identical to `application_set_version()`:
 /// null `application` returns `false`, otherwise the old string is freed, the
 /// new pointer is set to `why_strdup(author)`, and the full metadata JSON is
-/// rewritten. There is no validation of the author string and the object is
-/// mutated before save success is known.
+/// rewritten. There is no validation of the author string, `author = NULL`
+/// clears the field and persists as `""` on successful save, late write errors
+/// are ignored after opening the file, and the object is mutated before save
+/// success is known.
 #[unsafe(no_mangle)]
 pub extern "C" fn application_set_author(
     application: *mut application_t,
@@ -296,8 +372,10 @@ pub extern "C" fn application_set_author(
 /// Upstream behavior is again the same as the other simple string setters:
 /// null `application` returns `false`; otherwise the previous `name` is freed,
 /// the new one is assigned with `why_strdup(name)`, and the whole JSON metadata
-/// file is rewritten. There is no validation of the content and the object is
-/// mutated before the save result is known.
+/// file is rewritten. There is no validation of the content, `name = NULL`
+/// clears the field and persists as `""` on successful save, late write errors
+/// are ignored after opening the file, and the object is mutated before the
+/// save result is known.
 ///
 /// The launcher displays this field directly when rendering the installed-app
 /// list.
@@ -312,7 +390,9 @@ pub extern "C" fn application_set_name(
 ///
 /// Upstream only checks `application != NULL`, frees the old interpreter,
 /// assigns `why_strdup(interpreter)`, and rewrites the full JSON metadata.
-/// There is no validation and the same mutation-before-save behavior applies.
+/// There is no validation, `interpreter = NULL` clears the field and persists
+/// as `""` on successful save, late write errors are ignored after opening the
+/// file, and the same mutation-before-save behavior applies.
 ///
 /// The currently shipped `application_launch()` implementation ignores this
 /// field completely, so setting it affects metadata consumers but not launch
@@ -337,6 +417,8 @@ pub extern "C" fn application_set_interpreter(
 /// `"No valid app_dir for %s"` and returns `false`.
 ///
 /// The function returns only the boolean result of `rm_rf(app_dir)`.
+/// `rm_rf()` itself returns `true` when the target path does not exist, so a
+/// missing install directory is treated as a successful destroy.
 ///
 /// # Important upstream bug
 ///
@@ -381,6 +463,11 @@ pub extern "C" fn application_destroy(application: *mut application_t) -> bool {
 /// creations happen even if `why_fopen()` then fails, so callers can observe
 /// partial side effects where directories exist but the file was never created.
 ///
+/// If `file_path` uses the directory-only relative form `[dir.subdir]`, the
+/// helper still resolves that path and `application_create_file()` then tries to
+/// open the resulting directory path with mode `"w"`. The directory creation
+/// side effects still occur first.
+///
 /// The OTA updater relies on this helper family when staging downloaded
 /// application content into the install tree.
 #[unsafe(no_mangle)]
@@ -399,11 +486,11 @@ pub extern "C" fn application_create_file(
 /// `app->installed_path`.
 ///
 /// It then computes the candidate absolute path with
-/// `path_concat(app->installed_path, file_path)`. Because `path_concat()` only
-/// accepts relative append paths, the supported input forms are exactly:
-///
-/// - `file.ext`
-/// - `[dir.subdir]file.ext`
+/// `path_concat(app->installed_path, file_path)`. `path_concat()` accepts a
+/// device-less append path with an optional leading `[dir.subdir]` segment and
+/// an optional trailing filename. That means `file.ext`,
+/// `[dir.subdir]file.ext`, and `[dir.subdir]` are all accepted. Empty brackets
+/// such as `[]file.ext` are also accepted and behave like `file.ext`.
 ///
 /// Device-qualified paths, slash-separated paths, malformed bracket forms, or
 /// invalid path characters are rejected.
@@ -425,6 +512,8 @@ pub extern "C" fn application_create_file(
 /// Directories are created even if the caller never creates the file afterward.
 /// The OTA updater intentionally depends on that behavior when preparing nested
 /// install paths.
+/// OTA also uses placeholder application records created from metadata alone, so
+/// this helper can be invoked before any real payload file exists.
 ///
 /// Upstream leaks the `dirname` string on the success path. It is only freed on
 /// failure. Every successful `application_create_file_string()` call therefore
@@ -461,6 +550,9 @@ pub extern "C" fn application_create_file_string(
 ///
 /// Each successfully loaded metadata file becomes one heap-allocated
 /// `application_t` stored in the list. Failed loads are silently skipped.
+/// The OTA updater intentionally relies on that metadata-file-only discovery:
+/// its placeholder `.json` records become visible immediately, even before the
+/// application has a usable payload.
 ///
 /// If `out != NULL` and at least one application loaded successfully,
 /// `*out` is set to the first loaded entry. If no entries were loaded,
@@ -532,6 +624,9 @@ pub extern "C" fn application_list_close(list: application_list_handle) {
 /// # Exact upstream behavior
 ///
 /// Upstream rejects null `unique_identifier` with null.
+/// An uninitialized `applications_base_dir` or an identifier that cannot be
+/// turned into a legal `APPS:<uid>.json` path also returns null before any file
+/// I/O happens.
 ///
 /// It then builds the metadata path `APPS:<unique_identifier>.json`, opens it
 /// with `why_fopen(..., "r")`, reads the entire file into memory, parses it with
@@ -542,6 +637,9 @@ pub extern "C" fn application_list_close(list: application_list_handle) {
 /// `why_strdup()` and reconstructs `installed_path` from the unique identifier
 /// instead of trusting JSON to provide it. The numeric `source` field is written
 /// into the `const` enum member by casting away constness.
+/// Unknown keys are ignored, missing or wrongly typed keys are left at their
+/// zero-initialized defaults, and persisted empty JSON strings reload as
+/// non-null empty C strings.
 ///
 /// The returned object is independent of any earlier snapshot. Callers own it
 /// and must free it with `application_free()`.

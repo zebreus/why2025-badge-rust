@@ -5,6 +5,7 @@ mod tests {
         use crate::*;
 
         unsafe {
+            assert_ne!(core::ptr::addr_of!(_ctype_b) as *const (), core::ptr::null());
             assert_ne!(a64l as *const (), core::ptr::null());
             assert_ne!(abs as *const (), core::ptr::null());
             assert_ne!(asctime_r as *const (), core::ptr::null());
@@ -829,8 +830,12 @@ mod tests {
             assert_ne!(vsscanf as *const (), core::ptr::null());
             assert_ne!(wcsdup as *const (), core::ptr::null());
             assert_ne!(write as *const (), core::ptr::null());
+            assert_ne!(__errno as *const (), core::ptr::null());
+            assert_ne!(core::ptr::addr_of!(stdin) as *const (), core::ptr::null());
+            assert_ne!(core::ptr::addr_of!(stdout) as *const (), core::ptr::null());
+            assert_ne!(core::ptr::addr_of!(stderr) as *const (), core::ptr::null());
+            assert_ne!(core::ptr::addr_of!(environ) as *const (), core::ptr::null());
 
-            assert_ne!(printf as *const (), core::ptr::null());
         }
     }
 }

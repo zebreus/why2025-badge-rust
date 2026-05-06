@@ -5,10 +5,17 @@
 
 use crate::types::*;
 use crate::{atof, isascii};
+use core::cell::UnsafeCell;
 use core::ffi::{CStr, c_char};
 use std::{borrow::Cow, io::{self, Write}};
 
 type size_t = usize;
+
+struct HostErrnoCell(UnsafeCell<::core::ffi::c_int>);
+
+unsafe impl Sync for HostErrnoCell {}
+
+static HOST_ERRNO: HostErrnoCell = HostErrnoCell(UnsafeCell::new(0));
 
 fn c_string_or_placeholder<'a>(ptr: *const c_char, placeholder: &'a str) -> Cow<'a, str> {
     if ptr.is_null() {
@@ -17,6 +24,16 @@ fn c_string_or_placeholder<'a>(ptr: *const c_char, placeholder: &'a str) -> Cow<
         unsafe { CStr::from_ptr(ptr) }.to_string_lossy()
     }
 }
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __errno() -> *mut ::core::ffi::c_int {
+    HOST_ERRNO.0.get()
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub static _ctype_b: [::core::ffi::c_char; 0usize] = [];
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]

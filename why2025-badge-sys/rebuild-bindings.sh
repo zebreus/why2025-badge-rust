@@ -17,8 +17,9 @@ SIMPLE_FUNCTIONS=( $(yq --raw-output '.simple_function[]' firmware/badgevms/symb
 EXTERN_SIMPLE_FUNCTIONS=( $(yq --raw-output '.simple_function_extern[]' firmware/badgevms/symbols.yml ) )
 WRAPPED_FUNCTIONS=( $(yq --raw-output '.wrapped_function[]' firmware/badgevms/symbols.yml ) )
 SIMPLE_OBJECTS=( $(yq --raw-output '.simple_object[]' firmware/badgevms/symbols.yml ) )
-# Exclude errno from the wrapped objects, as it appears to be a function. fix this if you need it.
-WRAPPED_OBJECTS=( $(yq --raw-output '.wrapped_object[]' firmware/badgevms/symbols.yml | grep -v '__errno') )
+WRAPPED_OBJECTS=( $(yq --raw-output '.wrapped_object[]' firmware/badgevms/symbols.yml ) )
+NORMALIZED_FUNCTION_EXPORTS=( __errno )
+BADGE_TARGET=riscv32imafc-unknown-none-elf
 
 # Enums are by default represented as Rust enums. Add them here to make them bitfields insteads.
 BITFIELD_ENUMS=(
@@ -52,7 +53,7 @@ BINDGEN_COMMAND=(
     --allowlist-item 'BADGEVMS_KEY_.*' 
     --allowlist-item 'BADGEVMS_KMOD_.*'
 )
-for function in "${SIMPLE_FUNCTIONS[@]}" "${EXTERN_SIMPLE_FUNCTIONS[@]}" "${WRAPPED_FUNCTIONS[@]}"; do
+for function in "${SIMPLE_FUNCTIONS[@]}" "${EXTERN_SIMPLE_FUNCTIONS[@]}" "${WRAPPED_FUNCTIONS[@]}" "${NORMALIZED_FUNCTION_EXPORTS[@]}"; do
     BINDGEN_COMMAND+=( --allowlist-function "$function" )
 done
 for var in "${SIMPLE_OBJECTS[@]}" "${WRAPPED_OBJECTS[@]}"; do
@@ -66,6 +67,99 @@ done
 for enum in "${BITFIELD_ENUMS[@]}" ; do
     BINDGEN_COMMAND+=( --bitfield-enum "$enum" )
 done
+
+function normalize_function_export() {
+    local symbol="$1"
+
+    echo "$symbol"
+}
+
+function normalize_var_export() {
+    local symbol="$1"
+
+    case "$symbol" in
+        _ctype_)
+            echo "_ctype_b"
+            ;;
+        *)
+            echo "$symbol"
+            ;;
+    esac
+}
+
+function symbol_kind_for_bindings() {
+    local symbol="$1"
+
+    case "$symbol" in
+        __errno)
+            echo "function"
+            ;;
+        _ctype_)
+            echo "var"
+            ;;
+        *)
+            echo "auto"
+            ;;
+    esac
+}
+
+function bindings_have_function() {
+    local file="$1"
+    local symbol="$2"
+    local normalized_symbol
+
+    normalized_symbol="$(normalize_function_export "$symbol")"
+    grep -q "fn $normalized_symbol(" "$file"
+}
+
+function bindings_have_var() {
+    local file="$1"
+    local symbol="$2"
+    local normalized_symbol
+
+    normalized_symbol="$(normalize_var_export "$symbol")"
+    grep -aq "$normalized_symbol:" "$file"
+}
+
+function badge_target_is_available() {
+    local target_libdir
+
+    if ! target_libdir="$(rustc --print target-libdir --target "$BADGE_TARGET" 2>/dev/null)"; then
+        return 1
+    fi
+
+    [ -d "$target_libdir" ]
+}
+
+function emit_linker_function_assertion() {
+    local symbol="$1"
+    local normalized_symbol
+    local assertion_key
+
+    normalized_symbol="$(normalize_function_export "$symbol")"
+    assertion_key="function:$normalized_symbol"
+    if [ -n "${GENERATED_LINKER_ASSERTIONS[$assertion_key]+x}" ]; then
+        return 0
+    fi
+    GENERATED_LINKER_ASSERTIONS[$assertion_key]=1
+
+    echo "            assert_ne!($normalized_symbol as *const (), core::ptr::null());" >> src/linker_test.rs
+}
+
+function emit_linker_var_assertion() {
+    local symbol="$1"
+    local normalized_symbol
+    local assertion_key
+
+    normalized_symbol="$(normalize_var_export "$symbol")"
+    assertion_key="var:$normalized_symbol"
+    if [ -n "${GENERATED_LINKER_ASSERTIONS[$assertion_key]+x}" ]; then
+        return 0
+    fi
+    GENERATED_LINKER_ASSERTIONS[$assertion_key]=1
+
+    echo "            assert_ne!(core::ptr::addr_of!($normalized_symbol) as *const (), core::ptr::null());" >> src/linker_test.rs
+}
 
 function ensure_include_after_pragma_once() {
     local file="$1"
@@ -156,15 +250,22 @@ function check_functions {
     local missing_functions=false
     local missing_functions_list=()
     for function in "${functions[@]}"; do
-        if [ "$function" == "_ctype_" ]; then
-            # ctype is wrongly? listed as a function
-            continue
-        fi
-        if ! grep -q "fn $function(" "$file"; then
+        case "$(symbol_kind_for_bindings "$function")" in
+            var)
+                if bindings_have_var "$file" "$function"; then
+                    continue
+                fi
+                ;;
+            *)
+                if bindings_have_function "$file" "$function"; then
+                    continue
+                fi
+                ;;
+        esac
+
             echo "Missing function: $function"
             missing_functions=true
             missing_functions_list+=("$function")
-        fi
     done
     if $missing_functions; then
         echo "Missing functions!!!"
@@ -182,11 +283,22 @@ function check_vars {
     local missing_vars=false
     local missing_vars_list=()
     for var in "${vars[@]}"; do
-        if ! grep -aq "$var:" "$file"; then
+        case "$(symbol_kind_for_bindings "$var")" in
+            function)
+                if bindings_have_function "$file" "$var"; then
+                    continue
+                fi
+                ;;
+            *)
+                if bindings_have_var "$file" "$var"; then
+                    continue
+                fi
+                ;;
+        esac
+
             echo "Missing variable: $var"
             missing_vars=true
             missing_vars_list+=("$var")
-        fi
     done
     if $missing_vars; then
         echo "Missing variables!!!"
@@ -201,6 +313,7 @@ function check_vars {
 check_functions src/bindings.rs "${SIMPLE_FUNCTIONS[@]}"
 check_functions src/bindings.rs "${EXTERN_SIMPLE_FUNCTIONS[@]}"
 check_functions src/bindings.rs "${WRAPPED_FUNCTIONS[@]}"
+check_functions src/bindings.rs "${NORMALIZED_FUNCTION_EXPORTS[@]}"
 
 check_vars src/bindings.rs "${SIMPLE_OBJECTS[@]}"
 check_vars src/bindings.rs "${WRAPPED_OBJECTS[@]}"
@@ -217,18 +330,45 @@ mod tests {
         unsafe {
 EOF
 
+declare -A GENERATED_LINKER_ASSERTIONS=()
+
 for symbol in "${SIMPLE_FUNCTIONS[@]}" "${EXTERN_SIMPLE_FUNCTIONS[@]}" "${WRAPPED_FUNCTIONS[@]}"; do
-    if [ "$symbol" == "_ctype_" ]; then
-        # ctype is wrongly? listed as a function
-        continue
-    fi
-    echo "            assert_ne!($symbol as *const (), core::ptr::null());" >> src/linker_test.rs
+    case "$(symbol_kind_for_bindings "$symbol")" in
+        var)
+            emit_linker_var_assertion "$symbol"
+            ;;
+        *)
+            emit_linker_function_assertion "$symbol"
+            ;;
+    esac
 done
+
+for symbol in "${NORMALIZED_FUNCTION_EXPORTS[@]}"; do
+    emit_linker_function_assertion "$symbol"
+done
+
+for symbol in "${SIMPLE_OBJECTS[@]}" "${WRAPPED_OBJECTS[@]}"; do
+    case "$(symbol_kind_for_bindings "$symbol")" in
+        function)
+            emit_linker_function_assertion "$symbol"
+            ;;
+        *)
+            emit_linker_var_assertion "$symbol"
+            ;;
+    esac
+done
+
+emit_linker_function_assertion printf
 
 cat <<EOF >> src/linker_test.rs
 
-            assert_ne!(printf as *const (), core::ptr::null());
         }
     }
 }
 EOF
+
+if badge_target_is_available; then
+    cargo check --target "$BADGE_TARGET" --lib
+else
+    echo "Skipping badge target cargo check because $BADGE_TARGET is not installed."
+fi

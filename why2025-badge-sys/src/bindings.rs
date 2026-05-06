@@ -104,6 +104,7 @@ unsafe extern "C" {
     pub fn isascii_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int;
     pub fn toascii_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int;
     pub static _ctype_b: [::core::ffi::c_char; 0usize];
+    pub fn __errno() -> *mut ::core::ffi::c_int;
     pub fn feclearexcept(excepts: ::core::ffi::c_int) -> ::core::ffi::c_int;
     pub fn fegetexceptflag(
         flagp: *mut fexcept_t,

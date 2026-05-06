@@ -109,6 +109,19 @@
 
 use crate::types::*;
 
+mod runtime;
+
+use runtime::{
+    get_mac_address_inner, wifi_connect_inner, wifi_disconnect_inner,
+    wifi_get_connection_station_inner, wifi_get_connection_status_inner,
+    wifi_scan_free_station_inner, wifi_scan_get_num_results_inner,
+    wifi_scan_get_result_inner, wifi_set_connection_parameters_inner,
+    wifi_station_get_bssid_inner, wifi_station_get_mode_inner,
+    wifi_station_get_primary_channel_inner, wifi_station_get_rssi_inner,
+    wifi_station_get_secondary_channel_inner, wifi_station_get_ssid_inner,
+    wifi_station_wps_inner,
+};
+
 /// Returns the raw global Wi-Fi enable state.
 ///
 /// In upstream this is a plain `return status.status;` with no locking,
@@ -118,7 +131,7 @@ use crate::types::*;
 /// entire lifetime of the driver after boot.
 #[unsafe(no_mangle)]
 pub extern "C" fn wifi_get_status() -> wifi_status_t {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_status_t::WIFI_ENABLED
 }
 /// Returns the current global connection state.
 ///
@@ -135,7 +148,7 @@ pub extern "C" fn wifi_get_status() -> wifi_status_t {
 ///   exhausts its 10 automatic reconnect attempts.
 #[unsafe(no_mangle)]
 pub extern "C" fn wifi_get_connection_status() -> wifi_connection_status_t {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_get_connection_status_inner()
 }
 /// Returns a heap-allocated snapshot of the currently connected access point.
 ///
@@ -157,7 +170,7 @@ pub extern "C" fn wifi_get_connection_status() -> wifi_connection_status_t {
 /// mentions scan results.
 #[unsafe(no_mangle)]
 pub extern "C" fn wifi_get_connection_station() -> wifi_station_handle {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_get_connection_station_inner()
 }
 /// Performs a blocking connection attempt through the Hermes worker task.
 ///
@@ -208,7 +221,7 @@ pub extern "C" fn wifi_get_connection_station() -> wifi_station_handle {
 /// delivered through task-notification index 0 of the calling FreeRTOS task.
 #[unsafe(no_mangle)]
 pub extern "C" fn wifi_connect() -> wifi_connection_status_t {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_connect_inner()
 }
 /// Performs a blocking disconnect command through the Hermes worker task.
 ///
@@ -240,7 +253,7 @@ pub extern "C" fn wifi_connect() -> wifi_connection_status_t {
 /// force an extra retry before a real disconnect event is seen.
 #[unsafe(no_mangle)]
 pub extern "C" fn wifi_disconnect() -> wifi_connection_status_t {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_disconnect_inner()
 }
 /// Frees a station handle previously returned by `wifi_get_connection_station()`
 /// or `wifi_scan_get_result()`.
@@ -250,7 +263,7 @@ pub extern "C" fn wifi_disconnect() -> wifi_connection_status_t {
 /// also uses it to free the handle returned by `wifi_get_connection_station()`.
 #[unsafe(no_mangle)]
 pub extern "C" fn wifi_scan_free_station(station: wifi_station_handle) {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_scan_free_station_inner(station)
 }
 /// Scans for access points if scanning is enabled, then returns the cached AP
 /// count.
@@ -284,7 +297,7 @@ pub extern "C" fn wifi_scan_free_station(station: wifi_station_handle) {
 /// only `status.num_scan_results` controls which entries are visible.
 #[unsafe(no_mangle)]
 pub extern "C" fn wifi_scan_get_num_results() -> ::core::ffi::c_int {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_scan_get_num_results_inner()
 }
 /// Returns a heap-allocated copy of one cached scan result.
 ///
@@ -302,7 +315,7 @@ pub extern "C" fn wifi_scan_get_num_results() -> ::core::ffi::c_int {
 /// The returned handle must be freed with `wifi_scan_free_station()`.
 #[unsafe(no_mangle)]
 pub extern "C" fn wifi_scan_get_result(num: ::core::ffi::c_int) -> wifi_station_handle {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_scan_get_result_inner(num)
 }
 /// Returns a borrowed pointer to the SSID buffer stored inside a station
 /// snapshot.
@@ -316,7 +329,7 @@ pub extern "C" fn wifi_scan_get_result(num: ::core::ffi::c_int) -> wifi_station_
 pub extern "C" fn wifi_station_get_ssid(
     station: wifi_station_handle,
 ) -> *const ::core::ffi::c_char {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_station_get_ssid_inner(station)
 }
 /// Returns a borrowed pointer to the BSSID bytes stored inside a station
 /// snapshot.
@@ -331,7 +344,7 @@ pub extern "C" fn wifi_station_get_ssid(
 /// once the handle is freed.
 #[unsafe(no_mangle)]
 pub extern "C" fn wifi_station_get_bssid(station: wifi_station_handle) -> *mut mac_address_t {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_station_get_bssid_inner(station)
 }
 /// Returns the primary channel recorded in the station snapshot.
 ///
@@ -343,7 +356,7 @@ pub extern "C" fn wifi_station_get_bssid(station: wifi_station_handle) -> *mut m
 pub extern "C" fn wifi_station_get_primary_channel(
     station: wifi_station_handle,
 ) -> ::core::ffi::c_int {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_station_get_primary_channel_inner(station)
 }
 /// Returns the secondary channel recorded in the station snapshot.
 ///
@@ -353,7 +366,7 @@ pub extern "C" fn wifi_station_get_primary_channel(
 pub extern "C" fn wifi_station_get_secondary_channel(
     station: wifi_station_handle,
 ) -> ::core::ffi::c_int {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_station_get_secondary_channel_inner(station)
 }
 /// Returns the raw RSSI stored in the station snapshot.
 ///
@@ -363,7 +376,7 @@ pub extern "C" fn wifi_station_get_secondary_channel(
 /// percentage by adding 150.
 #[unsafe(no_mangle)]
 pub extern "C" fn wifi_station_get_rssi(station: wifi_station_handle) -> ::core::ffi::c_int {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_station_get_rssi_inner(station)
 }
 /// Returns the authentication mode stored in the station snapshot.
 ///
@@ -385,7 +398,7 @@ pub extern "C" fn wifi_station_get_rssi(station: wifi_station_handle) -> ::core:
 /// `WIFI_AUTH_OPEN` as a secured network.
 #[unsafe(no_mangle)]
 pub extern "C" fn wifi_station_get_mode(station: wifi_station_handle) -> wifi_auth_mode_t {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_station_get_mode_inner(station)
 }
 /// Returns the raw WPS-capable flag stored in the station snapshot.
 ///
@@ -393,7 +406,7 @@ pub extern "C" fn wifi_station_get_mode(station: wifi_station_handle) -> wifi_au
 /// a plain boolean with no validation.
 #[unsafe(no_mangle)]
 pub extern "C" fn wifi_station_wps(station: wifi_station_handle) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_station_wps_inner(station)
 }
 /// Stores the credentials that a later `wifi_connect()` call will read back
 /// from NVS.
@@ -426,7 +439,7 @@ pub extern "C" fn wifi_set_connection_parameters(
     ssid: *const ::core::ffi::c_char,
     password: *const ::core::ffi::c_char,
 ) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+    wifi_set_connection_parameters_inner(ssid, password)
 }
 /// Returns the base MAC address as an uppercase, colon-separated ASCII string.
 ///
@@ -450,5 +463,5 @@ pub extern "C" fn wifi_set_connection_parameters(
 /// string and do not retry `esp_read_mac()`.
 #[unsafe(no_mangle)]
 pub extern "C" fn get_mac_address() -> *const ::core::ffi::c_char {
-    unimplemented!("Implement this yourself if you need it");
+    get_mac_address_inner()
 }

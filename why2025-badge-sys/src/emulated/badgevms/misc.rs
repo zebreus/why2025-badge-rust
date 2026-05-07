@@ -410,7 +410,10 @@ pub extern "C" fn vaddr_to_paddr(vaddr: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::emulated::badgevms::fs::paths::set_base_directory_for_tests;
+    use crate::emulated::badgevms::{
+        fs::paths::set_base_directory_for_tests,
+        misc::runtime::lock_global_test_runtime,
+    };
     use std::{
         ffi::{CString, OsString},
         fs,
@@ -527,12 +530,14 @@ mod tests {
 
     #[test]
     fn device_get_returns_tt01_and_rejects_unknown_devices() {
+        let _test_lock = lock_global_test_runtime();
         assert!(!device_get(c"TT01".as_ptr()).is_null());
         assert!(device_get(c"DOES_NOT_EXIST".as_ptr()).is_null());
     }
 
     #[test]
     fn thread_create_reaps_before_wait_consumes_pid() {
+        let _test_lock = lock_global_test_runtime();
         let base_count = get_num_tasks();
         let pid = thread_create(Some(test_thread_entry), std::ptr::null_mut(), 0);
 
@@ -546,6 +551,8 @@ mod tests {
     fn process_create_reaps_before_wait_consumes_pid() {
         const ENV_NAME: &str = "WHY2025_MISC_PROCESS_CREATE_CHILD";
         const TEST_NAME: &str = "emulated::badgevms::misc::tests::process_create_reaps_before_wait_consumes_pid";
+
+        let _test_lock = lock_global_test_runtime();
 
         if std::env::var_os(ENV_NAME).is_some() {
             return;
@@ -576,6 +583,8 @@ mod tests {
     fn die_aborts_current_process() {
         const ENV_NAME: &str = "WHY2025_MISC_DIE_TEST";
         const TEST_NAME: &str = "emulated::badgevms::misc::tests::die_aborts_current_process";
+
+        let _test_lock = lock_global_test_runtime();
 
         if std::env::var_os(ENV_NAME).is_some() {
             die(c"test abort".as_ptr());

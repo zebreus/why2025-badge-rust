@@ -553,6 +553,7 @@ mod tests {
         misc::runtime::{
             current_task_pid, ota_session_count_for_task, register_ota_session, register_task,
             reset_runtime_for_tests, set_current_task_pid, task_exited,
+            GlobalTestRuntimeGuard, lock_global_test_runtime,
         },
         ota::{
             ota_get_invalid_version, ota_get_running_version, ota_session_abort,
@@ -564,11 +565,13 @@ mod tests {
 
     struct TestOtaDirectory {
         root: PathBuf,
+        _lock: GlobalTestRuntimeGuard,
         _guard: TestOtaRootGuard,
     }
 
     impl TestOtaDirectory {
         fn new() -> Self {
+            let lock = lock_global_test_runtime();
             let suffix = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
@@ -577,7 +580,11 @@ mod tests {
                 .join(format!("why2025-ota-test-{}-{suffix}", std::process::id()));
             let _guard = set_ota_root_directory_for_tests(root.clone());
 
-            Self { root, _guard }
+            Self {
+                root,
+                _lock: lock,
+                _guard,
+            }
         }
 
         fn create_image(&self, version: &str) -> Vec<u8> {

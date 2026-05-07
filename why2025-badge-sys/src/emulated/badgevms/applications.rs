@@ -711,7 +711,7 @@ mod tests {
         emulated::badgevms::{
             fs::paths::{TestBaseDirectoryGuard, set_base_directory_for_tests},
             misc::{get_num_tasks, wait},
-            misc::runtime::reset_runtime_for_tests,
+            misc::runtime::{GlobalTestRuntimeGuard, lock_global_test_runtime, reset_runtime_for_tests},
         },
         free,
     };
@@ -727,11 +727,13 @@ mod tests {
 
     struct TestApplicationDirectory {
         root: PathBuf,
+        _lock: GlobalTestRuntimeGuard,
         _guard: TestBaseDirectoryGuard,
     }
 
     impl TestApplicationDirectory {
         fn new(test_name: &str) -> Self {
+            let lock = lock_global_test_runtime();
             let suffix = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .expect("system time should be after the unix epoch")
@@ -746,6 +748,7 @@ mod tests {
 
             Self {
                 root,
+                _lock: lock,
                 _guard: guard,
             }
         }

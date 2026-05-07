@@ -246,6 +246,19 @@ impl MiscRuntime {
 
 static MISC_RUNTIME: LazyLock<MiscRuntime> = LazyLock::new(MiscRuntime::new);
 
+#[cfg(test)]
+static GLOBAL_TEST_RUNTIME_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+
+#[cfg(test)]
+pub(crate) type GlobalTestRuntimeGuard = MutexGuard<'static, ()>;
+
+#[cfg(test)]
+pub(crate) fn lock_global_test_runtime() -> GlobalTestRuntimeGuard {
+    GLOBAL_TEST_RUNTIME_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 fn cleanup_ota_sessions(ota_sessions: Vec<usize>) {
     for handle in ota_sessions {
         abort_task_owned_ota_session(handle as ota_handle_t);

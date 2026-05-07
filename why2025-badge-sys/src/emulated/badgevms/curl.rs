@@ -39,8 +39,15 @@
 use crate::types::*;
 use core::ffi::c_char;
 
-const CURL_STUB_MESSAGE: &str =
-    "Host-side BadgeVMS curl emulation is not implemented yet";
+mod runtime;
+
+use runtime::{
+    curl_easy_cleanup_inner, curl_easy_getinfo_inner, curl_easy_init_inner,
+    curl_easy_perform_inner,
+    curl_easy_setopt_inner, curl_easy_strerror_inner,
+    curl_global_cleanup_inner, curl_global_init_inner, curl_slist_append_inner,
+    curl_slist_free_all_inner,
+};
 
 /// Allocate a new BadgeVMS curl handle.
 ///
@@ -88,7 +95,7 @@ const CURL_STUB_MESSAGE: &str =
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn curl_easy_init() -> *mut CURL {
-    unimplemented!("{CURL_STUB_MESSAGE}")
+    curl_easy_init_inner()
 }
 
 /// Apply one option to a BadgeVMS curl handle.
@@ -204,9 +211,9 @@ pub extern "C" fn curl_easy_init() -> *mut CURL {
 pub unsafe extern "C" fn curl_easy_setopt(
     _curl: *mut CURL,
     _option: CURLoption,
-    mut _args: ...,
+    mut _args: ...
 ) -> CURLcode {
-    unimplemented!("{CURL_STUB_MESSAGE}")
+    unsafe { curl_easy_setopt_inner(_curl, _option, _args.as_va_list()) }
 }
 
 /// Execute one HTTP request using the options currently stored on the handle.
@@ -342,7 +349,7 @@ pub unsafe extern "C" fn curl_easy_setopt(
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn curl_easy_perform(_curl: *mut CURL) -> CURLcode {
-    unimplemented!("{CURL_STUB_MESSAGE}")
+    curl_easy_perform_inner(_curl)
 }
 
 /// Destroy a BadgeVMS curl handle and free all state owned by it.
@@ -380,7 +387,7 @@ pub extern "C" fn curl_easy_perform(_curl: *mut CURL) -> CURLcode {
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn curl_easy_cleanup(_curl: *mut CURL) {
-    unimplemented!("{CURL_STUB_MESSAGE}")
+    curl_easy_cleanup_inner(_curl)
 }
 
 /// Query one piece of cached metadata from the handle.
@@ -418,9 +425,9 @@ pub extern "C" fn curl_easy_cleanup(_curl: *mut CURL) {
 pub unsafe extern "C" fn curl_easy_getinfo(
     _curl: *mut CURL,
     _info: curl_easy_info_t,
-    mut _args: ...,
+    mut _args: ...
 ) -> CURLcode {
-    unimplemented!("{CURL_STUB_MESSAGE}")
+    unsafe { curl_easy_getinfo_inner(_curl, _info, _args.as_va_list()) }
 }
 
 /// Convert a `CURLcode` to one of BadgeVMS's static error strings.
@@ -450,7 +457,7 @@ pub unsafe extern "C" fn curl_easy_getinfo(
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn curl_easy_strerror(_error: CURLcode) -> *const c_char {
-    unimplemented!("{CURL_STUB_MESSAGE}")
+    curl_easy_strerror_inner(_error)
 }
 
 /// Append one string node to a `curl_slist` chain.
@@ -481,7 +488,7 @@ pub extern "C" fn curl_slist_append(
     _list: *mut curl_slist,
     _string: *const c_char,
 ) -> *mut curl_slist {
-    unimplemented!("{CURL_STUB_MESSAGE}")
+    curl_slist_append_inner(_list, _string)
 }
 
 /// Free an entire `curl_slist` chain.
@@ -503,7 +510,7 @@ pub extern "C" fn curl_slist_append(
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn curl_slist_free_all(_list: *mut curl_slist) {
-    unimplemented!("{CURL_STUB_MESSAGE}")
+    curl_slist_free_all_inner(_list)
 }
 
 /// Perform libcurl-compatible global initialization.
@@ -518,7 +525,7 @@ pub extern "C" fn curl_slist_free_all(_list: *mut curl_slist) {
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn curl_global_init(_flags: ::core::ffi::c_long) -> CURLcode {
-    unimplemented!("{CURL_STUB_MESSAGE}")
+    curl_global_init_inner(_flags)
 }
 
 /// Perform libcurl-compatible global teardown.
@@ -532,5 +539,5 @@ pub extern "C" fn curl_global_init(_flags: ::core::ffi::c_long) -> CURLcode {
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn curl_global_cleanup() {
-    unimplemented!("{CURL_STUB_MESSAGE}")
+    curl_global_cleanup_inner()
 }

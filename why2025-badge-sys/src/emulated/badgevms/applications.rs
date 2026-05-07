@@ -58,6 +58,27 @@
 
 use crate::types::*;
 
+pub(crate) mod runtime;
+
+use runtime::{
+    application_create as application_create_inner,
+    application_create_file as application_create_file_inner,
+    application_create_file_string as application_create_file_string_inner,
+    application_destroy as application_destroy_inner,
+    application_free as application_free_inner,
+    application_get as application_get_inner,
+    application_launch as application_launch_inner,
+    application_list as application_list_inner,
+    application_list_close as application_list_close_inner,
+    application_list_get_next as application_list_get_next_inner,
+    application_set_author as application_set_author_inner,
+    application_set_binary_path as application_set_binary_path_inner,
+    application_set_interpreter as application_set_interpreter_inner,
+    application_set_metadata as application_set_metadata_inner,
+    application_set_name as application_set_name_inner,
+    application_set_version as application_set_version_inner,
+};
+
 /// Launch an installed application by unique identifier.
 ///
 /// # Exact upstream behavior
@@ -120,7 +141,7 @@ use crate::types::*;
 /// until `process_create` fails on the missing binary path.
 #[unsafe(no_mangle)]
 pub extern "C" fn application_launch(unique_identifier: *const ::core::ffi::c_char) -> pid_t {
-    unimplemented!("Implement this yourself if you need it");
+    application_launch_inner(unique_identifier)
 }
 /// Create a new application metadata record and install directory.
 ///
@@ -212,7 +233,7 @@ pub extern "C" fn application_create(
     interpreter: *const ::core::ffi::c_char,
     source: application_source_t,
 ) -> *mut application_t {
-    unimplemented!("Implement this yourself if you need it");
+    application_create_inner(unique_identifier, name, author, version, interpreter, source)
 }
 /// Set or clear the metadata-file path stored in an application snapshot.
 ///
@@ -268,7 +289,7 @@ pub extern "C" fn application_set_metadata(
     application: *mut application_t,
     metadata_file: *const ::core::ffi::c_char,
 ) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+    application_set_metadata_inner(application, metadata_file)
 }
 /// Set or clear the relative main-binary path stored in an application snapshot.
 ///
@@ -315,7 +336,7 @@ pub extern "C" fn application_set_binary_path(
     application: *mut application_t,
     binary_path: *const ::core::ffi::c_char,
 ) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+    application_set_binary_path_inner(application, binary_path)
 }
 /// Replace the version string in an application snapshot and persist it.
 ///
@@ -349,7 +370,7 @@ pub extern "C" fn application_set_version(
     application: *mut application_t,
     version: *const ::core::ffi::c_char,
 ) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+    application_set_version_inner(application, version)
 }
 /// Replace the author string in an application snapshot and persist it.
 ///
@@ -365,7 +386,7 @@ pub extern "C" fn application_set_author(
     application: *mut application_t,
     author: *const ::core::ffi::c_char,
 ) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+    application_set_author_inner(application, author)
 }
 /// Replace the human-readable application name and persist it.
 ///
@@ -384,7 +405,7 @@ pub extern "C" fn application_set_name(
     application: *mut application_t,
     name: *const ::core::ffi::c_char,
 ) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+    application_set_name_inner(application, name)
 }
 /// Replace the interpreter string and persist it.
 ///
@@ -402,7 +423,7 @@ pub extern "C" fn application_set_interpreter(
     application: *mut application_t,
     interpreter: *const ::core::ffi::c_char,
 ) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+    application_set_interpreter_inner(application, interpreter)
 }
 /// Remove an application's install directory from storage.
 ///
@@ -442,7 +463,7 @@ pub extern "C" fn application_set_interpreter(
 /// manager. It is purely a filesystem deletion attempt.
 #[unsafe(no_mangle)]
 pub extern "C" fn application_destroy(application: *mut application_t) -> bool {
-    unimplemented!("Implement this yourself if you need it");
+    application_destroy_inner(application)
 }
 /// Create or truncate a file relative to an application's install directory.
 ///
@@ -475,7 +496,7 @@ pub extern "C" fn application_create_file(
     application: *mut application_t,
     file_path: *const ::core::ffi::c_char,
 ) -> *mut FILE {
-    unimplemented!("Implement this yourself if you need it");
+    application_create_file_inner(application, file_path)
 }
 /// Build an absolute BadgeVMS path for a file inside an application's install
 /// directory and ensure all parent directories exist.
@@ -526,7 +547,7 @@ pub extern "C" fn application_create_file_string(
     application: *mut application_t,
     file_path: *const ::core::ffi::c_char,
 ) -> *mut ::core::ffi::c_char {
-    unimplemented!("Implement this yourself if you need it");
+    application_create_file_string_inner(application, file_path)
 }
 /// Enumerate installed applications by scanning metadata JSON files.
 ///
@@ -576,7 +597,7 @@ pub extern "C" fn application_create_file_string(
 /// to the caller.
 #[unsafe(no_mangle)]
 pub extern "C" fn application_list(out: *mut *mut application_t) -> application_list_handle {
-    unimplemented!("Implement this yourself if you need it");
+    application_list_inner(out)
 }
 /// Advance an application list iterator and return the next loaded application.
 ///
@@ -598,7 +619,7 @@ pub extern "C" fn application_list(out: *mut *mut application_t) -> application_
 /// the caller also intends to call `application_list_close()`.
 #[unsafe(no_mangle)]
 pub extern "C" fn application_list_get_next(list: application_list_handle) -> *mut application_t {
-    unimplemented!("Implement this yourself if you need it");
+    application_list_get_next_inner(list)
 }
 /// Free an application list and every application snapshot currently stored in
 /// it.
@@ -617,7 +638,7 @@ pub extern "C" fn application_list_get_next(list: application_list_handle) -> *m
 /// snapshot.
 #[unsafe(no_mangle)]
 pub extern "C" fn application_list_close(list: application_list_handle) {
-    unimplemented!("Implement this yourself if you need it");
+    application_list_close_inner(list)
 }
 /// Load one application snapshot from its metadata JSON file.
 ///
@@ -656,7 +677,7 @@ pub extern "C" fn application_list_close(list: application_list_handle) {
 pub extern "C" fn application_get(
     unique_identifier: *const ::core::ffi::c_char,
 ) -> *mut application_t {
-    unimplemented!("Implement this yourself if you need it");
+    application_get_inner(unique_identifier)
 }
 /// Free a heap-allocated application snapshot.
 ///
@@ -680,5 +701,282 @@ pub extern "C" fn application_get(
 /// update the application list, or affect running tasks.
 #[unsafe(no_mangle)]
 pub extern "C" fn application_free(application: *mut application_t) {
-    unimplemented!("Implement this yourself if you need it");
+    application_free_inner(application)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        emulated::badgevms::{
+            fs::paths::{TestBaseDirectoryGuard, set_base_directory_for_tests},
+            misc::{get_num_tasks, wait},
+            misc::runtime::reset_runtime_for_tests,
+        },
+        free,
+    };
+    use std::{
+        ffi::{CStr, CString},
+        fs,
+        os::unix::fs::PermissionsExt,
+        path::PathBuf,
+        ptr,
+        thread,
+        time::{Duration, Instant, SystemTime, UNIX_EPOCH},
+    };
+
+    struct TestApplicationDirectory {
+        root: PathBuf,
+        _guard: TestBaseDirectoryGuard,
+    }
+
+    impl TestApplicationDirectory {
+        fn new(test_name: &str) -> Self {
+            let suffix = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("system time should be after the unix epoch")
+                .as_nanos();
+            let root = std::env::temp_dir().join(format!(
+                "why2025-applications-test-{test_name}-{}-{suffix}",
+                std::process::id()
+            ));
+            let _ = fs::remove_dir_all(&root);
+            let guard = set_base_directory_for_tests(root.clone());
+            reset_runtime_for_tests();
+
+            Self {
+                root,
+                _guard: guard,
+            }
+        }
+
+        fn metadata_file(&self, unique_identifier: &str) -> PathBuf {
+            self.root.join("APPS").join(format!("{unique_identifier}.json"))
+        }
+
+        fn install_directory(&self, unique_identifier: &str) -> PathBuf {
+            self.root.join("APPS").join(unique_identifier)
+        }
+    }
+
+    impl Drop for TestApplicationDirectory {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.root);
+        }
+    }
+
+    fn wait_for_task_count(expected: u32) {
+        let start = Instant::now();
+        while get_num_tasks() != expected {
+            assert!(
+                start.elapsed() < Duration::from_secs(5),
+                "timed out waiting for task count {expected}, got {}",
+                get_num_tasks()
+            );
+            thread::sleep(Duration::from_millis(10));
+        }
+    }
+
+    #[test]
+    fn create_and_reload_persist_metadata() {
+        let directory = TestApplicationDirectory::new("create-and-reload");
+        let unique_identifier = CString::new("com_example_app").unwrap();
+        let name = CString::new("Example App").unwrap();
+        let version = CString::new("1.0.0").unwrap();
+        let metadata_file = CString::new("[config]metadata.json").unwrap();
+        let binary_path = CString::new("run.sh").unwrap();
+
+        let application = application_create(
+            unique_identifier.as_ptr(),
+            name.as_ptr(),
+            ptr::null(),
+            version.as_ptr(),
+            ptr::null(),
+            application_source_t::APPLICATION_SOURCE_BADGEHUB,
+        );
+
+        assert!(!application.is_null());
+        assert!(directory.metadata_file("com_example_app").is_file());
+        assert!(directory.install_directory("com_example_app").is_dir());
+        assert!(application_set_metadata(application, metadata_file.as_ptr()));
+        assert!(application_set_binary_path(application, binary_path.as_ptr()));
+
+        application_free(application);
+
+        let reloaded = application_get(unique_identifier.as_ptr());
+        assert!(!reloaded.is_null());
+        let reloaded_ref = unsafe { &*reloaded };
+        assert_eq!(
+            unsafe { CStr::from_ptr(reloaded_ref.unique_identifier) }
+                .to_str()
+                .unwrap(),
+            "com_example_app"
+        );
+        assert_eq!(
+            unsafe { CStr::from_ptr(reloaded_ref.name) }.to_str().unwrap(),
+            "Example App"
+        );
+        assert_eq!(
+            unsafe { CStr::from_ptr(reloaded_ref.version) }
+                .to_str()
+                .unwrap(),
+            "1.0.0"
+        );
+        assert_eq!(
+            unsafe { CStr::from_ptr(reloaded_ref.metadata_file) }
+                .to_str()
+                .unwrap(),
+            "[config]metadata.json"
+        );
+        assert_eq!(
+            unsafe { CStr::from_ptr(reloaded_ref.binary_path) }
+                .to_str()
+                .unwrap(),
+            "run.sh"
+        );
+        assert_eq!(
+            reloaded_ref.source,
+            application_source_t::APPLICATION_SOURCE_BADGEHUB
+        );
+
+        application_free(reloaded);
+    }
+
+    #[test]
+    fn list_uses_out_parameter_for_first_entry() {
+        let _directory = TestApplicationDirectory::new("list-first-entry");
+        let first_uid = CString::new("com_example_first").unwrap();
+        let second_uid = CString::new("com_example_second").unwrap();
+
+        let first = application_create(
+            first_uid.as_ptr(),
+            first_uid.as_ptr(),
+            ptr::null(),
+            ptr::null(),
+            ptr::null(),
+            application_source_t::APPLICATION_SOURCE_UNKNOWN,
+        );
+        let second = application_create(
+            second_uid.as_ptr(),
+            second_uid.as_ptr(),
+            ptr::null(),
+            ptr::null(),
+            ptr::null(),
+            application_source_t::APPLICATION_SOURCE_UNKNOWN,
+        );
+
+        assert!(!first.is_null());
+        assert!(!second.is_null());
+
+        let mut current = ptr::null_mut();
+        let list = application_list(&mut current);
+        assert!(!list.is_null());
+        assert!(!current.is_null());
+
+        let next = application_list_get_next(list);
+        assert!(!next.is_null());
+        assert_ne!(current, next);
+        assert!(application_list_get_next(list).is_null());
+
+        application_list_close(list);
+        application_free(first);
+        application_free(second);
+    }
+
+    #[test]
+    fn destroy_removes_install_directory_but_leaves_metadata() {
+        let directory = TestApplicationDirectory::new("destroy-leaves-metadata");
+        let unique_identifier = CString::new("com_example_destroy").unwrap();
+
+        let application = application_create(
+            unique_identifier.as_ptr(),
+            unique_identifier.as_ptr(),
+            ptr::null(),
+            ptr::null(),
+            ptr::null(),
+            application_source_t::APPLICATION_SOURCE_UNKNOWN,
+        );
+
+        assert!(!application.is_null());
+        assert!(application_destroy(application));
+        assert!(!directory.install_directory("com_example_destroy").exists());
+        assert!(directory.metadata_file("com_example_destroy").is_file());
+
+        let stale = application_get(unique_identifier.as_ptr());
+        assert!(!stale.is_null());
+
+        application_free(stale);
+        application_free(application);
+    }
+
+    #[test]
+    fn create_file_string_creates_parent_directories() {
+        let directory = TestApplicationDirectory::new("create-file-string");
+        let unique_identifier = CString::new("com_example_files").unwrap();
+        let file_path = CString::new("[config.subdir]settings.json").unwrap();
+
+        let application = application_create(
+            unique_identifier.as_ptr(),
+            unique_identifier.as_ptr(),
+            ptr::null(),
+            ptr::null(),
+            ptr::null(),
+            application_source_t::APPLICATION_SOURCE_UNKNOWN,
+        );
+
+        assert!(!application.is_null());
+        let absolute_path = application_create_file_string(application, file_path.as_ptr());
+        assert!(!absolute_path.is_null());
+        assert_eq!(
+            unsafe { CStr::from_ptr(absolute_path) }.to_str().unwrap(),
+            "APPS:[com_example_files.config.subdir]settings.json"
+        );
+        assert!(
+            directory
+                .install_directory("com_example_files")
+                .join("config")
+                .join("subdir")
+                .is_dir()
+        );
+
+        unsafe {
+            free(absolute_path.cast());
+        }
+        application_free(application);
+    }
+
+    #[test]
+    fn launch_runs_relative_binary_path() {
+        let directory = TestApplicationDirectory::new("launch");
+        let unique_identifier = CString::new("com_example_launch").unwrap();
+        let binary_path = CString::new("run.sh").unwrap();
+
+        let application = application_create(
+            unique_identifier.as_ptr(),
+            unique_identifier.as_ptr(),
+            ptr::null(),
+            ptr::null(),
+            ptr::null(),
+            application_source_t::APPLICATION_SOURCE_UNKNOWN,
+        );
+
+        assert!(!application.is_null());
+        assert!(application_set_binary_path(application, binary_path.as_ptr()));
+
+        let script_path = directory.install_directory("com_example_launch").join("run.sh");
+        fs::write(&script_path, "#!/bin/sh\nexit 0\n").unwrap();
+        let mut permissions = fs::metadata(&script_path).unwrap().permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(&script_path, permissions).unwrap();
+
+        let base_count = get_num_tasks();
+        let pid = application_launch(unique_identifier.as_ptr());
+
+        assert!(pid > 0);
+        wait_for_task_count(base_count);
+        assert_eq!(wait(true, 0), pid);
+        assert_eq!(get_num_tasks(), base_count);
+
+        application_free(application);
+    }
 }

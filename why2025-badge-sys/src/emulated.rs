@@ -1,6 +1,5 @@
-//! Implementations for the symbols not available in glibc or curl
+//! Implementations for the symbols not available in glibc or modeled locally
 
-extern crate curl_sys;
 extern crate libc;
 
 pub mod badgevms;

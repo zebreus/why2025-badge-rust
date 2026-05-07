@@ -1,4 +1,5 @@
 pub mod applications;
+pub mod curl;
 pub mod fs;
 pub mod graphics;
 pub mod misc;

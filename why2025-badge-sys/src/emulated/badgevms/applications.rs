@@ -64,10 +64,8 @@ use runtime::{
     application_create as application_create_inner,
     application_create_file as application_create_file_inner,
     application_create_file_string as application_create_file_string_inner,
-    application_destroy as application_destroy_inner,
-    application_free as application_free_inner,
-    application_get as application_get_inner,
-    application_launch as application_launch_inner,
+    application_destroy as application_destroy_inner, application_free as application_free_inner,
+    application_get as application_get_inner, application_launch as application_launch_inner,
     application_list as application_list_inner,
     application_list_close as application_list_close_inner,
     application_list_get_next as application_list_get_next_inner,
@@ -233,7 +231,14 @@ pub extern "C" fn application_create(
     interpreter: *const ::core::ffi::c_char,
     source: application_source_t,
 ) -> *mut application_t {
-    application_create_inner(unique_identifier, name, author, version, interpreter, source)
+    application_create_inner(
+        unique_identifier,
+        name,
+        author,
+        version,
+        interpreter,
+        source,
+    )
 }
 /// Set or clear the metadata-file path stored in an application snapshot.
 ///
@@ -710,8 +715,10 @@ mod tests {
     use crate::{
         emulated::badgevms::{
             fs::paths::{TestBaseDirectoryGuard, set_base_directory_for_tests},
+            misc::runtime::{
+                GlobalTestRuntimeGuard, lock_global_test_runtime, reset_runtime_for_tests,
+            },
             misc::{get_num_tasks, wait},
-            misc::runtime::{GlobalTestRuntimeGuard, lock_global_test_runtime, reset_runtime_for_tests},
         },
         free,
     };
@@ -720,8 +727,7 @@ mod tests {
         fs,
         os::unix::fs::PermissionsExt,
         path::PathBuf,
-        ptr,
-        thread,
+        ptr, thread,
         time::{Duration, Instant, SystemTime, UNIX_EPOCH},
     };
 
@@ -754,7 +760,9 @@ mod tests {
         }
 
         fn metadata_file(&self, unique_identifier: &str) -> PathBuf {
-            self.root.join("APPS").join(format!("{unique_identifier}.json"))
+            self.root
+                .join("APPS")
+                .join(format!("{unique_identifier}.json"))
         }
 
         fn install_directory(&self, unique_identifier: &str) -> PathBuf {
@@ -801,8 +809,14 @@ mod tests {
         assert!(!application.is_null());
         assert!(directory.metadata_file("com_example_app").is_file());
         assert!(directory.install_directory("com_example_app").is_dir());
-        assert!(application_set_metadata(application, metadata_file.as_ptr()));
-        assert!(application_set_binary_path(application, binary_path.as_ptr()));
+        assert!(application_set_metadata(
+            application,
+            metadata_file.as_ptr()
+        ));
+        assert!(application_set_binary_path(
+            application,
+            binary_path.as_ptr()
+        ));
 
         application_free(application);
 
@@ -816,7 +830,9 @@ mod tests {
             "com_example_app"
         );
         assert_eq!(
-            unsafe { CStr::from_ptr(reloaded_ref.name) }.to_str().unwrap(),
+            unsafe { CStr::from_ptr(reloaded_ref.name) }
+                .to_str()
+                .unwrap(),
             "Example App"
         );
         assert_eq!(
@@ -964,9 +980,14 @@ mod tests {
         );
 
         assert!(!application.is_null());
-        assert!(application_set_binary_path(application, binary_path.as_ptr()));
+        assert!(application_set_binary_path(
+            application,
+            binary_path.as_ptr()
+        ));
 
-        let script_path = directory.install_directory("com_example_launch").join("run.sh");
+        let script_path = directory
+            .install_directory("com_example_launch")
+            .join("run.sh");
         fs::write(&script_path, "#!/bin/sh\nexit 0\n").unwrap();
         let mut permissions = fs::metadata(&script_path).unwrap().permissions();
         permissions.set_mode(0o755);

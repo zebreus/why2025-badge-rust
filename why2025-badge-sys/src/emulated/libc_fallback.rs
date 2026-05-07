@@ -53,11 +53,8 @@ const HOST_FE_DIVBYZERO: ::core::ffi::c_int = 0x04;
 const HOST_FE_OVERFLOW: ::core::ffi::c_int = 0x08;
 const HOST_FE_UNDERFLOW: ::core::ffi::c_int = 0x10;
 const HOST_FE_INEXACT: ::core::ffi::c_int = 0x20;
-const HOST_FE_ALL_EXCEPT: ::core::ffi::c_int = HOST_FE_INVALID
-    | HOST_FE_DIVBYZERO
-    | HOST_FE_OVERFLOW
-    | HOST_FE_UNDERFLOW
-    | HOST_FE_INEXACT;
+const HOST_FE_ALL_EXCEPT: ::core::ffi::c_int =
+    HOST_FE_INVALID | HOST_FE_DIVBYZERO | HOST_FE_OVERFLOW | HOST_FE_UNDERFLOW | HOST_FE_INEXACT;
 
 const HOST_FE_TONEAREST: ::core::ffi::c_int = 0;
 const HOST_FE_DOWNWARD: ::core::ffi::c_int = 0x400;
@@ -98,11 +95,7 @@ const SIGNAL_NAMES: &[(::core::ffi::c_int, &[u8])] = &[
     (31, b"USR2"),
 ];
 
-const SIGNAL_ALIASES: &[(&[u8], ::core::ffi::c_int)] = &[
-    (b"IOT", 6),
-    (b"CLD", 20),
-    (b"POLL", 23),
-];
+const SIGNAL_ALIASES: &[(&[u8], ::core::ffi::c_int)] = &[(b"IOT", 6), (b"CLD", 20), (b"POLL", 23)];
 
 unsafe extern "C" {
     fn fegetround() -> ::core::ffi::c_int;
@@ -478,8 +471,7 @@ pub extern "C" fn __issignalingf(f: f32) -> ::core::ffi::c_int {
     let mantissa = bits & 0x007f_ffff;
     let quiet_bit = 0x0040_0000;
 
-    (exponent == 0x7f80_0000 && mantissa != 0 && (mantissa & quiet_bit) == 0)
-        as ::core::ffi::c_int
+    (exponent == 0x7f80_0000 && mantissa != 0 && (mantissa & quiet_bit) == 0) as ::core::ffi::c_int
 }
 
 #[unsafe(no_mangle)]
@@ -1560,8 +1552,14 @@ mod tests {
 
         assert_eq!(signed_ptr, signed.as_mut_ptr());
         assert_eq!(unsigned_ptr, unsigned.as_mut_ptr());
-        assert_eq!(unsafe { CStr::from_ptr(signed.as_ptr()) }.to_bytes(), b"-42");
-        assert_eq!(unsafe { CStr::from_ptr(unsigned.as_ptr()) }.to_bytes(), b"ff");
+        assert_eq!(
+            unsafe { CStr::from_ptr(signed.as_ptr()) }.to_bytes(),
+            b"-42"
+        );
+        assert_eq!(
+            unsafe { CStr::from_ptr(unsigned.as_ptr()) }.to_bytes(),
+            b"ff"
+        );
     }
 
     #[test]
@@ -1618,11 +1616,26 @@ mod tests {
         let equal = b"abc";
         let greater = b"abd";
 
-        assert_eq!(timingsafe_bcmp(left.as_ptr().cast(), equal.as_ptr().cast(), left.len()), 0);
-        assert_ne!(timingsafe_bcmp(left.as_ptr().cast(), greater.as_ptr().cast(), left.len()), 0);
-        assert_eq!(timingsafe_memcmp(left.as_ptr().cast(), equal.as_ptr().cast(), left.len()), 0);
-        assert_eq!(timingsafe_memcmp(left.as_ptr().cast(), greater.as_ptr().cast(), left.len()), -1);
-        assert_eq!(timingsafe_memcmp(greater.as_ptr().cast(), left.as_ptr().cast(), left.len()), 1);
+        assert_eq!(
+            timingsafe_bcmp(left.as_ptr().cast(), equal.as_ptr().cast(), left.len()),
+            0
+        );
+        assert_ne!(
+            timingsafe_bcmp(left.as_ptr().cast(), greater.as_ptr().cast(), left.len()),
+            0
+        );
+        assert_eq!(
+            timingsafe_memcmp(left.as_ptr().cast(), equal.as_ptr().cast(), left.len()),
+            0
+        );
+        assert_eq!(
+            timingsafe_memcmp(left.as_ptr().cast(), greater.as_ptr().cast(), left.len()),
+            -1
+        );
+        assert_eq!(
+            timingsafe_memcmp(greater.as_ptr().cast(), left.as_ptr().cast(), left.len()),
+            1
+        );
     }
 
     #[test]
@@ -1631,7 +1644,10 @@ mod tests {
         let mut signum = 0;
 
         assert_eq!(sig2str(30, buffer.as_mut_ptr()), 0);
-        assert_eq!(unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_bytes(), b"USR1");
+        assert_eq!(
+            unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_bytes(),
+            b"USR1"
+        );
 
         assert_eq!(str2sig(c"sigpoll".as_ptr(), &mut signum), 0);
         assert_eq!(signum, 23);
@@ -1688,7 +1704,10 @@ mod tests {
         let result = gcvtf(12.5, 4, buffer.as_mut_ptr());
 
         assert_eq!(result, buffer.as_mut_ptr());
-        assert_eq!(unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_bytes(), b"12.5");
+        assert_eq!(
+            unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_bytes(),
+            b"12.5"
+        );
     }
 
     #[test]

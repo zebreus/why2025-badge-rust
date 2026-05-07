@@ -2,7 +2,8 @@ use crate::{
     emulated::badgevms::misc::runtime::{
         current_managed_task_pid, register_ota_session, release_ota_session,
     },
-    malloc, types::*,
+    malloc,
+    types::*,
 };
 use core::ffi::c_char;
 use serde::{Deserialize, Serialize};
@@ -30,7 +31,8 @@ const ESP_APP_DESC_VERSION_OFFSET: usize = 16;
 const ESP_APP_DESC_VERSION_LENGTH: usize = 32;
 
 static OTA_SESSION_HANDLE: u8 = 0;
-static OTA_RUNTIME: LazyLock<Mutex<OtaRuntime>> = LazyLock::new(|| Mutex::new(OtaRuntime::default()));
+static OTA_RUNTIME: LazyLock<Mutex<OtaRuntime>> =
+    LazyLock::new(|| Mutex::new(OtaRuntime::default()));
 
 #[cfg(test)]
 thread_local! {
@@ -90,7 +92,9 @@ impl Default for OtaRuntime {
 }
 
 fn ota_runtime() -> MutexGuard<'static, OtaRuntime> {
-    let mut runtime = OTA_RUNTIME.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let mut runtime = OTA_RUNTIME
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     initialize_runtime(&mut runtime);
     runtime
 }
@@ -216,7 +220,9 @@ fn persist_runtime(runtime: &OtaRuntime) -> io::Result<()> {
 }
 
 fn session_handle() -> ota_handle_t {
-    (&OTA_SESSION_HANDLE as *const u8).cast_mut().cast::<ota_session_t>()
+    (&OTA_SESSION_HANDLE as *const u8)
+        .cast_mut()
+        .cast::<ota_session_t>()
 }
 
 fn is_valid_handle(session: ota_handle_t) -> bool {
@@ -382,7 +388,10 @@ pub(crate) fn ota_write_inner(
     };
 
     let block = unsafe {
-        std::slice::from_raw_parts(buffer.cast::<u8>(), usize::try_from(block_size).unwrap_or_default())
+        std::slice::from_raw_parts(
+            buffer.cast::<u8>(),
+            usize::try_from(block_size).unwrap_or_default(),
+        )
     };
 
     if staging.file.write_all(block).is_err() {
@@ -520,7 +529,9 @@ impl Drop for TestOtaRootGuard {
 
 #[cfg(test)]
 fn reset_ota_runtime_for_tests() {
-    let mut runtime = OTA_RUNTIME.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let mut runtime = OTA_RUNTIME
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     *runtime = OtaRuntime::default();
 }
 
@@ -542,7 +553,10 @@ fn ota_runtime_snapshot() -> OtaRuntimeSnapshot {
         error: runtime.error,
         running_version: runtime.running.version.clone(),
         configured_version: runtime.configured.version.clone(),
-        last_invalid_version: runtime.last_invalid.as_ref().map(|slot| slot.version.clone()),
+        last_invalid_version: runtime
+            .last_invalid
+            .as_ref()
+            .map(|slot| slot.version.clone()),
     }
 }
 
@@ -551,9 +565,9 @@ mod tests {
     use super::*;
     use crate::emulated::badgevms::{
         misc::runtime::{
-            current_task_pid, ota_session_count_for_task, register_ota_session, register_task,
+            GlobalTestRuntimeGuard, current_task_pid, lock_global_test_runtime,
+            ota_session_count_for_task, register_ota_session, register_task,
             reset_runtime_for_tests, set_current_task_pid, task_exited,
-            GlobalTestRuntimeGuard, lock_global_test_runtime,
         },
         ota::{
             ota_get_invalid_version, ota_get_running_version, ota_session_abort,
@@ -676,7 +690,9 @@ mod tests {
         let mut running = ptr::null_mut();
         assert!(ota_get_running_version(&mut running));
         let running_ptr = running;
-        let running = unsafe { CStr::from_ptr(running) }.to_string_lossy().into_owned();
+        let running = unsafe { CStr::from_ptr(running) }
+            .to_string_lossy()
+            .into_owned();
         unsafe { libc::free(running_ptr.cast::<c_void>()) };
         assert_eq!(running, DEFAULT_RUNNING_VERSION);
 
@@ -685,7 +701,9 @@ mod tests {
         let mut running = ptr::null_mut();
         assert!(ota_get_running_version(&mut running));
         let running_ptr = running;
-        let running = unsafe { CStr::from_ptr(running) }.to_string_lossy().into_owned();
+        let running = unsafe { CStr::from_ptr(running) }
+            .to_string_lossy()
+            .into_owned();
         unsafe { libc::free(running_ptr.cast::<c_void>()) };
         assert_eq!(running, "1.2.3");
     }
@@ -710,14 +728,18 @@ mod tests {
         let mut running = ptr::null_mut();
         assert!(ota_get_running_version(&mut running));
         let running_ptr = running;
-        let running = unsafe { CStr::from_ptr(running) }.to_string_lossy().into_owned();
+        let running = unsafe { CStr::from_ptr(running) }
+            .to_string_lossy()
+            .into_owned();
         unsafe { libc::free(running_ptr.cast::<c_void>()) };
         assert_eq!(running, DEFAULT_RUNNING_VERSION);
 
         let mut invalid = ptr::null_mut();
         assert!(ota_get_invalid_version(&mut invalid));
         let invalid_ptr = invalid;
-        let invalid = unsafe { CStr::from_ptr(invalid) }.to_string_lossy().into_owned();
+        let invalid = unsafe { CStr::from_ptr(invalid) }
+            .to_string_lossy()
+            .into_owned();
         unsafe { libc::free(invalid_ptr.cast::<c_void>()) };
         assert_eq!(invalid, "2.0.0");
     }
@@ -782,8 +804,12 @@ mod tests {
         assert!(ota_get_running_version(&mut second));
         assert_ne!(first, second);
 
-        let first_value = unsafe { CStr::from_ptr(first) }.to_string_lossy().into_owned();
-        let second_value = unsafe { CStr::from_ptr(second) }.to_string_lossy().into_owned();
+        let first_value = unsafe { CStr::from_ptr(first) }
+            .to_string_lossy()
+            .into_owned();
+        let second_value = unsafe { CStr::from_ptr(second) }
+            .to_string_lossy()
+            .into_owned();
         unsafe {
             libc::free(first.cast::<c_void>());
             libc::free(second.cast::<c_void>());
@@ -802,7 +828,9 @@ mod tests {
         let mut running = ptr::null_mut();
         assert!(ota_get_running_version(&mut running));
         let running_ptr = running;
-        let running = unsafe { CStr::from_ptr(running) }.to_string_lossy().into_owned();
+        let running = unsafe { CStr::from_ptr(running) }
+            .to_string_lossy()
+            .into_owned();
         unsafe { libc::free(running_ptr.cast::<c_void>()) };
         assert_eq!(running, DEFAULT_RUNNING_VERSION);
     }

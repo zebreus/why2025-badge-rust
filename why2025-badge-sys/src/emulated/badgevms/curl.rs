@@ -43,8 +43,7 @@ mod runtime;
 
 use runtime::{
     curl_easy_cleanup_inner, curl_easy_getinfo_inner, curl_easy_init_inner,
-    curl_easy_perform_inner,
-    curl_easy_setopt_inner, curl_easy_strerror_inner,
+    curl_easy_perform_inner, curl_easy_setopt_inner, curl_easy_strerror_inner,
     curl_global_cleanup_inner, curl_global_init_inner, curl_slist_append_inner,
     curl_slist_free_all_inner,
 };

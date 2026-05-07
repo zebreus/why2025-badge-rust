@@ -142,14 +142,18 @@ pub extern "C" fn process_create(
         .spawn({
             let child = Arc::clone(&child);
             move || {
-                let mut child = child.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+                let mut child = child
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
                 let _ = child.wait();
                 task_exited(pid);
             }
         })
         .is_err()
     {
-        let mut child = child.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut child = child
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         let _ = child.kill();
         let _ = child.wait();
         cancel_task(pid);
@@ -411,8 +415,7 @@ pub extern "C" fn vaddr_to_paddr(vaddr: u32) -> u32 {
 mod tests {
     use super::*;
     use crate::emulated::badgevms::{
-        fs::paths::set_base_directory_for_tests,
-        misc::runtime::lock_global_test_runtime,
+        fs::paths::set_base_directory_for_tests, misc::runtime::lock_global_test_runtime,
     };
     use std::{
         ffi::{CString, OsString},
@@ -550,7 +553,8 @@ mod tests {
     #[test]
     fn process_create_reaps_before_wait_consumes_pid() {
         const ENV_NAME: &str = "WHY2025_MISC_PROCESS_CREATE_CHILD";
-        const TEST_NAME: &str = "emulated::badgevms::misc::tests::process_create_reaps_before_wait_consumes_pid";
+        const TEST_NAME: &str =
+            "emulated::badgevms::misc::tests::process_create_reaps_before_wait_consumes_pid";
 
         let _test_lock = lock_global_test_runtime();
 
@@ -559,8 +563,10 @@ mod tests {
         }
 
         let temporary_directory = TemporaryTestDirectory::new("misc-process-create");
-        let _base_directory = set_base_directory_for_tests(temporary_directory.path().to_path_buf());
-        let badge_path = install_current_test_binary(temporary_directory.path(), "misc-process-child");
+        let _base_directory =
+            set_base_directory_for_tests(temporary_directory.path().to_path_buf());
+        let badge_path =
+            install_current_test_binary(temporary_directory.path(), "misc-process-child");
         let (_argv_owned, mut argv) = build_process_argv(badge_path.as_c_str(), TEST_NAME);
         let _child_env = TemporaryEnvVar::set(ENV_NAME, "1");
 

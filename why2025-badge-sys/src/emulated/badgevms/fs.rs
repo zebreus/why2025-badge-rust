@@ -372,7 +372,12 @@ pub extern "C" fn path_concat(base_path: *const c_char, append_path: *const c_ch
 
 #[cfg(test)]
 mod tests {
-    use std::{ffi::CStr, fs, path::PathBuf, time::{SystemTime, UNIX_EPOCH}};
+    use std::{
+        ffi::CStr,
+        fs,
+        path::PathBuf,
+        time::{SystemTime, UNIX_EPOCH},
+    };
 
     use super::*;
 
@@ -408,22 +413,31 @@ mod tests {
     #[test]
     fn test_mkdir_p_creates_nested_host_directories() {
         let temporary_directory = TemporaryTestDirectory::new("mkdir-p-nested");
-        let _base_directory = super::paths::set_base_directory_for_tests(
-            temporary_directory.path().clone(),
+        let _base_directory =
+            super::paths::set_base_directory_for_tests(temporary_directory.path().clone());
+
+        assert!(mkdir_p(
+            b"DEV:[dir.subdir]file.ext\0".as_ptr() as *const c_char
+        ));
+        assert!(
+            temporary_directory
+                .path()
+                .join("DEV")
+                .join("dir")
+                .join("subdir")
+                .is_dir()
         );
 
-        assert!(mkdir_p(b"DEV:[dir.subdir]file.ext\0".as_ptr() as *const c_char));
-        assert!(temporary_directory.path().join("DEV").join("dir").join("subdir").is_dir());
-
-        assert!(mkdir_p(b"DEV:[dir.subdir]file.ext\0".as_ptr() as *const c_char));
+        assert!(mkdir_p(
+            b"DEV:[dir.subdir]file.ext\0".as_ptr() as *const c_char
+        ));
     }
 
     #[test]
     fn test_mkdir_p_rejects_invalid_paths() {
         let temporary_directory = TemporaryTestDirectory::new("mkdir-p-invalid");
-        let _base_directory = super::paths::set_base_directory_for_tests(
-            temporary_directory.path().clone(),
-        );
+        let _base_directory =
+            super::paths::set_base_directory_for_tests(temporary_directory.path().clone());
 
         assert!(!mkdir_p(core::ptr::null()));
         assert!(!mkdir_p(b"[dir.subdir]file.ext\0".as_ptr() as *const c_char));
@@ -433,9 +447,8 @@ mod tests {
     #[test]
     fn test_rm_rf_removes_file_and_missing_target_is_success() {
         let temporary_directory = TemporaryTestDirectory::new("rm-rf-file");
-        let _base_directory = super::paths::set_base_directory_for_tests(
-            temporary_directory.path().clone(),
-        );
+        let _base_directory =
+            super::paths::set_base_directory_for_tests(temporary_directory.path().clone());
 
         let file_path = CStr::from_bytes_with_nul(b"DEV:[dir.subdir]file.ext\0").unwrap();
         let parsed_path = match ParsedPath::new(file_path) {
@@ -454,9 +467,8 @@ mod tests {
     #[test]
     fn test_rm_rf_removes_directories_recursively() {
         let temporary_directory = TemporaryTestDirectory::new("rm-rf-directory");
-        let _base_directory = super::paths::set_base_directory_for_tests(
-            temporary_directory.path().clone(),
-        );
+        let _base_directory =
+            super::paths::set_base_directory_for_tests(temporary_directory.path().clone());
 
         let directory_path = CStr::from_bytes_with_nul(b"DEV:[dir.subdir]\0").unwrap();
         let parsed_path = match ParsedPath::new(directory_path) {

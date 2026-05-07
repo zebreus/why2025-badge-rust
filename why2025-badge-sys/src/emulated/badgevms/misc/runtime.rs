@@ -23,9 +23,8 @@
 //!   and the small built-in device registry live here so `misc.rs` can remain a thin exported shim.
 
 use crate::{
-    emulated::badgevms::ota::abort_task_owned_ota_session,
     emulated::badgevms::fs::paths::ParsedPath,
-    types::*,
+    emulated::badgevms::ota::abort_task_owned_ota_session, types::*,
 };
 use core::ffi::{CStr, c_char, c_void};
 use std::{
@@ -203,7 +202,8 @@ impl MiscRuntime {
             return;
         };
 
-        task.ota_sessions.retain(|owned_handle| *owned_handle != handle);
+        task.ota_sessions
+            .retain(|owned_handle| *owned_handle != handle);
     }
 
     fn wait_for_child(&self, parent_pid: pid_t, block: bool, timeout_msec: u32) -> Option<pid_t> {

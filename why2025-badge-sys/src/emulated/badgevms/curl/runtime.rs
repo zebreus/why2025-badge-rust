@@ -2,13 +2,13 @@ use crate::types::*;
 use core::ffi::{CStr, VaList, c_char, c_long, c_void};
 use http_auth::{PasswordClient, PasswordParams};
 use reqwest::{
+    Certificate, Method, StatusCode, Url,
     blocking::ClientBuilder,
     header::{
         AUTHORIZATION, COOKIE, HeaderMap, HeaderName, HeaderValue, LOCATION, USER_AGENT,
         WWW_AUTHENTICATE,
     },
     redirect::Policy,
-    Certificate, Method, StatusCode, Url,
 };
 use std::{
     ffi::CString,
@@ -205,7 +205,10 @@ fn write_default_stream(contents: *mut c_void, size: usize, nmemb: usize, stdout
     }
 
     let bytes = unsafe { slice::from_raw_parts(contents.cast::<u8>(), real_size) };
-    let printable_len = bytes.iter().position(|byte| *byte == 0).unwrap_or(real_size);
+    let printable_len = bytes
+        .iter()
+        .position(|byte| *byte == 0)
+        .unwrap_or(real_size);
 
     let result = if stdout {
         let mut handle = io::stdout().lock();
@@ -273,7 +276,9 @@ fn load_cookies_from_file(curl: &mut CurlHandle, filename: *const c_char) -> i32
         return -1;
     }
 
-    let path = unsafe { CStr::from_ptr(filename) }.to_string_lossy().into_owned();
+    let path = unsafe { CStr::from_ptr(filename) }
+        .to_string_lossy()
+        .into_owned();
     let Ok(file) = File::open(&path) else {
         return 0;
     };
@@ -513,10 +518,9 @@ fn build_request_headers(curl: &CurlHandle) -> HeaderMap {
                         value = &value[1..];
                     }
 
-                    if let (Ok(name), Ok(value)) = (
-                        HeaderName::from_bytes(name),
-                        HeaderValue::from_bytes(value),
-                    ) {
+                    if let (Ok(name), Ok(value)) =
+                        (HeaderName::from_bytes(name), HeaderValue::from_bytes(value))
+                    {
                         headers.insert(name, value);
                     }
                 }
@@ -626,7 +630,10 @@ fn apply_response_headers(curl: &mut CurlHandle, headers: &HeaderMap) {
     }
 }
 
-fn stream_response_body(curl: &CurlHandle, response: &mut reqwest::blocking::Response) -> io::Result<()> {
+fn stream_response_body(
+    curl: &CurlHandle,
+    response: &mut reqwest::blocking::Response,
+) -> io::Result<()> {
     let chunk_size = curl.buffer_size.max(512);
     let mut buffer = vec![0_u8; chunk_size];
 
@@ -700,9 +707,7 @@ fn follow_redirect_method(method: CurlMethod, status: StatusCode) -> CurlMethod 
 }
 
 fn resolve_redirect_target(current_url: &Url, location: &HeaderValue) -> Result<String, CURLcode> {
-    let location = location
-        .to_str()
-        .map_err(|_| CURLE_URL_MALFORMAT_CODE)?;
+    let location = location.to_str().map_err(|_| CURLE_URL_MALFORMAT_CODE)?;
 
     current_url
         .join(location)
@@ -973,7 +978,11 @@ pub(crate) unsafe fn curl_easy_setopt_inner(
             CURLE_OK_CODE
         }
         CURLOPT_FOLLOWLOCATION_OPTION => {
-            curl.max_redirection_count = if unsafe { next_long(&mut args) } != 0 { 10 } else { 0 };
+            curl.max_redirection_count = if unsafe { next_long(&mut args) } != 0 {
+                10
+            } else {
+                0
+            };
             CURLE_OK_CODE
         }
         CURLOPT_MAXREDIRS_OPTION => {
@@ -1129,7 +1138,8 @@ pub(crate) unsafe fn curl_easy_getinfo_inner(
             let output = unsafe { next_c_string_out_ptr(&mut args) };
             if !output.is_null() {
                 unsafe {
-                    *output = borrowed_string_ptr(curl.effective_url.as_ref().or(curl.url.as_ref()));
+                    *output =
+                        borrowed_string_ptr(curl.effective_url.as_ref().or(curl.url.as_ref()));
                 }
             }
             CURLE_OK_CODE
@@ -1205,8 +1215,7 @@ pub(crate) fn curl_global_cleanup_inner() {}
 mod tests {
     use super::*;
     use crate::emulated::badgevms::curl::{
-        curl_easy_cleanup, curl_easy_getinfo, curl_easy_init, curl_easy_perform,
-        curl_easy_setopt,
+        curl_easy_cleanup, curl_easy_getinfo, curl_easy_init, curl_easy_perform, curl_easy_setopt,
     };
     use std::{
         fs,
@@ -1245,7 +1254,9 @@ mod tests {
     }
 
     fn find_subslice(haystack: &[u8], needle: &[u8]) -> Option<usize> {
-        haystack.windows(needle.len()).position(|window| window == needle)
+        haystack
+            .windows(needle.len())
+            .position(|window| window == needle)
     }
 
     fn read_request(stream: &mut TcpStream) -> RecordedRequest {
@@ -1253,7 +1264,10 @@ mod tests {
         let mut chunk = [0_u8; 1024];
         let header_end = loop {
             let bytes_read = stream.read(&mut chunk).unwrap();
-            assert!(bytes_read > 0, "connection closed before request headers arrived");
+            assert!(
+                bytes_read > 0,
+                "connection closed before request headers arrived"
+            );
             buffer.extend_from_slice(&chunk[..bytes_read]);
 
             if let Some(position) = find_subslice(&buffer, b"\r\n\r\n") {
@@ -1322,7 +1336,11 @@ mod tests {
 
     fn spawn_scripted_server(
         responses: Vec<PlannedResponse>,
-    ) -> (String, Arc<Mutex<Vec<RecordedRequest>>>, thread::JoinHandle<()>) {
+    ) -> (
+        String,
+        Arc<Mutex<Vec<RecordedRequest>>>,
+        thread::JoinHandle<()>,
+    ) {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let address = listener.local_addr().unwrap();
         let captured = Arc::new(Mutex::new(Vec::new()));
@@ -1348,10 +1366,8 @@ mod tests {
         Arc<Mutex<Option<RecordedRequest>>>,
         thread::JoinHandle<()>,
     ) {
-        let (url, captured, handle) = spawn_scripted_server(vec![PlannedResponse::ok(
-            response_headers,
-            response_body,
-        )]);
+        let (url, captured, handle) =
+            spawn_scripted_server(vec![PlannedResponse::ok(response_headers, response_body)]);
         let captured_request = Arc::new(Mutex::new(None));
         let captured_list = Arc::clone(&captured);
         let captured_single = Arc::clone(&captured_request);
@@ -1420,7 +1436,10 @@ mod tests {
         assert!(!curl.is_null());
 
         unsafe {
-            assert_eq!(curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()), CURLE_OK_CODE);
+            assert_eq!(
+                curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()),
+                CURLE_OK_CODE
+            );
             assert_eq!(
                 curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST_OPTION, put.as_ptr()),
                 CURLE_OK_CODE
@@ -1470,7 +1489,10 @@ mod tests {
         assert!(!curl.is_null());
 
         unsafe {
-            assert_eq!(curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()), CURLE_OK_CODE);
+            assert_eq!(
+                curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()),
+                CURLE_OK_CODE
+            );
             assert_eq!(
                 curl_easy_setopt(curl, CURLOPT_COOKIEJAR_OPTION, cookie_jar_c.as_ptr()),
                 CURLE_OK_CODE
@@ -1511,7 +1533,10 @@ mod tests {
         assert!(!curl.is_null());
 
         unsafe {
-            assert_eq!(curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()), CURLE_OK_CODE);
+            assert_eq!(
+                curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()),
+                CURLE_OK_CODE
+            );
         }
 
         assert_eq!(curl_easy_perform(curl), CURLE_OK_CODE);
@@ -1521,7 +1546,10 @@ mod tests {
         let requests = captured.lock().unwrap().clone();
         assert_eq!(requests.len(), 2);
         assert_eq!(requests[1].path, "/final");
-        assert_eq!(request_header(&requests[1], "Cookie"), Some("session=value"));
+        assert_eq!(
+            request_header(&requests[1], "Cookie"),
+            Some("session=value")
+        );
     }
 
     #[test]
@@ -1534,7 +1562,10 @@ mod tests {
         assert!(!curl.is_null());
 
         unsafe {
-            assert_eq!(curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()), CURLE_OK_CODE);
+            assert_eq!(
+                curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()),
+                CURLE_OK_CODE
+            );
         }
         assert_eq!(curl_easy_perform(curl), CURLE_OK_CODE);
         server.join().unwrap();
@@ -1566,7 +1597,8 @@ mod tests {
     #[test]
     fn callback_short_returns_are_ignored() {
         let response_headers = vec![("X-Test".to_owned(), "value".to_owned())];
-        let (url, _captured, server) = spawn_single_request_server(response_headers, b"payload".to_vec());
+        let (url, _captured, server) =
+            spawn_single_request_server(response_headers, b"payload".to_vec());
         let url = CString::new(url).unwrap();
         let mut callback_state = Box::new(CallbackState::default());
         let callback_ptr = (&mut *callback_state as *mut CallbackState).cast::<c_void>();
@@ -1575,7 +1607,10 @@ mod tests {
         assert!(!curl.is_null());
 
         unsafe {
-            assert_eq!(curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()), CURLE_OK_CODE);
+            assert_eq!(
+                curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()),
+                CURLE_OK_CODE
+            );
             assert_eq!(
                 curl_easy_setopt(
                     curl,
@@ -1626,7 +1661,10 @@ mod tests {
         assert!(!curl.is_null());
 
         unsafe {
-            assert_eq!(curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()), CURLE_OK_CODE);
+            assert_eq!(
+                curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()),
+                CURLE_OK_CODE
+            );
             assert_eq!(
                 curl_easy_setopt(curl, CURLOPT_COOKIEFILE_OPTION, cookie_a_c.as_ptr()),
                 CURLE_OK_CODE,
@@ -1674,7 +1712,10 @@ mod tests {
         assert!(!curl.is_null());
 
         unsafe {
-            assert_eq!(curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()), CURLE_OK_CODE);
+            assert_eq!(
+                curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()),
+                CURLE_OK_CODE
+            );
             assert_eq!(
                 curl_easy_setopt(curl, CURLOPT_USERPWD_OPTION, userpwd.as_ptr()),
                 CURLE_OK_CODE,

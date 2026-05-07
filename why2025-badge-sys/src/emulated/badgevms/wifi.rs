@@ -114,12 +114,11 @@ mod runtime;
 use runtime::{
     get_mac_address_inner, wifi_connect_inner, wifi_disconnect_inner,
     wifi_get_connection_station_inner, wifi_get_connection_status_inner,
-    wifi_scan_free_station_inner, wifi_scan_get_num_results_inner,
-    wifi_scan_get_result_inner, wifi_set_connection_parameters_inner,
-    wifi_station_get_bssid_inner, wifi_station_get_mode_inner,
-    wifi_station_get_primary_channel_inner, wifi_station_get_rssi_inner,
-    wifi_station_get_secondary_channel_inner, wifi_station_get_ssid_inner,
-    wifi_station_wps_inner,
+    wifi_scan_free_station_inner, wifi_scan_get_num_results_inner, wifi_scan_get_result_inner,
+    wifi_set_connection_parameters_inner, wifi_station_get_bssid_inner,
+    wifi_station_get_mode_inner, wifi_station_get_primary_channel_inner,
+    wifi_station_get_rssi_inner, wifi_station_get_secondary_channel_inner,
+    wifi_station_get_ssid_inner, wifi_station_wps_inner,
 };
 
 /// Returns the raw global Wi-Fi enable state.

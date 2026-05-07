@@ -1,7 +1,7 @@
 use crate::{
     emulated::badgevms::{
-        fs::{mkdir_p, path_concat, path_dirconcat, path_dirname, path_fileconcat, rm_rf},
         fs::paths::ParsedPath,
+        fs::{mkdir_p, path_concat, path_dirconcat, path_dirname, path_fileconcat, rm_rf},
         misc::process_create,
     },
     free, malloc,
@@ -10,14 +10,7 @@ use crate::{
 use core::ffi::{CStr, c_char, c_void};
 use serde::Serialize;
 use serde_json::Value;
-use std::{
-    ffi::CString,
-    fs,
-    mem,
-    os::unix::ffi::OsStrExt,
-    path::PathBuf,
-    ptr,
-};
+use std::{ffi::CString, fs, mem, os::unix::ffi::OsStrExt, path::PathBuf, ptr};
 
 const APPLICATIONS_BASE_DIR: &[u8] = b"APPS:\0";
 
@@ -96,7 +89,11 @@ fn applications_base_dir() -> &'static CStr {
 }
 
 fn applications_root_host_directory() -> Option<PathBuf> {
-    Some(ParsedPath::new(applications_base_dir()).ok()?.to_host_directory())
+    Some(
+        ParsedPath::new(applications_base_dir())
+            .ok()?
+            .to_host_directory(),
+    )
 }
 
 fn ensure_applications_root() -> bool {
@@ -171,11 +168,21 @@ fn metadata_badge_path(unique_identifier: &CStr) -> Option<OwnedMallocCString> {
     filename.extend_from_slice(b".json");
     let filename = CString::new(filename).ok()?;
 
-    unsafe { OwnedMallocCString::from_raw(path_fileconcat(applications_base_dir().as_ptr(), filename.as_ptr())) }
+    unsafe {
+        OwnedMallocCString::from_raw(path_fileconcat(
+            applications_base_dir().as_ptr(),
+            filename.as_ptr(),
+        ))
+    }
 }
 
 fn application_dir_badge_path(unique_identifier: &CStr) -> Option<OwnedMallocCString> {
-    unsafe { OwnedMallocCString::from_raw(path_dirconcat(applications_base_dir().as_ptr(), unique_identifier.as_ptr())) }
+    unsafe {
+        OwnedMallocCString::from_raw(path_dirconcat(
+            applications_base_dir().as_ptr(),
+            unique_identifier.as_ptr(),
+        ))
+    }
 }
 
 fn badge_path_to_host_file(path: &CStr) -> Option<PathBuf> {
@@ -192,9 +199,18 @@ fn parse_loaded_application(json: Value) -> LoadedApplication {
             .get("unique_identifier")
             .and_then(Value::as_str)
             .map(str::to_owned),
-        name: object.get("name").and_then(Value::as_str).map(str::to_owned),
-        author: object.get("author").and_then(Value::as_str).map(str::to_owned),
-        version: object.get("version").and_then(Value::as_str).map(str::to_owned),
+        name: object
+            .get("name")
+            .and_then(Value::as_str)
+            .map(str::to_owned),
+        author: object
+            .get("author")
+            .and_then(Value::as_str)
+            .map(str::to_owned),
+        version: object
+            .get("version")
+            .and_then(Value::as_str)
+            .map(str::to_owned),
         interpreter: object
             .get("interpreter")
             .and_then(Value::as_str)
@@ -458,7 +474,10 @@ pub(crate) fn application_set_version(
     save_metadata(application)
 }
 
-pub(crate) fn application_set_author(application: *mut application_t, author: *const c_char) -> bool {
+pub(crate) fn application_set_author(
+    application: *mut application_t,
+    author: *const c_char,
+) -> bool {
     if application.is_null() {
         return false;
     }
@@ -548,7 +567,9 @@ pub(crate) fn application_create_file_string(
     }) else {
         return ptr::null_mut();
     };
-    let Some(dirname) = (unsafe { OwnedMallocCString::from_raw(path_dirname(absolute_badge_path.as_ptr())) }) else {
+    let Some(dirname) =
+        (unsafe { OwnedMallocCString::from_raw(path_dirname(absolute_badge_path.as_ptr())) })
+    else {
         return ptr::null_mut();
     };
     if !mkdir_p(dirname.as_ptr()) {

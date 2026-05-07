@@ -1,13 +1,9 @@
-use crate::{
-    emulated::badgevms::fs::paths::base_directory,
-    types::*,
-};
+use crate::{emulated::badgevms::fs::paths::base_directory, types::*};
 use core::ffi::{CStr, c_char, c_int};
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::CString,
-    fs,
-    io,
+    fs, io,
     path::{Path, PathBuf},
     ptr,
     sync::{LazyLock, Mutex, MutexGuard},
@@ -625,7 +621,10 @@ mod tests {
         let ssid = CString::new(DEFAULT_SSID).unwrap();
         let password = CString::new(DEFAULT_PASSWORD).unwrap();
 
-        assert!(wifi_set_connection_parameters(ssid.as_ptr(), password.as_ptr()));
+        assert!(wifi_set_connection_parameters(
+            ssid.as_ptr(),
+            password.as_ptr()
+        ));
 
         let state = directory.read_state();
         assert_eq!(state.credentials.ssid, DEFAULT_SSID);
@@ -641,7 +640,10 @@ mod tests {
         assert!(!station.is_null());
         let connected_ssid = unsafe { CStr::from_ptr(wifi_station_get_ssid(station)) };
         assert_eq!(connected_ssid.to_str().unwrap(), DEFAULT_SSID);
-        assert_eq!(wifi_station_get_mode(station), wifi_auth_mode_t::WIFI_AUTH_OPEN);
+        assert_eq!(
+            wifi_station_get_mode(station),
+            wifi_auth_mode_t::WIFI_AUTH_OPEN
+        );
         wifi_scan_free_station(station);
     }
 
@@ -651,7 +653,10 @@ mod tests {
         let ssid = CString::new("WHY2025-secure").unwrap();
         let password = CString::new("not-the-password").unwrap();
 
-        assert!(wifi_set_connection_parameters(ssid.as_ptr(), password.as_ptr()));
+        assert!(wifi_set_connection_parameters(
+            ssid.as_ptr(),
+            password.as_ptr()
+        ));
         assert_eq!(
             wifi_connect(),
             wifi_connection_status_t::WIFI_ERROR_WRONG_CREDENTIALS
@@ -698,7 +703,8 @@ mod tests {
 
         {
             let mut runtime = wifi_runtime();
-            runtime.last_scan_at = Some(Instant::now() - MIN_SCAN_INTERVAL - Duration::from_secs(1));
+            runtime.last_scan_at =
+                Some(Instant::now() - MIN_SCAN_INTERVAL - Duration::from_secs(1));
         }
 
         assert_eq!(wifi_scan_get_num_results(), 0);
@@ -718,7 +724,10 @@ mod tests {
         directory.write_state(&state);
 
         let first = get_mac_address();
-        let first_value = unsafe { CStr::from_ptr(first) }.to_str().unwrap().to_owned();
+        let first_value = unsafe { CStr::from_ptr(first) }
+            .to_str()
+            .unwrap()
+            .to_owned();
         assert_eq!(first_value, "AA:BB:CC:DD:EE:FF");
 
         directory.overwrite_state_without_reset(&PersistedWifiState {
@@ -727,7 +736,10 @@ mod tests {
         });
 
         let second = get_mac_address();
-        let second_value = unsafe { CStr::from_ptr(second) }.to_str().unwrap().to_owned();
+        let second_value = unsafe { CStr::from_ptr(second) }
+            .to_str()
+            .unwrap()
+            .to_owned();
         assert_eq!(first, second);
         assert_eq!(second_value, "AA:BB:CC:DD:EE:FF");
     }

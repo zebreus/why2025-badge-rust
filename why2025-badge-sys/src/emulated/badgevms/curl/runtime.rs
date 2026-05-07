@@ -1,10 +1,14 @@
 use crate::types::*;
 use core::ffi::{CStr, VaList, c_char, c_long, c_void};
+use http_auth::{PasswordClient, PasswordParams};
 use reqwest::{
     blocking::ClientBuilder,
-    header::{COOKIE, HeaderMap, HeaderName, HeaderValue, USER_AGENT},
+    header::{
+        AUTHORIZATION, COOKIE, HeaderMap, HeaderName, HeaderValue, LOCATION, USER_AGENT,
+        WWW_AUTHENTICATE,
+    },
     redirect::Policy,
-    Certificate, Method,
+    Certificate, Method, StatusCode, Url,
 };
 use std::{
     ffi::CString,
@@ -645,6 +649,107 @@ fn stream_response_body(curl: &CurlHandle, response: &mut reqwest::blocking::Res
     }
 }
 
+fn request_body_bytes(curl: &CurlHandle, method: CurlMethod) -> Vec<u8> {
+    if method != CurlMethod::Post {
+        return Vec::new();
+    }
+
+    let Some(post_data) = curl.post_data.as_ref() else {
+        return Vec::new();
+    };
+
+    let body_len = curl.post_data_size.min(post_data.as_bytes().len());
+    post_data.as_bytes()[..body_len].to_vec()
+}
+
+fn request_uri(url: &Url) -> String {
+    let mut uri = url.path().to_owned();
+    if uri.is_empty() {
+        uri.push('/');
+    }
+    if let Some(query) = url.query() {
+        uri.push('?');
+        uri.push_str(query);
+    }
+    uri
+}
+
+fn request_method_name(method: CurlMethod) -> &'static str {
+    match method {
+        CurlMethod::Get => "GET",
+        CurlMethod::Post => "POST",
+        CurlMethod::Put => "PUT",
+        CurlMethod::Delete => "DELETE",
+        CurlMethod::Head => "HEAD",
+        CurlMethod::Patch => "PATCH",
+    }
+}
+
+fn follow_redirect_method(method: CurlMethod, status: StatusCode) -> CurlMethod {
+    match status.as_u16() {
+        303 => {
+            if method == CurlMethod::Head {
+                CurlMethod::Head
+            } else {
+                CurlMethod::Get
+            }
+        }
+        301 | 302 if method == CurlMethod::Post => CurlMethod::Get,
+        _ => method,
+    }
+}
+
+fn resolve_redirect_target(current_url: &Url, location: &HeaderValue) -> Result<String, CURLcode> {
+    let location = location
+        .to_str()
+        .map_err(|_| CURLE_URL_MALFORMAT_CODE)?;
+
+    current_url
+        .join(location)
+        .or_else(|_| Url::parse(location))
+        .map(|url| url.to_string())
+        .map_err(|_| CURLE_URL_MALFORMAT_CODE)
+}
+
+fn build_authorization_header(
+    curl: &CurlHandle,
+    headers: &HeaderMap,
+    url: &Url,
+    method: CurlMethod,
+    body: &[u8],
+) -> Option<String> {
+    let (Some(username), Some(password)) = (curl.username.as_ref(), curl.password.as_ref()) else {
+        return None;
+    };
+
+    let mut builder = PasswordClient::builder();
+    let mut found_challenge = false;
+    for value in headers.get_all(WWW_AUTHENTICATE) {
+        let Ok(challenge) = value.to_str() else {
+            continue;
+        };
+        builder = builder.challenges(challenge);
+        found_challenge = true;
+    }
+
+    if !found_challenge {
+        return None;
+    }
+
+    let mut client = builder.build().ok()?;
+    let username = String::from_utf8_lossy(username.as_bytes());
+    let password = String::from_utf8_lossy(password.as_bytes());
+    client
+        .respond(&PasswordParams {
+            username: &username,
+            password: &password,
+            uri: &request_uri(url),
+            method: request_method_name(method),
+            body: Some(body),
+        })
+        .ok()
+}
+
 fn method_to_reqwest(method: CurlMethod) -> Method {
     match method {
         CurlMethod::Get => Method::GET,
@@ -668,15 +773,12 @@ fn map_reqwest_error(error: &reqwest::Error) -> CURLcode {
 
 fn build_client(curl: &CurlHandle) -> Result<ClientBuilder, CURLcode> {
     let mut builder = ClientBuilder::new()
+        .redirect(Policy::none())
         .danger_accept_invalid_certs(!curl.ssl_verify_peer)
         .danger_accept_invalid_hostnames(!curl.verify_host);
 
     if curl.timeout_ms > 0 {
         builder = builder.timeout(std::time::Duration::from_millis(curl.timeout_ms as u64));
-    }
-
-    if curl.max_redirection_count > 0 {
-        builder = builder.redirect(Policy::limited(curl.max_redirection_count as usize));
     }
 
     if let Some(cert_pem) = curl.cert_pem.as_ref() {
@@ -705,39 +807,86 @@ fn perform_request(curl: &mut CurlHandle) -> (CURLcode, bool) {
         Err(error) => return (map_reqwest_error(&error), true),
     };
 
-    let mut request = client.request(method_to_reqwest(curl.method), String::from_utf8_lossy(url.as_bytes()).into_owned());
-
-    if let (Some(username), Some(password)) = (curl.username.as_ref(), curl.password.as_ref()) {
-        request = request.basic_auth(
-            String::from_utf8_lossy(username.as_bytes()).into_owned(),
-            Some(String::from_utf8_lossy(password.as_bytes()).into_owned()),
-        );
-    }
-
-    request = request.headers(build_request_headers(curl));
-
-    if curl.method == CurlMethod::Post {
-        if let Some(post_data) = curl.post_data.as_ref() {
-            let body_len = curl.post_data_size.min(post_data.as_bytes().len());
-            request = request.body(post_data.as_bytes()[..body_len].to_vec());
-        }
-    }
-
-    let mut response = match request.send() {
-        Ok(response) => response,
-        Err(error) => return (map_reqwest_error(&error), true),
+    let mut current_url = String::from_utf8_lossy(url.as_bytes()).into_owned();
+    let mut current_method = curl.method;
+    let mut redirects_remaining = if curl.max_redirection_count > 0 {
+        curl.max_redirection_count as usize
+    } else {
+        10
     };
+    let mut auth_retries_remaining = 1_usize;
+    let mut authorization_header: Option<String> = None;
 
-    apply_response_headers(curl, response.headers());
+    loop {
+        let parsed_url = match Url::parse(&current_url) {
+            Ok(url) => url,
+            Err(_) => return (CURLE_URL_MALFORMAT_CODE, true),
+        };
+        let body = request_body_bytes(curl, current_method);
 
-    if stream_response_body(curl, &mut response).is_err() {
-        return (CURLE_HTTP_RETURNED_ERROR_CODE, true);
+        let mut request = client
+            .request(method_to_reqwest(current_method), parsed_url.clone())
+            .headers(build_request_headers(curl));
+
+        if current_method == CurlMethod::Post {
+            request = request.body(body.clone());
+        }
+
+        if let Some(header) = authorization_header.as_ref() {
+            request = request.header(AUTHORIZATION, header);
+        }
+
+        let mut response = match request.send() {
+            Ok(response) => response,
+            Err(error) => return (map_reqwest_error(&error), true),
+        };
+
+        apply_response_headers(curl, response.headers());
+        let status = response.status();
+
+        if status == StatusCode::UNAUTHORIZED && auth_retries_remaining > 0 {
+            if let Some(header) = build_authorization_header(
+                curl,
+                response.headers(),
+                &parsed_url,
+                current_method,
+                &body,
+            ) {
+                authorization_header = Some(header);
+                auth_retries_remaining -= 1;
+                continue;
+            }
+        }
+
+        if status.is_redirection()
+            && let Some(location) = response.headers().get(LOCATION)
+        {
+            if redirects_remaining == 0 {
+                return (CURLE_HTTP_RETURNED_ERROR_CODE, true);
+            }
+
+            current_url = match resolve_redirect_target(&parsed_url, location) {
+                Ok(url) => url,
+                Err(error) => return (error, true),
+            };
+            current_method = follow_redirect_method(current_method, status);
+            authorization_header = None;
+            auth_retries_remaining = 1;
+            redirects_remaining -= 1;
+            continue;
+        }
+
+        if stream_response_body(curl, &mut response).is_err() {
+            return (CURLE_HTTP_RETURNED_ERROR_CODE, true);
+        }
+
+        curl.response_code = status.as_u16() as i32;
+        curl.content_length = response
+            .content_length()
+            .map(|length| length as i64)
+            .unwrap_or(-1);
+        return (CURLE_OK_CODE, true);
     }
-
-    curl.response_code = response.status().as_u16() as i32;
-    curl.content_length = response.content_length().map(|length| length as i64).unwrap_or(-1);
-
-    (CURLE_OK_CODE, true)
 }
 
 pub(crate) fn curl_easy_init_inner() -> *mut CURL {
@@ -1066,6 +1215,27 @@ mod tests {
         thread,
     };
 
+    #[derive(Debug, Clone)]
+    struct PlannedResponse {
+        status_line: String,
+        headers: Vec<(String, String)>,
+        body: Vec<u8>,
+    }
+
+    impl PlannedResponse {
+        fn ok(headers: Vec<(String, String)>, body: Vec<u8>) -> Self {
+            Self::with_status("HTTP/1.1 200 OK", headers, body)
+        }
+
+        fn with_status(status_line: &str, headers: Vec<(String, String)>, body: Vec<u8>) -> Self {
+            Self {
+                status_line: status_line.to_owned(),
+                headers,
+                body,
+            }
+        }
+    }
+
     #[derive(Debug, Clone, PartialEq, Eq)]
     struct RecordedRequest {
         method: String,
@@ -1132,21 +1302,42 @@ mod tests {
         }
     }
 
-    fn write_response(stream: &mut TcpStream, headers: &[(String, String)], body: &[u8]) {
+    fn write_response(stream: &mut TcpStream, response: &PlannedResponse) {
         write!(
             stream,
-            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n",
-            body.len()
+            "{}\r\nContent-Length: {}\r\nConnection: close\r\n",
+            response.status_line,
+            response.body.len()
         )
         .unwrap();
 
-        for (name, value) in headers {
+        for (name, value) in &response.headers {
             write!(stream, "{}: {}\r\n", name, value).unwrap();
         }
 
         write!(stream, "\r\n").unwrap();
-        stream.write_all(body).unwrap();
+        stream.write_all(&response.body).unwrap();
         stream.flush().unwrap();
+    }
+
+    fn spawn_scripted_server(
+        responses: Vec<PlannedResponse>,
+    ) -> (String, Arc<Mutex<Vec<RecordedRequest>>>, thread::JoinHandle<()>) {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let captured = Arc::new(Mutex::new(Vec::new()));
+        let captured_requests = Arc::clone(&captured);
+
+        let handle = thread::spawn(move || {
+            for response in responses {
+                let (mut stream, _) = listener.accept().unwrap();
+                let request = read_request(&mut stream);
+                captured_requests.lock().unwrap().push(request);
+                write_response(&mut stream, &response);
+            }
+        });
+
+        (format!("http://{address}"), captured, handle)
     }
 
     fn spawn_single_request_server(
@@ -1157,19 +1348,57 @@ mod tests {
         Arc<Mutex<Option<RecordedRequest>>>,
         thread::JoinHandle<()>,
     ) {
-        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-        let address = listener.local_addr().unwrap();
-        let captured = Arc::new(Mutex::new(None));
-        let captured_request = Arc::clone(&captured);
+        let (url, captured, handle) = spawn_scripted_server(vec![PlannedResponse::ok(
+            response_headers,
+            response_body,
+        )]);
+        let captured_request = Arc::new(Mutex::new(None));
+        let captured_list = Arc::clone(&captured);
+        let captured_single = Arc::clone(&captured_request);
 
-        let handle = thread::spawn(move || {
-            let (mut stream, _) = listener.accept().unwrap();
-            let request = read_request(&mut stream);
-            *captured_request.lock().unwrap() = Some(request);
-            write_response(&mut stream, &response_headers, &response_body);
+        let join = thread::spawn(move || {
+            handle.join().unwrap();
+            let request = captured_list.lock().unwrap().pop().unwrap();
+            *captured_single.lock().unwrap() = Some(request);
         });
 
-        (format!("http://{address}"), captured, handle)
+        (url, captured_request, join)
+    }
+
+    fn request_header<'a>(request: &'a RecordedRequest, name: &str) -> Option<&'a str> {
+        request
+            .headers
+            .iter()
+            .find(|(header_name, _)| header_name.eq_ignore_ascii_case(name))
+            .map(|(_, value)| value.as_str())
+    }
+
+    #[derive(Default)]
+    struct CallbackState {
+        body_calls: usize,
+        header_calls: usize,
+    }
+
+    unsafe extern "C" fn short_write_callback(
+        _contents: *mut c_void,
+        _size: usize,
+        _nmemb: usize,
+        userp: *mut c_void,
+    ) -> usize {
+        let state = unsafe { &mut *userp.cast::<CallbackState>() };
+        state.body_calls += 1;
+        0
+    }
+
+    unsafe extern "C" fn short_header_callback(
+        _contents: *mut c_void,
+        _size: usize,
+        _nmemb: usize,
+        userp: *mut c_void,
+    ) -> usize {
+        let state = unsafe { &mut *userp.cast::<CallbackState>() };
+        state.header_calls += 1;
+        0
     }
 
     fn unique_temp_file(name: &str) -> std::path::PathBuf {
@@ -1260,5 +1489,206 @@ mod tests {
         assert!(cookie_line.ends_with("\t1\t"));
 
         let _ = fs::remove_file(cookie_jar);
+    }
+
+    #[test]
+    fn redirect_response_cookies_are_reused_on_follow_up_request() {
+        let responses = vec![
+            PlannedResponse::with_status(
+                "HTTP/1.1 302 Found",
+                vec![
+                    ("Location".to_owned(), "/final".to_owned()),
+                    ("Set-Cookie".to_owned(), "session=value".to_owned()),
+                ],
+                Vec::new(),
+            ),
+            PlannedResponse::ok(Vec::new(), Vec::new()),
+        ];
+        let (url, captured, server) = spawn_scripted_server(responses);
+        let url = CString::new(url).unwrap();
+
+        let curl = curl_easy_init();
+        assert!(!curl.is_null());
+
+        unsafe {
+            assert_eq!(curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()), CURLE_OK_CODE);
+        }
+
+        assert_eq!(curl_easy_perform(curl), CURLE_OK_CODE);
+        curl_easy_cleanup(curl);
+        server.join().unwrap();
+
+        let requests = captured.lock().unwrap().clone();
+        assert_eq!(requests.len(), 2);
+        assert_eq!(requests[1].path, "/final");
+        assert_eq!(request_header(&requests[1], "Cookie"), Some("session=value"));
+    }
+
+    #[test]
+    fn stale_response_code_survives_failed_follow_up_request() {
+        let (url, _captured, server) = spawn_single_request_server(Vec::new(), Vec::new());
+        let url = CString::new(url).unwrap();
+        let failing_url = CString::new("http://127.0.0.1:9/").unwrap();
+
+        let curl = curl_easy_init();
+        assert!(!curl.is_null());
+
+        unsafe {
+            assert_eq!(curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()), CURLE_OK_CODE);
+        }
+        assert_eq!(curl_easy_perform(curl), CURLE_OK_CODE);
+        server.join().unwrap();
+
+        unsafe {
+            assert_eq!(
+                curl_easy_setopt(curl, CURLOPT_URL_OPTION, failing_url.as_ptr()),
+                CURLE_OK_CODE,
+            );
+        }
+        assert_eq!(curl_easy_perform(curl), CURLE_COULDNT_CONNECT_CODE);
+
+        let mut response_code: c_long = 0;
+        unsafe {
+            assert_eq!(
+                curl_easy_getinfo(
+                    curl,
+                    curl_easy_info_t::CURLINFO_RESPONSE_CODE,
+                    &mut response_code as *mut c_long,
+                ),
+                CURLE_OK_CODE,
+            );
+        }
+        assert_eq!(response_code, 200);
+
+        curl_easy_cleanup(curl);
+    }
+
+    #[test]
+    fn callback_short_returns_are_ignored() {
+        let response_headers = vec![("X-Test".to_owned(), "value".to_owned())];
+        let (url, _captured, server) = spawn_single_request_server(response_headers, b"payload".to_vec());
+        let url = CString::new(url).unwrap();
+        let mut callback_state = Box::new(CallbackState::default());
+        let callback_ptr = (&mut *callback_state as *mut CallbackState).cast::<c_void>();
+
+        let curl = curl_easy_init();
+        assert!(!curl.is_null());
+
+        unsafe {
+            assert_eq!(curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()), CURLE_OK_CODE);
+            assert_eq!(
+                curl_easy_setopt(
+                    curl,
+                    CURLOPT_WRITEFUNCTION_OPTION,
+                    short_write_callback as *mut c_void,
+                ),
+                CURLE_OK_CODE,
+            );
+            assert_eq!(
+                curl_easy_setopt(curl, CURLOPT_WRITEDATA_OPTION, callback_ptr),
+                CURLE_OK_CODE,
+            );
+            assert_eq!(
+                curl_easy_setopt(
+                    curl,
+                    CURLOPT_HEADERFUNCTION_OPTION,
+                    short_header_callback as *mut c_void,
+                ),
+                CURLE_OK_CODE,
+            );
+            assert_eq!(
+                curl_easy_setopt(curl, CURLOPT_HEADERDATA_OPTION, callback_ptr),
+                CURLE_OK_CODE,
+            );
+        }
+
+        assert_eq!(curl_easy_perform(curl), CURLE_OK_CODE);
+        curl_easy_cleanup(curl);
+        server.join().unwrap();
+
+        assert!(callback_state.body_calls > 0);
+        assert!(callback_state.header_calls > 0);
+    }
+
+    #[test]
+    fn repeated_cookiefile_loads_merge_entries() {
+        let cookie_a = unique_temp_file("cookie-a");
+        let cookie_b = unique_temp_file("cookie-b");
+        fs::write(&cookie_a, "alpha\tone\texample.com\t/\t0\t0\t0\t0\t\n").unwrap();
+        fs::write(&cookie_b, "beta\ttwo\texample.com\t/\t0\t0\t0\t0\t\n").unwrap();
+
+        let (url, captured, server) = spawn_single_request_server(Vec::new(), Vec::new());
+        let url = CString::new(url).unwrap();
+        let cookie_a_c = CString::new(cookie_a.to_string_lossy().into_owned()).unwrap();
+        let cookie_b_c = CString::new(cookie_b.to_string_lossy().into_owned()).unwrap();
+
+        let curl = curl_easy_init();
+        assert!(!curl.is_null());
+
+        unsafe {
+            assert_eq!(curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()), CURLE_OK_CODE);
+            assert_eq!(
+                curl_easy_setopt(curl, CURLOPT_COOKIEFILE_OPTION, cookie_a_c.as_ptr()),
+                CURLE_OK_CODE,
+            );
+            assert_eq!(
+                curl_easy_setopt(curl, CURLOPT_COOKIEFILE_OPTION, cookie_b_c.as_ptr()),
+                CURLE_OK_CODE,
+            );
+        }
+
+        assert_eq!(curl_easy_perform(curl), CURLE_OK_CODE);
+        curl_easy_cleanup(curl);
+        server.join().unwrap();
+
+        let request = captured.lock().unwrap().take().unwrap();
+        let cookie_header = request_header(&request, "Cookie").unwrap();
+        assert!(cookie_header.contains("alpha=one"));
+        assert!(cookie_header.contains("beta=two"));
+
+        let _ = fs::remove_file(cookie_a);
+        let _ = fs::remove_file(cookie_b);
+    }
+
+    #[test]
+    fn auth_retry_prefers_digest_challenge() {
+        let responses = vec![
+            PlannedResponse::with_status(
+                "HTTP/1.1 401 Unauthorized",
+                vec![
+                    ("WWW-Authenticate".to_owned(), "Basic realm=\"badge\"".to_owned()),
+                    (
+                        "WWW-Authenticate".to_owned(),
+                        "Digest realm=\"badge\", qop=\"auth\", algorithm=MD5, nonce=\"abcdef\", opaque=\"opaque\"".to_owned(),
+                    ),
+                ],
+                Vec::new(),
+            ),
+            PlannedResponse::ok(Vec::new(), Vec::new()),
+        ];
+        let (url, captured, server) = spawn_scripted_server(responses);
+        let url = CString::new(url).unwrap();
+        let userpwd = CString::new("badge:secret").unwrap();
+
+        let curl = curl_easy_init();
+        assert!(!curl.is_null());
+
+        unsafe {
+            assert_eq!(curl_easy_setopt(curl, CURLOPT_URL_OPTION, url.as_ptr()), CURLE_OK_CODE);
+            assert_eq!(
+                curl_easy_setopt(curl, CURLOPT_USERPWD_OPTION, userpwd.as_ptr()),
+                CURLE_OK_CODE,
+            );
+        }
+
+        assert_eq!(curl_easy_perform(curl), CURLE_OK_CODE);
+        curl_easy_cleanup(curl);
+        server.join().unwrap();
+
+        let requests = captured.lock().unwrap().clone();
+        assert_eq!(requests.len(), 2);
+        assert_eq!(request_header(&requests[0], "Authorization"), None);
+        let authorization = request_header(&requests[1], "Authorization").unwrap();
+        assert!(authorization.starts_with("Digest "));
     }
 }

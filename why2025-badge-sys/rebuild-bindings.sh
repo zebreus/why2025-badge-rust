@@ -79,6 +79,11 @@ function normalize_var_export() {
 
     case "$symbol" in
         _ctype_)
+            # Upstream exports `_ctype_` in symbols.yml, but the public header only exposes it as
+            # a macro alias to `_ctype_b + _CTYPE_OFFSET`. Keep the bindings on the real declared
+            # backing object until we have an explicit, selective forwarding strategy for libc-
+            # owned symbols (for example linker-wrapped shims that still delegate to the real host
+            # libc implementation).
             echo "_ctype_b"
             ;;
         *)
@@ -95,6 +100,7 @@ function symbol_kind_for_bindings() {
             echo "function"
             ;;
         _ctype_)
+            # See docs/adr/0001-ctype-export-normalization.md.
             echo "var"
             ;;
         *)

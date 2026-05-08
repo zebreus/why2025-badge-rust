@@ -14,8 +14,10 @@ extern int sig2str(int signum, char *str);
 /** Probably in symbols, because it's in newlib. idk why it is not in our
  * headers */
 extern int str2sig(const char *restrict str, int *restrict pnum);
-// Included in symbols as a function but is actually a value
-// extern void _ctype_(void);
+// The upstream manifest lists `_ctype_`, but the public header only exposes it as the macro alias
+// `_ctype_b + _CTYPE_OFFSET`. Keep bindgen on `_ctype_b` rather than inventing a standalone host
+// declaration for `_ctype_`. If we ever need exact exported names here, do it through selective
+// forwarding wrappers, not a blanket libc override.
 
 // Missing for some reason, but included in symbols.yml
 extern char *gets(char *s);

@@ -366,6 +366,21 @@ pub unsafe extern "C" fn localtime(timer: *const time_t) -> *mut tm {
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn memccpy(
+    dst: *mut c_void,
+    src: *const c_void,
+    needle: c_int,
+    count: c_uint,
+) -> *mut c_void {
+    call_resolved!(runtime::real_memccpy, dst, src, needle, count)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn memchr(value: *const c_void, needle: c_int, count: c_uint) -> *mut c_void {
+    call_resolved!(runtime::real_memchr, value, needle, count)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn memcmp(
     left: *const c_void,
     right: *const c_void,
@@ -384,6 +399,16 @@ pub unsafe extern "C" fn memcpy(
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn memmem(
+    haystack: *const c_void,
+    haystack_len: usize,
+    needle: *const c_void,
+    needle_len: usize,
+) -> *mut c_void {
+    call_resolved!(runtime::real_memmem, haystack, haystack_len, needle, needle_len)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn memmove(
     dst: *mut c_void,
     src: *const c_void,
@@ -393,8 +418,27 @@ pub unsafe extern "C" fn memmove(
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn mempcpy(
+    dst: *mut c_void,
+    src: *const c_void,
+    count: c_uint,
+) -> *mut c_void {
+    call_resolved!(runtime::real_mempcpy, dst, src, count)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn memrchr(value: *const c_void, needle: c_int, count: usize) -> *mut c_void {
+    call_resolved!(runtime::real_memrchr, value, needle, count)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn memset(dst: *mut c_void, value: c_int, count: c_uint) -> *mut c_void {
     call_resolved!(runtime::real_memset, dst, value, count)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rawmemchr(value: *const c_void, needle: c_int) -> *mut c_void {
+    call_resolved!(runtime::real_rawmemchr, value, needle)
 }
 
 #[unsafe(no_mangle)]
@@ -540,6 +584,21 @@ pub unsafe extern "C" fn stat(path: *const c_char, buf: *mut stat_t) -> c_int {
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn stpcpy(dst: *mut c_char, src: *const c_char) -> *mut c_char {
+    call_resolved!(runtime::real_stpcpy, dst, src)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn stpncpy(dst: *mut c_char, src: *const c_char, count: c_uint) -> *mut c_char {
+    call_resolved!(runtime::real_stpncpy, dst, src, count)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strcasestr(haystack: *const c_char, needle: *const c_char) -> *mut c_char {
+    call_resolved!(runtime::real_strcasestr, haystack, needle)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn strcat(dst: *mut c_char, src: *const c_char) -> *mut c_char {
     call_resolved!(runtime::real_strcat, dst, src)
 }
@@ -550,6 +609,11 @@ pub unsafe extern "C" fn strchr(value: *const c_char, needle: c_int) -> *mut c_c
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn strchrnul(value: *const c_char, needle: c_int) -> *mut c_char {
+    call_resolved!(runtime::real_strchrnul, value, needle)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn strcmp(left: *const c_char, right: *const c_char) -> c_int {
     call_resolved!(runtime::real_strcmp, left, right)
 }
@@ -557,6 +621,75 @@ pub unsafe extern "C" fn strcmp(left: *const c_char, right: *const c_char) -> c_
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn strcpy(dst: *mut c_char, src: *const c_char) -> *mut c_char {
     call_resolved!(runtime::real_strcpy, dst, src)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strcspn(value: *const c_char, reject: *const c_char) -> c_uint {
+    call_resolved!(runtime::real_strcspn, value, reject)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strerror(errnum: c_int) -> *mut c_char {
+    call_resolved!(runtime::real_strerror, errnum)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strlen(value: *const c_char) -> c_uint {
+    call_resolved!(runtime::real_strlen, value)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strncat(dst: *mut c_char, src: *const c_char, count: c_uint) -> *mut c_char {
+    call_resolved!(runtime::real_strncat, dst, src, count)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strncmp(left: *const c_char, right: *const c_char, count: c_uint) -> c_int {
+    call_resolved!(runtime::real_strncmp, left, right, count)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strncpy(dst: *mut c_char, src: *const c_char, count: c_uint) -> *mut c_char {
+    call_resolved!(runtime::real_strncpy, dst, src, count)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strnlen(value: *const c_char, count: usize) -> usize {
+    call_resolved!(runtime::real_strnlen, value, count)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strpbrk(value: *const c_char, accept: *const c_char) -> *mut c_char {
+    call_resolved!(runtime::real_strpbrk, value, accept)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strrchr(value: *const c_char, needle: c_int) -> *mut c_char {
+    call_resolved!(runtime::real_strrchr, value, needle)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strsep(stringp: *mut *mut c_char, delim: *const c_char) -> *mut c_char {
+    call_resolved!(runtime::real_strsep, stringp, delim)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strspn(value: *const c_char, accept: *const c_char) -> c_uint {
+    call_resolved!(runtime::real_strspn, value, accept)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strstr(haystack: *const c_char, needle: *const c_char) -> *mut c_char {
+    call_resolved!(runtime::real_strstr, haystack, needle)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strtok_r(
+    value: *mut c_char,
+    delim: *const c_char,
+    saveptr: *mut *mut c_char,
+) -> *mut c_char {
+    call_resolved!(runtime::real_strtok_r, value, delim, saveptr)
 }
 
 #[unsafe(no_mangle)]

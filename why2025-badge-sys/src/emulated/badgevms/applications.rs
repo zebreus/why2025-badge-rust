@@ -25,14 +25,14 @@
 //! before any public application API is used. Two kinds of paths are then
 //! derived from an application's unique identifier:
 //!
-//! - metadata lives in a flat JSON file at `APPS:<unique_identifier>.json`
+//! - the App manifest lives in a flat JSON file at `APPS:<unique_identifier>.json`
 //! - payload files live under a directory at `APPS:[<unique_identifier>]`
 //!
-//! Each public `application_t *` is just a heap-allocated snapshot of that JSON
-//! metadata plus a reconstructed `installed_path`. There is no central in-memory
-//! registry of live `application_t` objects, and there is no locking anywhere in
-//! `application.c`. Concurrent callers can therefore race on both the JSON files
-//! and the hidden global base-directory string.
+//! Each public `application_t *` is just a heap-allocated snapshot of that App
+//! manifest JSON plus a reconstructed `installed_path`. There is no central
+//! in-memory registry of live `application_t` objects, and there is no locking
+//! anywhere in `application.c`. Concurrent callers can therefore race on both
+//! the App manifest files and the hidden global base-directory string.
 //!
 //! `application_to_json()` serializes missing strings as empty JSON strings via
 //! `field ?: ""`. `json_to_application()` then reconstructs a fresh heap object
@@ -45,16 +45,16 @@
 //! empty string. That null-versus-empty distinction is therefore not stable
 //! across save/load boundaries.
 //!
-//! `save_application_metadata()` also treats opening the metadata file as the
-//! last meaningful I/O failure point. Once `why_fopen(..., "w")` succeeds, the
-//! implementation ignores the return values from `why_fputs()` and
+//! `save_application_metadata()` also treats opening the App manifest file as
+//! the last meaningful I/O failure point. Once `why_fopen(..., "w")` succeeds,
+//! the implementation ignores the return values from `why_fputs()` and
 //! `why_fclose()`, so late write or flush failures are not surfaced.
 //!
 //! A consequence of that model is that individual string-allocation failures are
 //! often silent: several setters free the old string, assign the result of
-//! `why_strdup()` without checking it, and then save metadata. If `why_strdup()`
-//! returns null and the JSON rewrite still succeeds, the field is effectively
-//! persisted as an empty string.
+//! `why_strdup()` without checking it, and then save the App manifest. If
+//! `why_strdup()` returns null and the JSON rewrite still succeeds, the field is
+//! effectively persisted as an empty string.
 
 use crate::types::*;
 
@@ -134,14 +134,15 @@ use runtime::{
 /// relaunch `badgevms_launcher` when no windows exist. Neither caller adds extra
 /// `application_uid` bookkeeping around the launch.
 ///
-/// Because launch works from the JSON metadata file, stale metadata can outlive a
-/// destroyed install directory and still make an application appear launchable
-/// until `process_create` fails on the missing binary path.
+/// Because launch works from the persisted App manifest JSON, a stale
+/// `APPS:<unique_identifier>.json` file can outlive a destroyed install
+/// directory and still make an application appear launchable until
+/// `process_create` fails on the missing binary path.
 #[unsafe(no_mangle)]
 pub extern "C" fn application_launch(unique_identifier: *const ::core::ffi::c_char) -> pid_t {
     application_launch_inner(unique_identifier)
 }
-/// Create a new application metadata record and install directory.
+/// Create a new application App manifest record and install directory.
 ///
 /// # Exact upstream behavior
 ///
@@ -151,27 +152,27 @@ pub extern "C" fn application_launch(unique_identifier: *const ::core::ffi::c_ch
 /// - the hidden global `applications_base_dir` is still empty because the
 ///   private `application_init()` boot-time setup did not run successfully.
 ///
-/// It then validates the identifier indirectly by trying to build the metadata
-/// path `APPS:<unique_identifier>.json` with `get_metadata_path()`. That helper
-/// appends `".json"` and then runs the result through `parse_path()`. Invalid
-/// device/file characters therefore cause creation to fail with a warning
-/// `"Illegal application name %s"`.
+/// It then validates the identifier indirectly by trying to build the App
+/// manifest path `APPS:<unique_identifier>.json` with `get_metadata_path()`.
+/// That helper appends `".json"` and then runs the result through
+/// `parse_path()`. Invalid device/file characters therefore cause creation to
+/// fail with a warning `"Illegal application name %s"`.
 ///
-/// Duplicate detection is just a readability test on the metadata file: if
+/// Duplicate detection is just a readability test on the App manifest file: if
 /// `why_fopen(metadata_path, "r")` succeeds, upstream closes the file and
 /// returns null. If opening fails for some other reason than non-existence,
 /// upstream does not distinguish that case and continues as if the application
 /// were absent.
 ///
-/// Duplicate detection is therefore metadata-only. If `APPS:[<unique_identifier>]`
-/// already exists on disk but `APPS:<unique_identifier>.json` does not,
-/// `application_create()` treats the application as absent and reuses the
-/// existing directory tree.
+/// Duplicate detection is therefore App-manifest-only. If
+/// `APPS:[<unique_identifier>]` already exists on disk but
+/// `APPS:<unique_identifier>.json` does not, `application_create()` treats the
+/// application as absent and reuses the existing directory tree.
 ///
 /// After that it derives the install directory as `APPS:[<unique_identifier>]`
 /// with `get_application_dir()` and creates it with `mkdir_p()`. The install
 /// directory is created before the `application_t` is allocated and before the
-/// JSON metadata is written.
+/// App manifest JSON is written.
 ///
 /// A successful allocation path then:
 ///
@@ -448,15 +449,15 @@ pub extern "C" fn application_set_interpreter(
 ///
 /// # Important upstream bug
 ///
-/// The metadata JSON file is not inside the install directory. It lives beside
-/// it at `APPS:<unique_identifier>.json`, while the install directory is
+/// The App manifest JSON file is not inside the install directory. It lives
+/// beside it at `APPS:<unique_identifier>.json`, while the install directory is
 /// `APPS:[<unique_identifier>]`. `application_destroy()` only deletes the
-/// directory tree. It does not remove the metadata JSON file.
+/// directory tree. It does not remove the App manifest JSON file.
 ///
 /// As a result, the current upstream implementation can report success while
-/// leaving behind a perfectly loadable metadata record. `application_get()` and
-/// `application_list()` will continue to find the application until something
-/// else deletes the stale `.json` file.
+/// leaving behind a perfectly loadable App manifest record. `application_get()`
+/// and `application_list()` will continue to find the application until
+/// something else deletes the stale `.json` file.
 ///
 /// # Other omissions and interactions
 ///
@@ -554,7 +555,7 @@ pub extern "C" fn application_create_file_string(
 ) -> *mut ::core::ffi::c_char {
     application_create_file_string_inner(application, file_path)
 }
-/// Enumerate installed applications by scanning metadata JSON files.
+/// Enumerate installed applications by scanning App manifest JSON files.
 ///
 /// # Exact upstream behavior
 ///
@@ -563,9 +564,9 @@ pub extern "C" fn application_create_file_string(
 ///
 /// Otherwise it opens that directory with `why_opendir()` and scans for entries
 /// whose names end in `.json`. Only those files count as installed
-/// applications. Bare install directories without metadata files are invisible,
-/// while stale metadata files remain visible even if the payload directory has
-/// been deleted.
+/// applications. Bare install directories without App manifest files are
+/// invisible, while stale App manifest files remain visible even if the payload
+/// directory has been deleted.
 ///
 /// The function allocates an `application_list_t` with `why_calloc()` and uses a
 /// two-pass directory walk:
@@ -574,9 +575,9 @@ pub extern "C" fn application_create_file_string(
 /// - second pass allocates an array of `application_t *`, strips the `.json`
 ///   suffix from each filename, and calls `load_application_metadata()`
 ///
-/// Each successfully loaded metadata file becomes one heap-allocated
+/// Each successfully loaded App manifest file becomes one heap-allocated
 /// `application_t` stored in the list. Failed loads are silently skipped.
-/// The OTA updater intentionally relies on that metadata-file-only discovery:
+/// The OTA updater intentionally relies on that App-manifest-only discovery:
 /// its placeholder `.json` records become visible immediately, even before the
 /// application has a usable payload.
 ///
@@ -645,7 +646,7 @@ pub extern "C" fn application_list_get_next(list: application_list_handle) -> *m
 pub extern "C" fn application_list_close(list: application_list_handle) {
     application_list_close_inner(list)
 }
-/// Load one application snapshot from its metadata JSON file.
+/// Load one application snapshot from its App manifest JSON file.
 ///
 /// # Exact upstream behavior
 ///
@@ -654,9 +655,9 @@ pub extern "C" fn application_list_close(list: application_list_handle) {
 /// turned into a legal `APPS:<uid>.json` path also returns null before any file
 /// I/O happens.
 ///
-/// It then builds the metadata path `APPS:<unique_identifier>.json`, opens it
-/// with `why_fopen(..., "r")`, reads the entire file into memory, parses it with
-/// `cJSON_Parse()`, and reconstructs a fresh `application_t` with
+/// It then builds the App manifest path `APPS:<unique_identifier>.json`, opens
+/// it with `why_fopen(..., "r")`, reads the entire file into memory, parses it
+/// with `cJSON_Parse()`, and reconstructs a fresh `application_t` with
 /// `json_to_application()`.
 ///
 /// `json_to_application()` duplicates each recognized JSON string field with
@@ -673,7 +674,7 @@ pub extern "C" fn application_list_close(list: application_list_handle) {
 /// # Subtleties
 ///
 /// Upstream does not verify that the corresponding install directory actually
-/// exists. A stale metadata file is enough for this function to succeed.
+/// exists. A stale App manifest file is enough for this function to succeed.
 ///
 /// File-size and read results are not checked rigorously. The code trusts
 /// `why_ftell()` and `why_fread()` and only treats JSON parse failure as the

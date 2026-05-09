@@ -85,6 +85,48 @@ unsafe fn host_fd_set_to_badge(value: &libc::fd_set) -> fd_set {
     badge
 }
 
+unsafe fn write_optional_value<T>(dst: *mut T, value: T) {
+    if !dst.is_null() {
+        unsafe { dst.write(value) };
+    }
+}
+
+fn normalize_angle_f64(mut value: f64) -> f64 {
+    if !value.is_finite() {
+        return f64::NAN;
+    }
+
+    let turns = (value / core::f64::consts::TAU) as i64;
+    value -= (turns as f64) * core::f64::consts::TAU;
+
+    if value > core::f64::consts::PI {
+        value -= core::f64::consts::TAU;
+    } else if value < -core::f64::consts::PI {
+        value += core::f64::consts::TAU;
+    }
+    value
+}
+
+fn approx_sin_f64(value: f64) -> f64 {
+    let value = normalize_angle_f64(value);
+    let linear = (4.0 / core::f64::consts::PI) * value;
+    let curve = (-4.0 / (core::f64::consts::PI * core::f64::consts::PI)) * value * value.abs();
+    let estimate = linear + curve;
+    0.225 * (estimate * estimate.abs() - estimate) + estimate
+}
+
+fn approx_cos_f64(value: f64) -> f64 {
+    approx_sin_f64(value + core::f64::consts::FRAC_PI_2)
+}
+
+fn approx_sin_f32(value: f32) -> f32 {
+    approx_sin_f64(value as f64) as f32
+}
+
+fn approx_cos_f32(value: f32) -> f32 {
+    approx_cos_f64(value as f64) as f32
+}
+
 macro_rules! forward_resolved_fn {
     ($(fn $name:ident($($arg:ident : $arg_ty:ty),* $(,)?) -> $ret:ty = $resolver:path;)+) => {
         $(
@@ -143,8 +185,6 @@ forward_resolved_fn! {
     fn clock() -> clock_t = runtime::real_clock;
     fn copysign(left: f64, right: f64) -> f64 = runtime::real_copysign;
     fn copysignf(left: f32, right: f32) -> f32 = runtime::real_copysignf;
-    fn cos(value: f64) -> f64 = runtime::real_cos;
-    fn cosf(value: f32) -> f32 = runtime::real_cosf;
     fn cosh(value: f64) -> f64 = runtime::real_cosh;
     fn coshf(value: f32) -> f32 = runtime::real_coshf;
     fn ctime_r(timer: *const time_t, buf: *mut [c_char; 26usize]) -> *mut c_char = runtime::real_ctime_r;
@@ -282,10 +322,6 @@ forward_resolved_fn! {
     fn scalblnf(value: f32, exp: c_long) -> f32 = runtime::real_scalblnf;
     fn scalbn(value: f64, exp: c_int) -> f64 = runtime::real_scalbn;
     fn scalbnf(value: f32, exp: c_int) -> f32 = runtime::real_scalbnf;
-    fn sin(value: f64) -> f64 = runtime::real_sin;
-    fn sincos(value: f64, sinp: *mut f64, cosp: *mut f64) -> () = runtime::real_sincos;
-    fn sincosf(value: f32, sinp: *mut f32, cosp: *mut f32) -> () = runtime::real_sincosf;
-    fn sinf(value: f32) -> f32 = runtime::real_sinf;
     fn sinh(value: f64) -> f64 = runtime::real_sinh;
     fn sinhf(value: f32) -> f32 = runtime::real_sinhf;
     fn sleep(seconds: c_uint) -> c_uint = runtime::real_sleep;
@@ -343,6 +379,48 @@ forward_resolved_fn! {
     fn y1f(value: f32) -> f32 = runtime::real_y1f;
     fn yn(order: c_int, value: f64) -> f64 = runtime::real_yn;
     fn ynf(order: c_int, value: f32) -> f32 = runtime::real_ynf;
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn cos(value: f64) -> f64 {
+    approx_cos_f64(value)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn cosf(value: f32) -> f32 {
+    approx_cos_f32(value)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn sin(value: f64) -> f64 {
+    approx_sin_f64(value)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn sincos(value: f64, sinp: *mut f64, cosp: *mut f64) {
+    unsafe {
+        write_optional_value(sinp, approx_sin_f64(value));
+        write_optional_value(cosp, approx_cos_f64(value));
+    }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn sincosf(value: f32, sinp: *mut f32, cosp: *mut f32) {
+    unsafe {
+        write_optional_value(sinp, approx_sin_f32(value));
+        write_optional_value(cosp, approx_cos_f32(value));
+    }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn sinf(value: f32) -> f32 {
+    approx_sin_f32(value)
 }
 
 forward_ignore_locale_resolved_fn! {

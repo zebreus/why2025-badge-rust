@@ -60,19 +60,27 @@ pub(crate) fn abort_incompatible_symbol(symbol: &str, reason: &str) -> ! {
     std::process::abort();
 }
 
-fn resolve_symbol(symbol: &'static [u8]) -> *mut c_void {
+fn try_resolve_symbol(handle: *mut c_void, symbol: &'static [u8]) -> Option<*mut c_void> {
     unsafe {
         libc::dlerror();
-        let resolved = libc::dlsym(libc::RTLD_NEXT, symbol.as_ptr().cast::<c_char>());
+        let resolved = libc::dlsym(handle, symbol.as_ptr().cast::<c_char>());
         let error = libc::dlerror();
 
-        if !error.is_null() || resolved.is_null() {
-            let name = core::str::from_utf8(&symbol[..symbol.len() - 1]).unwrap_or("<invalid>");
-            abort_missing_symbol(name);
+        if error.is_null() && !resolved.is_null() {
+            Some(resolved)
+        } else {
+            None
         }
-
-        resolved
     }
+}
+
+fn resolve_symbol(symbol: &'static [u8]) -> *mut c_void {
+    if let Some(resolved) = try_resolve_symbol(libc::RTLD_NEXT, symbol) {
+        return resolved;
+    }
+
+    let name = core::str::from_utf8(&symbol[..symbol.len() - 1]).unwrap_or("<invalid>");
+    abort_missing_symbol(name);
 }
 
 unsafe fn resolve_object_value<T: Copy>(symbol: &'static [u8]) -> T {
@@ -338,8 +346,6 @@ dlsym_resolver_group! {
     REAL_CLOCK, real_clock, b"clock\0", fn clock() -> clock_t;
     REAL_COPYSIGN, real_copysign, b"copysign\0", fn copysign(left: f64, right: f64) -> f64;
     REAL_COPYSIGNF, real_copysignf, b"copysignf\0", fn copysignf(left: f32, right: f32) -> f32;
-    REAL_COS, real_cos, b"cos\0", fn cos(value: f64) -> f64;
-    REAL_COSF, real_cosf, b"cosf\0", fn cosf(value: f32) -> f32;
     REAL_COSH, real_cosh, b"cosh\0", fn cosh(value: f64) -> f64;
     REAL_COSHF, real_coshf, b"coshf\0", fn coshf(value: f32) -> f32;
     REAL_CTIME_R, real_ctime_r, b"ctime_r\0", fn ctime_r(timer: *const time_t, buf: *mut [c_char; 26usize]) -> *mut c_char;
@@ -477,10 +483,6 @@ dlsym_resolver_group! {
     REAL_SCALBLNF, real_scalblnf, b"scalblnf\0", fn scalblnf(value: f32, exp: c_long) -> f32;
     REAL_SCALBN, real_scalbn, b"scalbn\0", fn scalbn(value: f64, exp: c_int) -> f64;
     REAL_SCALBNF, real_scalbnf, b"scalbnf\0", fn scalbnf(value: f32, exp: c_int) -> f32;
-    REAL_SIN, real_sin, b"sin\0", fn sin(value: f64) -> f64;
-    REAL_SINCOS, real_sincos, b"sincos\0", fn sincos(value: f64, sinp: *mut f64, cosp: *mut f64) -> ();
-    REAL_SINCOSF, real_sincosf, b"sincosf\0", fn sincosf(value: f32, sinp: *mut f32, cosp: *mut f32) -> ();
-    REAL_SINF, real_sinf, b"sinf\0", fn sinf(value: f32) -> f32;
     REAL_SINH, real_sinh, b"sinh\0", fn sinh(value: f64) -> f64;
     REAL_SINHF, real_sinhf, b"sinhf\0", fn sinhf(value: f32) -> f32;
     REAL_SLEEP, real_sleep, b"sleep\0", fn sleep(seconds: c_uint) -> c_uint;
@@ -834,6 +836,15 @@ mod tests {
 
         assert_eq!(pid, host_pid);
         assert!(getpid_interpose_calls() >= 1);
+    }
+
+    #[test]
+    fn host_trig_weak_exports_work_without_host_libm() {
+        let sine = exports::sin(0.0);
+        let cosine = exports::cos(0.0);
+
+        assert_eq!(sine, 0.0);
+        assert_eq!(cosine, 1.0);
     }
 
     #[test]

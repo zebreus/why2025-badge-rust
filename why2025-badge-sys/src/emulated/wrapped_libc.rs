@@ -1,6 +1,6 @@
 use crate::{
     _ssize_t, DIR, FILE, addrinfo, fpos_t, iconv_t, in_addr, mode_t, off_t, pid_t, regex_t,
-    sockaddr, socklen_t, stat as stat_t, termios, time_t, tm, wchar_t,
+    sockaddr, socklen_t, stat as stat_t, termios, time_t, tm, wchar_t, wint_t,
 };
 use core::ffi::{c_char, c_int, c_long, c_uint, c_void};
 
@@ -841,6 +841,206 @@ pub unsafe extern "C" fn system(command: *const c_char) -> c_int {
 /// - Upstream allocates with `why_malloc`; host forwarding allocates from libc and must be freed with host `free()`.
 pub unsafe extern "C" fn wcsdup(value: *const wchar_t) -> *mut wchar_t {
     call_resolved!(runtime::real_wcsdup, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_wcschr`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn wcschr(value: *const wchar_t, needle: c_int) -> *mut wchar_t {
+    call_resolved!(runtime::real_wcschr, value, needle)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_wcscmp`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn wcscmp(left: *const wchar_t, right: *const wchar_t) -> c_int {
+    call_resolved!(runtime::real_wcscmp, left, right)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_wcscpy`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn wcscpy(dst: *mut wchar_t, src: *const wchar_t) -> *mut wchar_t {
+    call_resolved!(runtime::real_wcscpy, dst, src)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_wcscspn`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn wcscspn(value: *const wchar_t, reject: *const wchar_t) -> usize {
+    call_resolved!(runtime::real_wcscspn, value, reject)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_wcslen`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn wcslen(value: *const wchar_t) -> c_uint {
+    call_resolved!(runtime::real_wcslen, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_wcsncmp`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn wcsncmp(left: *const wchar_t, right: *const wchar_t, count: c_uint) -> c_int {
+    call_resolved!(runtime::real_wcsncmp, left, right, count)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_wcsncpy`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn wcsncpy(dst: *mut wchar_t, src: *const wchar_t, count: usize) -> *mut wchar_t {
+    call_resolved!(runtime::real_wcsncpy, dst, src, count)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_wcsnlen`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn wcsnlen(value: *const wchar_t, count: usize) -> usize {
+    call_resolved!(runtime::real_wcsnlen, value, count)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_wcsrchr`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn wcsrchr(value: *const wchar_t, needle: wchar_t) -> *mut wchar_t {
+    call_resolved!(runtime::real_wcsrchr, value, needle)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_wmemcmp`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn wmemcmp(left: *const wchar_t, right: *const wchar_t, count: c_uint) -> c_int {
+    call_resolved!(runtime::real_wmemcmp, left, right, count)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_wmemcpy`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn wmemcpy(dst: *mut wchar_t, src: *const wchar_t, count: c_uint) -> *mut wchar_t {
+    call_resolved!(runtime::real_wmemcpy, dst, src, count)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_iswalnum`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn iswalnum(value: wint_t) -> c_int {
+    call_resolved!(runtime::real_iswalnum, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_iswalpha`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn iswalpha(value: wint_t) -> c_int {
+    call_resolved!(runtime::real_iswalpha, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_iswblank`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn iswblank(value: wint_t) -> c_int {
+    call_resolved!(runtime::real_iswblank, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_iswcntrl`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn iswcntrl(value: wint_t) -> c_int {
+    call_resolved!(runtime::real_iswcntrl, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_iswdigit`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn iswdigit(value: wint_t) -> c_int {
+    call_resolved!(runtime::real_iswdigit, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_iswgraph`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn iswgraph(value: wint_t) -> c_int {
+    call_resolved!(runtime::real_iswgraph, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_iswlower`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn iswlower(value: wint_t) -> c_int {
+    call_resolved!(runtime::real_iswlower, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_iswprint`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn iswprint(value: wint_t) -> c_int {
+    call_resolved!(runtime::real_iswprint, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_iswpunct`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn iswpunct(value: wint_t) -> c_int {
+    call_resolved!(runtime::real_iswpunct, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_iswspace`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn iswspace(value: wint_t) -> c_int {
+    call_resolved!(runtime::real_iswspace, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_iswupper`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn iswupper(value: wint_t) -> c_int {
+    call_resolved!(runtime::real_iswupper, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_iswxdigit`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn iswxdigit(value: wint_t) -> c_int {
+    call_resolved!(runtime::real_iswxdigit, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_towlower`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn towlower(value: wint_t) -> wint_t {
+    call_resolved!(runtime::real_towlower, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_towupper`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn towupper(value: wint_t) -> wint_t {
+    call_resolved!(runtime::real_towupper, value)
 }
 
 #[unsafe(no_mangle)]

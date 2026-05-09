@@ -1,6 +1,6 @@
 use crate::{
     _ssize_t, DIR, FILE, addrinfo, dirent, fpos_t, iconv_t, in_addr, mode_t, off_t, pid_t, re_guts,
-    regex_t, sockaddr, socklen_t, stat as stat_t, termios, time_t, tm, wchar_t,
+    regex_t, sockaddr, socklen_t, stat as stat_t, termios, time_t, tm, wchar_t, wint_t,
 };
 use core::ffi::{c_char, c_int, c_long, c_uint, c_void};
 use core::mem;
@@ -238,6 +238,31 @@ dlsym_resolver!(REAL_TOUPPER, real_toupper, b"toupper\0", fn toupper(value: c_in
 dlsym_resolver!(REAL_UNGETC, real_ungetc, b"ungetc\0", fn ungetc(value: c_int, stream: *mut FILE) -> c_int);
 dlsym_resolver!(REAL_UNLINK, real_unlink, b"unlink\0", fn unlink(path: *const c_char) -> c_int);
 dlsym_resolver!(REAL_WCSDUP, real_wcsdup, b"wcsdup\0", fn wcsdup(value: *const wchar_t) -> *mut wchar_t);
+dlsym_resolver!(REAL_WCSCHR, real_wcschr, b"wcschr\0", fn wcschr(value: *const wchar_t, needle: c_int) -> *mut wchar_t);
+dlsym_resolver!(REAL_WCSCMP, real_wcscmp, b"wcscmp\0", fn wcscmp(left: *const wchar_t, right: *const wchar_t) -> c_int);
+dlsym_resolver!(REAL_WSCPY, real_wcscpy, b"wcscpy\0", fn wcscpy(dst: *mut wchar_t, src: *const wchar_t) -> *mut wchar_t);
+dlsym_resolver!(REAL_WCSCSPN, real_wcscspn, b"wcscspn\0", fn wcscspn(value: *const wchar_t, reject: *const wchar_t) -> usize);
+dlsym_resolver!(REAL_WCSLEN, real_wcslen, b"wcslen\0", fn wcslen(value: *const wchar_t) -> c_uint);
+dlsym_resolver!(REAL_WCSNCMP, real_wcsncmp, b"wcsncmp\0", fn wcsncmp(left: *const wchar_t, right: *const wchar_t, count: c_uint) -> c_int);
+dlsym_resolver!(REAL_WCSNCPY, real_wcsncpy, b"wcsncpy\0", fn wcsncpy(dst: *mut wchar_t, src: *const wchar_t, count: usize) -> *mut wchar_t);
+dlsym_resolver!(REAL_WCSNLEN, real_wcsnlen, b"wcsnlen\0", fn wcsnlen(value: *const wchar_t, count: usize) -> usize);
+dlsym_resolver!(REAL_WCSRCHR, real_wcsrchr, b"wcsrchr\0", fn wcsrchr(value: *const wchar_t, needle: wchar_t) -> *mut wchar_t);
+dlsym_resolver!(REAL_WMEMCMP, real_wmemcmp, b"wmemcmp\0", fn wmemcmp(left: *const wchar_t, right: *const wchar_t, count: c_uint) -> c_int);
+dlsym_resolver!(REAL_WMEMCPY, real_wmemcpy, b"wmemcpy\0", fn wmemcpy(dst: *mut wchar_t, src: *const wchar_t, count: c_uint) -> *mut wchar_t);
+dlsym_resolver!(REAL_ISWALNUM, real_iswalnum, b"iswalnum\0", fn iswalnum(value: wint_t) -> c_int);
+dlsym_resolver!(REAL_ISWALPHA, real_iswalpha, b"iswalpha\0", fn iswalpha(value: wint_t) -> c_int);
+dlsym_resolver!(REAL_ISWBLANK, real_iswblank, b"iswblank\0", fn iswblank(value: wint_t) -> c_int);
+dlsym_resolver!(REAL_ISWCNTRL, real_iswcntrl, b"iswcntrl\0", fn iswcntrl(value: wint_t) -> c_int);
+dlsym_resolver!(REAL_ISWDIGIT, real_iswdigit, b"iswdigit\0", fn iswdigit(value: wint_t) -> c_int);
+dlsym_resolver!(REAL_ISWGRAPH, real_iswgraph, b"iswgraph\0", fn iswgraph(value: wint_t) -> c_int);
+dlsym_resolver!(REAL_ISWLOWER, real_iswlower, b"iswlower\0", fn iswlower(value: wint_t) -> c_int);
+dlsym_resolver!(REAL_ISWPRINT, real_iswprint, b"iswprint\0", fn iswprint(value: wint_t) -> c_int);
+dlsym_resolver!(REAL_ISWPUNCT, real_iswpunct, b"iswpunct\0", fn iswpunct(value: wint_t) -> c_int);
+dlsym_resolver!(REAL_ISWSPACE, real_iswspace, b"iswspace\0", fn iswspace(value: wint_t) -> c_int);
+dlsym_resolver!(REAL_ISWUPPER, real_iswupper, b"iswupper\0", fn iswupper(value: wint_t) -> c_int);
+dlsym_resolver!(REAL_ISWXDIGIT, real_iswxdigit, b"iswxdigit\0", fn iswxdigit(value: wint_t) -> c_int);
+dlsym_resolver!(REAL_TOWLOWER, real_towlower, b"towlower\0", fn towlower(value: wint_t) -> wint_t);
+dlsym_resolver!(REAL_TOWUPPER, real_towupper, b"towupper\0", fn towupper(value: wint_t) -> wint_t);
 dlsym_resolver!(REAL_WRITE, real_write, b"write\0", fn write(fd: c_int, buf: *const c_void, count: usize) -> isize);
 
 static REAL_OPEN: OnceLock<unsafe extern "C" fn(*const c_char, c_int, ...) -> c_int> =
@@ -932,6 +957,90 @@ mod tests {
         let wrapped_cmp = unsafe { exports::strverscmp(file9.as_ptr(), file10.as_ptr()) };
         let host_cmp = unsafe { real_strverscmp()(file9.as_ptr(), file10.as_ptr()) };
         assert_eq!(wrapped_cmp.signum(), host_cmp.signum());
+    }
+
+    #[test]
+    fn host_wide_string_helpers_roundtrip() {
+        let badge = ['b' as wchar_t, 'a' as wchar_t, 'd' as wchar_t, 'g' as wchar_t, 'e' as wchar_t, 0];
+        let badge_rust = [
+            'b' as wchar_t,
+            'a' as wchar_t,
+            'd' as wchar_t,
+            'g' as wchar_t,
+            'e' as wchar_t,
+            '-' as wchar_t,
+            'r' as wchar_t,
+            'u' as wchar_t,
+            's' as wchar_t,
+            't' as wchar_t,
+            0,
+        ];
+        let dash = ['-' as wchar_t, 0];
+        let alpha = ['a' as wchar_t, 'l' as wchar_t, 'p' as wchar_t, 'h' as wchar_t, 'a' as wchar_t, 0];
+        let alpha_x = ['a' as wchar_t, 'l' as wchar_t, 'p' as wchar_t, 'h' as wchar_t, 'a' as wchar_t, 'X' as wchar_t, 0];
+
+        let mut copied = [0 as wchar_t; 8];
+        assert_eq!(unsafe { exports::wcscpy(copied.as_mut_ptr(), badge.as_ptr()) }, copied.as_mut_ptr());
+        assert_eq!(&copied[..badge.len()], &badge);
+        assert_eq!(unsafe { exports::wcslen(copied.as_ptr()) }, 5);
+        assert_eq!(unsafe { exports::wcsnlen(copied.as_ptr(), 3) }, 3);
+        assert_eq!(unsafe { exports::wcscmp(alpha.as_ptr(), alpha.as_ptr()) }, 0);
+        assert_eq!(unsafe { exports::wcsncmp(alpha.as_ptr(), alpha_x.as_ptr(), 5) }, 0);
+        assert!(unsafe { exports::wcsncmp(alpha.as_ptr(), alpha_x.as_ptr(), 6) } < 0);
+        assert_eq!(unsafe { exports::wcscspn(badge_rust.as_ptr(), dash.as_ptr()) }, 5);
+
+        let found = unsafe { exports::wcschr(badge_rust.as_ptr(), '-' as c_int) };
+        assert!(!found.is_null());
+        assert_eq!(unsafe { found.offset_from(badge_rust.as_ptr()) }, 5);
+
+        let bananas = ['b' as wchar_t, 'a' as wchar_t, 'n' as wchar_t, 'a' as wchar_t, 'n' as wchar_t, 'a' as wchar_t, 0];
+        let last_a = unsafe { exports::wcsrchr(bananas.as_ptr(), 'a' as wchar_t) };
+        assert!(!last_a.is_null());
+        assert_eq!(unsafe { last_a.offset_from(bananas.as_ptr()) }, 5);
+
+        let mut fixed = [0 as wchar_t; 8];
+        assert_eq!(unsafe { exports::wcsncpy(fixed.as_mut_ptr(), alpha.as_ptr(), fixed.len()) }, fixed.as_mut_ptr());
+        assert_eq!(&fixed[..alpha.len()], &alpha);
+
+        let why = ['W' as wchar_t, 'H' as wchar_t, 'Y' as wchar_t, 0];
+        let mut wide_copy = [0 as wchar_t; 4];
+        assert_eq!(unsafe { exports::wmemcpy(wide_copy.as_mut_ptr(), why.as_ptr(), why.len() as c_uint) }, wide_copy.as_mut_ptr());
+        assert_eq!(wide_copy, why);
+        assert_eq!(unsafe { exports::wmemcmp(wide_copy.as_ptr(), why.as_ptr(), why.len() as c_uint) }, 0);
+
+        let mut different = wide_copy;
+        different[2] = '!' as wchar_t;
+        assert_ne!(unsafe { exports::wmemcmp(different.as_ptr(), why.as_ptr(), why.len() as c_uint) }, 0);
+    }
+
+    #[test]
+    fn host_wide_classification_helpers_roundtrip() {
+        assert_ne!(unsafe { exports::iswalnum('A' as wint_t) }, 0);
+        assert_eq!(unsafe { exports::iswalnum('!' as wint_t) }, 0);
+        assert_ne!(unsafe { exports::iswalpha('Q' as wint_t) }, 0);
+        assert_eq!(unsafe { exports::iswalpha('7' as wint_t) }, 0);
+        assert_ne!(unsafe { exports::iswblank(' ' as wint_t) }, 0);
+        assert_eq!(unsafe { exports::iswblank('x' as wint_t) }, 0);
+        assert_ne!(unsafe { exports::iswcntrl('\n' as wint_t) }, 0);
+        assert_eq!(unsafe { exports::iswcntrl('x' as wint_t) }, 0);
+        assert_ne!(unsafe { exports::iswdigit('7' as wint_t) }, 0);
+        assert_eq!(unsafe { exports::iswdigit('x' as wint_t) }, 0);
+        assert_ne!(unsafe { exports::iswgraph('!' as wint_t) }, 0);
+        assert_eq!(unsafe { exports::iswgraph(' ' as wint_t) }, 0);
+        assert_ne!(unsafe { exports::iswlower('q' as wint_t) }, 0);
+        assert_eq!(unsafe { exports::iswlower('Q' as wint_t) }, 0);
+        assert_ne!(unsafe { exports::iswprint(' ' as wint_t) }, 0);
+        assert_eq!(unsafe { exports::iswprint('\n' as wint_t) }, 0);
+        assert_ne!(unsafe { exports::iswpunct('!' as wint_t) }, 0);
+        assert_eq!(unsafe { exports::iswpunct('A' as wint_t) }, 0);
+        assert_ne!(unsafe { exports::iswspace(' ' as wint_t) }, 0);
+        assert_eq!(unsafe { exports::iswspace('x' as wint_t) }, 0);
+        assert_ne!(unsafe { exports::iswupper('Q' as wint_t) }, 0);
+        assert_eq!(unsafe { exports::iswupper('q' as wint_t) }, 0);
+        assert_ne!(unsafe { exports::iswxdigit('f' as wint_t) }, 0);
+        assert_eq!(unsafe { exports::iswxdigit('g' as wint_t) }, 0);
+        assert_eq!(unsafe { exports::towlower('Q' as wint_t) }, 'q' as wint_t);
+        assert_eq!(unsafe { exports::towupper('q' as wint_t) }, 'Q' as wint_t);
     }
 
     #[test]

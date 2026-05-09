@@ -1,0 +1,12 @@
+[package]
+name = "why2025-badge-build"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Build-script helper for WHY2025 badge application linker configuration"
+keywords = ["why2025", "badge"]
+categories = ["development-tools::build-utils", "embedded", "no-std", "os"]
+
+[dependencies]

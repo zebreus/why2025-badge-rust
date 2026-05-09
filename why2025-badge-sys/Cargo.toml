@@ -8,6 +8,12 @@ description = "Bindings to the built-in functions of the WHY2025 badge"
 repository.workspace = true
 keywords = ["why2025", "badge"]
 categories = ["embedded", "no-std", "os", "graphics"]
+build = "src/build_script.rs"
+links = "why2025_badge_sys"
+
+[features]
+default = []
+badge-app-link = []
 
 [dependencies]
 

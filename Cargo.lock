@@ -416,6 +416,7 @@ dependencies = [
  "embedded-graphics",
  "spin",
  "talc",
+ "why2025-badge-build",
  "why2025-badge-embedded-graphics",
  "why2025-badge-sys",
 ]
@@ -443,6 +444,7 @@ version = "0.2.0"
 dependencies = [
  "spin",
  "talc",
+ "why2025-badge-build",
  "why2025-badge-sys",
 ]
 
@@ -901,6 +903,7 @@ dependencies = [
  "ratatui-core",
  "spin",
  "talc",
+ "why2025-badge-build",
  "why2025-badge-embedded-graphics",
  "why2025-badge-sys",
 ]
@@ -1167,6 +1170,7 @@ dependencies = [
  "ratatui-core",
  "spin",
  "talc",
+ "why2025-badge-build",
  "why2025-badge-embedded-graphics",
  "why2025-badge-sys",
 ]
@@ -1871,6 +1875,10 @@ checksum = "52f5ee44c96cf55f1b349600768e3ece3a8f26010c05265ab73f945bb1a2eb9d"
 dependencies = [
  "rustls-pki-types",
 ]
+
+[[package]]
+name = "why2025-badge-build"
+version = "0.2.0"
 
 [[package]]
 name = "why2025-badge-embedded-graphics"

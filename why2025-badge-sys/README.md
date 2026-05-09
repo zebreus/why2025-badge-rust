@@ -26,3 +26,17 @@ The symbols definitely need more documentation. If you want to add some, please 
 * [window_present]
 
 <!-- cargo-rdme end -->
+
+## Badge App Linking
+
+Badge binaries still need final linker args for `--shared`, `--entry=main`, and export pruning. Enable the `badge-app-link` feature on `why2025-badge-sys` to have this crate generate badge-link metadata, including a retain-symbols file in `OUT_DIR`, without requiring a checked-in `retain.txt`.
+
+Cargo only lets the final binary emit `rustc-link-arg-bins`, so the application still needs a tiny build script. Use `why2025-badge-build` there and forward the build script path you want Cargo to watch:
+
+```rust
+fn main() {
+    why2025_badge_build::configure("src/build_script.rs");
+}
+```
+
+The helper reads the `DEP_WHY2025_BADGE_SYS_*` metadata emitted by this crate and only emits the final linker args for `riscv32imafc-unknown-none-elf`, so host builds stay as a no-op.

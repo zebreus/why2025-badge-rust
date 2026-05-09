@@ -12,16 +12,7 @@ use why2025_badge_embedded_graphics::Why2025BadgeWindow;
 mod app;
 mod ui;
 
-#[cfg(target_arch = "riscv32")]
-#[unsafe(no_mangle)]
-pub extern "C" fn main() -> i32 {
-    run()
-}
-
-#[cfg(not(target_arch = "riscv32"))]
-fn main() {
-    std::process::exit(run());
-}
+why2025_badge_app_no_std::app_main!(run);
 
 fn run() -> i32 {
     let mut display = Why2025BadgeWindow::new_fullscreen();
@@ -67,15 +58,17 @@ fn panic(panic_info: &core::panic::PanicInfo) -> ! {
     unsafe {
         let maybe_msg = alloc::string::ToString::to_string(&panic_info.message());
         let msg = maybe_msg.as_ptr();
-        why2025_badge_sys::printf(b"panic: %s\n\0".as_ptr(), msg);
+        why2025_badge_app_no_std::sys::printf(b"panic: %s\n\0".as_ptr(), msg);
         if let Some(location) = panic_info.location() {
-            why2025_badge_sys::printf(
+            why2025_badge_app_no_std::sys::printf(
                 b"in %s:%d\n\0".as_ptr(),
                 location.file().as_ptr(),
                 location.line() as i32,
             );
         } else {
-            why2025_badge_sys::printf(b"no location information available :(\n\0".as_ptr());
+            why2025_badge_app_no_std::sys::printf(
+                b"no location information available :(\n\0".as_ptr(),
+            );
         }
     }
     loop {}

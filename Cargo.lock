@@ -416,9 +416,8 @@ dependencies = [
  "embedded-graphics",
  "spin",
  "talc",
- "why2025-badge-build",
+ "why2025-badge-app-no-std",
  "why2025-badge-embedded-graphics",
- "why2025-badge-sys",
 ]
 
 [[package]]
@@ -444,8 +443,7 @@ version = "0.2.0"
 dependencies = [
  "spin",
  "talc",
- "why2025-badge-build",
- "why2025-badge-sys",
+ "why2025-badge-app-no-std",
 ]
 
 [[package]]
@@ -903,9 +901,8 @@ dependencies = [
  "ratatui-core",
  "spin",
  "talc",
- "why2025-badge-build",
+ "why2025-badge-app-no-std",
  "why2025-badge-embedded-graphics",
- "why2025-badge-sys",
 ]
 
 [[package]]
@@ -1170,9 +1167,8 @@ dependencies = [
  "ratatui-core",
  "spin",
  "talc",
- "why2025-badge-build",
+ "why2025-badge-app-no-std",
  "why2025-badge-embedded-graphics",
- "why2025-badge-sys",
 ]
 
 [[package]]
@@ -1874,6 +1870,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52f5ee44c96cf55f1b349600768e3ece3a8f26010c05265ab73f945bb1a2eb9d"
 dependencies = [
  "rustls-pki-types",
+]
+
+[[package]]
+name = "why2025-badge-app-no-std"
+version = "0.2.0"
+dependencies = [
+ "why2025-badge-sys",
 ]
 
 [[package]]

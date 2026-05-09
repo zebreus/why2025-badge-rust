@@ -10,9 +10,9 @@ categories = ["embedded", "no-std", "os"]
 build = "src/build_script.rs"
 
 [dependencies]
-why2025-badge-sys = { workspace = true, features = ["badge-app-link"] }
+why2025-badge-app-no-std.workspace = true
 talc.workspace = true
 spin.workspace = true
 
 [build-dependencies]
-why2025-badge-build.workspace = true
+why2025-badge-app-no-std.workspace = true

@@ -1,0 +1,15 @@
+[package]
+name = "why2025-badge-app-no-std"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "App-facing facade for building WHY2025 badge Apps across BadgeVMS and Emulation"
+keywords = ["why2025", "badge"]
+categories = ["embedded", "no-std", "os"]
+build = "build.rs"
+links = "why2025_badge_app_no_std"
+
+[dependencies]
+why2025-badge-sys = { workspace = true, features = ["badge-app-link"] }

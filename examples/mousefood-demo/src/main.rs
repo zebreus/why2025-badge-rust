@@ -7,21 +7,10 @@ use mousefood::{TerminalAlignment, prelude::*};
 use ratatui::{Frame, Terminal, widgets::Paragraph};
 use why2025_badge_embedded_graphics::Why2025BadgeWindow;
 
-#[cfg(target_arch = "riscv32")]
-#[unsafe(no_mangle)]
-pub extern "C" fn main() -> i32 {
-    run()
-}
-
-#[cfg(not(target_arch = "riscv32"))]
-fn main() {
-    std::process::exit(run());
-}
+why2025_badge_app_no_std::app_main!(run);
 
 fn run() -> i32 {
-    unsafe {
-        why2025_badge_sys::printf(b"Hello, world! (from rust)\n\0".as_ptr().cast());
-    }
+    why2025_badge_app_no_std::console::print_bytes(b"Hello, world! (from rust)\n\0");
     let mut display = Why2025BadgeWindow::new_floating(
         Size {
             width: 200,
@@ -30,9 +19,7 @@ fn run() -> i32 {
         "Mousefood Demo",
     );
 
-    unsafe {
-        why2025_badge_sys::printf(b"Frame drawn A\n\0".as_ptr().cast());
-    }
+    why2025_badge_app_no_std::console::print_bytes(b"Frame drawn A\n\0");
 
     let config = EmbeddedBackendConfig {
         flush_callback: alloc::boxed::Box::new(|d: &mut Why2025BadgeWindow| {
@@ -44,20 +31,14 @@ fn run() -> i32 {
         vertical_alignment: TerminalAlignment::Center,
         horizontal_alignment: TerminalAlignment::Center,
     };
-    unsafe {
-        why2025_badge_sys::printf(b"Frame drawn B\n\0".as_ptr().cast());
-    }
+    why2025_badge_app_no_std::console::print_bytes(b"Frame drawn B\n\0");
     let backend = EmbeddedBackend::new(&mut display, config);
 
-    unsafe {
-        why2025_badge_sys::printf(b"Frame drawn C\n\0".as_ptr().cast());
-    }
+    why2025_badge_app_no_std::console::print_bytes(b"Frame drawn C\n\0");
     let mut terminal = Terminal::new(backend).unwrap();
 
     loop {
-        unsafe {
-            why2025_badge_sys::printf(b"Frame drawn D\n\0".as_ptr().cast());
-        }
+        why2025_badge_app_no_std::console::print_bytes(b"Frame drawn D\n\0");
         terminal.draw(draw).unwrap();
     }
 }
@@ -88,15 +69,17 @@ fn panic(panic_info: &core::panic::PanicInfo) -> ! {
     unsafe {
         let maybe_msg = alloc::string::ToString::to_string(&panic_info.message());
         let msg = maybe_msg.as_ptr();
-        why2025_badge_sys::printf(b"panic: %s\n\0".as_ptr(), msg);
+        why2025_badge_app_no_std::sys::printf(b"panic: %s\n\0".as_ptr(), msg);
         if let Some(location) = panic_info.location() {
-            why2025_badge_sys::printf(
+            why2025_badge_app_no_std::sys::printf(
                 b"in %s:%d\n\0".as_ptr(),
                 location.file().as_ptr(),
                 location.line() as i32,
             );
         } else {
-            why2025_badge_sys::printf(b"no location information available :(\n\0".as_ptr());
+            why2025_badge_app_no_std::sys::printf(
+                b"no location information available :(\n\0".as_ptr(),
+            );
         }
     }
     loop {}

@@ -13,401 +13,15 @@
 //! the docs say so explicitly instead of inferring behavior from the function name alone.
 
 use crate::types::*;
-use crate::{atof, isascii};
-use core::cell::UnsafeCell;
-use core::ffi::{CStr, VaList, c_char};
-use core::{ptr, slice};
-use std::{
-    borrow::Cow,
-    cell::Cell,
-    io::{self, Write},
-};
+
+mod runtime;
 
 type size_t = usize;
-
-struct HostErrnoCell(UnsafeCell<::core::ffi::c_int>);
-
-unsafe impl Sync for HostErrnoCell {}
-
-static HOST_ERRNO: HostErrnoCell = HostErrnoCell(UnsafeCell::new(0));
-
-std::thread_local! {
-    static HOST_FP_MASK: Cell<fp_except> = const { Cell::new(0) };
-}
-
-const FP_RN_CONST: fp_rnd = 0;
-const FP_RM_CONST: fp_rnd = 1;
-const FP_RP_CONST: fp_rnd = 2;
-const FP_RZ_CONST: fp_rnd = 3;
-
-const FP_X_INV_CONST: fp_except = 0x10;
-const FP_X_DX_CONST: fp_except = 0x80;
-const FP_X_OFL_CONST: fp_except = 0x04;
-const FP_X_UFL_CONST: fp_except = 0x02;
-const FP_X_IMP_CONST: fp_except = 0x01;
-const FP_SUPPORTED_MASK: fp_except =
-    FP_X_INV_CONST | FP_X_DX_CONST | FP_X_OFL_CONST | FP_X_UFL_CONST | FP_X_IMP_CONST;
-
-const HOST_FE_INVALID: ::core::ffi::c_int = 0x01;
-const HOST_FE_DIVBYZERO: ::core::ffi::c_int = 0x04;
-const HOST_FE_OVERFLOW: ::core::ffi::c_int = 0x08;
-const HOST_FE_UNDERFLOW: ::core::ffi::c_int = 0x10;
-const HOST_FE_INEXACT: ::core::ffi::c_int = 0x20;
-const HOST_FE_ALL_EXCEPT: ::core::ffi::c_int =
-    HOST_FE_INVALID | HOST_FE_DIVBYZERO | HOST_FE_OVERFLOW | HOST_FE_UNDERFLOW | HOST_FE_INEXACT;
-
-const HOST_FE_TONEAREST: ::core::ffi::c_int = 0;
-const HOST_FE_DOWNWARD: ::core::ffi::c_int = 0x400;
-const HOST_FE_UPWARD: ::core::ffi::c_int = 0x800;
-const HOST_FE_TOWARDZERO: ::core::ffi::c_int = 0xc00;
-
-const SIGNAL_NAMES: &[(::core::ffi::c_int, &[u8])] = &[
-    (1, b"HUP"),
-    (2, b"INT"),
-    (3, b"QUIT"),
-    (4, b"ILL"),
-    (5, b"TRAP"),
-    (6, b"ABRT"),
-    (7, b"EMT"),
-    (8, b"FPE"),
-    (9, b"KILL"),
-    (10, b"BUS"),
-    (11, b"SEGV"),
-    (12, b"SYS"),
-    (13, b"PIPE"),
-    (14, b"ALRM"),
-    (15, b"TERM"),
-    (16, b"URG"),
-    (17, b"STOP"),
-    (18, b"TSTP"),
-    (19, b"CONT"),
-    (20, b"CHLD"),
-    (21, b"TTIN"),
-    (22, b"TTOU"),
-    (23, b"IO"),
-    (24, b"XCPU"),
-    (25, b"XFSZ"),
-    (26, b"VTALRM"),
-    (27, b"PROF"),
-    (28, b"WINCH"),
-    (29, b"LOST"),
-    (30, b"USR1"),
-    (31, b"USR2"),
-];
-
-const SIGNAL_ALIASES: &[(&[u8], ::core::ffi::c_int)] = &[(b"IOT", 6), (b"CLD", 20), (b"POLL", 23)];
-
-unsafe extern "C" {
-    fn fegetround() -> ::core::ffi::c_int;
-    fn fesetround(round: ::core::ffi::c_int) -> ::core::ffi::c_int;
-    fn fetestexcept(excepts: ::core::ffi::c_int) -> ::core::ffi::c_int;
-    fn feclearexcept(excepts: ::core::ffi::c_int) -> ::core::ffi::c_int;
-    fn feraiseexcept(excepts: ::core::ffi::c_int) -> ::core::ffi::c_int;
-    #[link_name = "__cxa_atexit"]
-    fn host_cxa_atexit(
-        func: ::core::option::Option<unsafe extern "C" fn(*mut ::core::ffi::c_void)>,
-        arg: *mut ::core::ffi::c_void,
-        dso_handle: *mut ::core::ffi::c_void,
-    ) -> ::core::ffi::c_int;
-    #[allow(clashing_extern_declarations)]
-    #[link_name = "vsnprintf"]
-    fn host_vsnprintf(
-        buf: *mut ::core::ffi::c_char,
-        size: size_t,
-        fmt: *const ::core::ffi::c_char,
-        ap: VaList<'_, '_>,
-    ) -> ::core::ffi::c_int;
-    #[allow(clashing_extern_declarations)]
-    #[link_name = "vdprintf"]
-    fn host_vdprintf(
-        fd: ::core::ffi::c_int,
-        fmt: *const ::core::ffi::c_char,
-        ap: VaList<'_, '_>,
-    ) -> ::core::ffi::c_int;
-    fn sprintf(
-        buf: *mut ::core::ffi::c_char,
-        fmt: *const ::core::ffi::c_char,
-        ...
-    ) -> ::core::ffi::c_int;
-    fn wcstoll(
-        nptr: *const _wchar_t,
-        endptr: *mut *mut _wchar_t,
-        base: ::core::ffi::c_int,
-    ) -> ::core::ffi::c_longlong;
-    fn wcstoull(
-        nptr: *const _wchar_t,
-        endptr: *mut *mut _wchar_t,
-        base: ::core::ffi::c_int,
-    ) -> ::core::ffi::c_ulonglong;
-}
-
-fn set_host_errno(value: ::core::ffi::c_int) {
-    unsafe {
-        *HOST_ERRNO.0.get() = value;
-    }
-}
-
-#[cfg(target_os = "linux")]
-fn set_system_errno(value: ::core::ffi::c_int) {
-    unsafe {
-        *libc::__errno_location() = value;
-    }
-}
-
-#[cfg(not(target_os = "linux"))]
-fn set_system_errno(_value: ::core::ffi::c_int) {}
-
-#[cfg(target_os = "linux")]
-fn sync_host_errno_from_system() {
-    unsafe {
-        *HOST_ERRNO.0.get() = *libc::__errno_location();
-    }
-}
-
-#[cfg(not(target_os = "linux"))]
-fn sync_host_errno_from_system() {
-    set_host_errno(0);
-}
-
-fn clear_errno() {
-    set_host_errno(0);
-    set_system_errno(0);
-}
-
-fn ascii_lower(byte: u8) -> u8 {
-    if byte.is_ascii_uppercase() {
-        byte + (b'a' - b'A')
-    } else {
-        byte
-    }
-}
-
-fn ascii_upper(byte: u8) -> u8 {
-    if byte.is_ascii_lowercase() {
-        byte - (b'a' - b'A')
-    } else {
-        byte
-    }
-}
-
-unsafe fn transform_c_string_in_place(
-    ptr_: *mut ::core::ffi::c_char,
-    transform: fn(u8) -> u8,
-) -> *mut ::core::ffi::c_char {
-    if ptr_.is_null() {
-        return ptr::null_mut();
-    }
-
-    let mut cursor = ptr_;
-    while unsafe { *cursor } != 0 {
-        unsafe {
-            *cursor = transform(*cursor as u8) as ::core::ffi::c_char;
-            cursor = cursor.add(1);
-        }
-    }
-
-    ptr_
-}
-
-unsafe fn write_c_string_bytes(dst: *mut ::core::ffi::c_char, bytes: &[u8]) {
-    for (index, byte) in bytes.iter().copied().enumerate() {
-        unsafe {
-            *dst.add(index) = byte as ::core::ffi::c_char;
-        }
-    }
-    unsafe {
-        *dst.add(bytes.len()) = 0;
-    }
-}
-
-fn normalize_signal_name<'a>(bytes: &'a [u8]) -> &'a [u8] {
-    if bytes.len() >= 3 && bytes[..3].eq_ignore_ascii_case(b"SIG") {
-        &bytes[3..]
-    } else {
-        bytes
-    }
-}
-
-fn signal_name(signum: ::core::ffi::c_int) -> Option<&'static [u8]> {
-    SIGNAL_NAMES
-        .iter()
-        .find(|(candidate, _)| *candidate == signum)
-        .map(|(_, name)| *name)
-}
-
-fn parse_signal_name(bytes: &[u8]) -> Option<::core::ffi::c_int> {
-    let normalized = normalize_signal_name(bytes);
-
-    if let Ok(text) = std::str::from_utf8(normalized) {
-        if let Ok(value) = text.parse::<::core::ffi::c_int>() {
-            if signal_name(value).is_some() {
-                return Some(value);
-            }
-        }
-    }
-
-    if let Some((signum, _)) = SIGNAL_NAMES
-        .iter()
-        .find(|(_, name)| normalized.eq_ignore_ascii_case(name))
-    {
-        return Some(*signum);
-    }
-
-    SIGNAL_ALIASES
-        .iter()
-        .find(|(alias, _)| normalized.eq_ignore_ascii_case(alias))
-        .map(|(_, signum)| *signum)
-}
-
-fn host_round_mode_to_badge(mode: ::core::ffi::c_int) -> fp_rnd {
-    match mode {
-        HOST_FE_TONEAREST => FP_RN_CONST,
-        HOST_FE_DOWNWARD => FP_RM_CONST,
-        HOST_FE_UPWARD => FP_RP_CONST,
-        HOST_FE_TOWARDZERO => FP_RZ_CONST,
-        _ => FP_RN_CONST,
-    }
-}
-
-fn badge_round_mode_to_host(mode: fp_rnd) -> Option<::core::ffi::c_int> {
-    match mode {
-        FP_RN_CONST => Some(HOST_FE_TONEAREST),
-        FP_RM_CONST => Some(HOST_FE_DOWNWARD),
-        FP_RP_CONST => Some(HOST_FE_UPWARD),
-        FP_RZ_CONST => Some(HOST_FE_TOWARDZERO),
-        _ => None,
-    }
-}
-
-fn host_excepts_to_badge(mask: ::core::ffi::c_int) -> fp_except {
-    let mut result = 0;
-    if mask & HOST_FE_INVALID != 0 {
-        result |= FP_X_INV_CONST;
-    }
-    if mask & HOST_FE_DIVBYZERO != 0 {
-        result |= FP_X_DX_CONST;
-    }
-    if mask & HOST_FE_OVERFLOW != 0 {
-        result |= FP_X_OFL_CONST;
-    }
-    if mask & HOST_FE_UNDERFLOW != 0 {
-        result |= FP_X_UFL_CONST;
-    }
-    if mask & HOST_FE_INEXACT != 0 {
-        result |= FP_X_IMP_CONST;
-    }
-    result
-}
-
-fn badge_excepts_to_host(mask: fp_except) -> ::core::ffi::c_int {
-    let mut result = 0;
-    if mask & FP_X_INV_CONST != 0 {
-        result |= HOST_FE_INVALID;
-    }
-    if mask & FP_X_DX_CONST != 0 {
-        result |= HOST_FE_DIVBYZERO;
-    }
-    if mask & FP_X_OFL_CONST != 0 {
-        result |= HOST_FE_OVERFLOW;
-    }
-    if mask & FP_X_UFL_CONST != 0 {
-        result |= HOST_FE_UNDERFLOW;
-    }
-    if mask & FP_X_IMP_CONST != 0 {
-        result |= HOST_FE_INEXACT;
-    }
-    result
-}
-
-fn store_fp_mask(mask: fp_except) {
-    HOST_FP_MASK.with(|value| value.set(mask & FP_SUPPORTED_MASK));
-}
-
-fn load_fp_mask() -> fp_except {
-    HOST_FP_MASK.with(Cell::get)
-}
-
-fn is_valid_radix(radix: ::core::ffi::c_int) -> bool {
-    (2..=36).contains(&radix)
-}
-
-unsafe fn format_unsigned_to_buffer(
-    value: u64,
-    dst: *mut ::core::ffi::c_char,
-    radix: u32,
-    negative: bool,
-) -> *mut ::core::ffi::c_char {
-    const DIGITS: &[u8; 36] = b"0123456789abcdefghijklmnopqrstuvwxyz";
-
-    let mut scratch = [0u8; 66];
-    let mut len = 0usize;
-    let mut remaining = value;
-
-    loop {
-        scratch[len] = DIGITS[(remaining % radix as u64) as usize];
-        len += 1;
-        remaining /= radix as u64;
-        if remaining == 0 {
-            break;
-        }
-    }
-
-    let mut out_index = 0usize;
-    if negative {
-        unsafe {
-            *dst = b'-' as ::core::ffi::c_char;
-        }
-        out_index = 1;
-    }
-
-    for index in 0..len {
-        unsafe {
-            *dst.add(out_index + index) = scratch[len - 1 - index] as ::core::ffi::c_char;
-        }
-    }
-    unsafe {
-        *dst.add(out_index + len) = 0;
-    }
-
-    dst
-}
-
-fn c_string_or_placeholder<'a>(ptr: *const c_char, placeholder: &'a str) -> Cow<'a, str> {
-    if ptr.is_null() {
-        Cow::Borrowed(placeholder)
-    } else {
-        unsafe { CStr::from_ptr(ptr) }.to_string_lossy()
-    }
-}
-
-fn compare_f64_nan_high(a: f64, b: f64) -> ::core::ffi::c_int {
-    match a.partial_cmp(&b) {
-        Some(core::cmp::Ordering::Less) => -1,
-        Some(core::cmp::Ordering::Equal) => 0,
-        Some(core::cmp::Ordering::Greater) => 1,
-        None => 1,
-    }
-}
-
-fn compare_f64_nan_low(a: f64, b: f64) -> ::core::ffi::c_int {
-    match a.partial_cmp(&b) {
-        Some(core::cmp::Ordering::Less) => -1,
-        Some(core::cmp::Ordering::Equal) => 0,
-        Some(core::cmp::Ordering::Greater) => 1,
-        None => -1,
-    }
-}
-
-unsafe extern "C" fn atexit_trampoline(ctx: *mut ::core::ffi::c_void) {
-    let callback =
-        unsafe { core::mem::transmute::<*mut ::core::ffi::c_void, unsafe extern "C" fn()>(ctx) };
-    unsafe { callback() };
-}
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __errno() -> *mut ::core::ffi::c_int {
-    HOST_ERRNO.0.get()
+    runtime::__errno()
 }
 
 #[unsafe(no_mangle)]
@@ -415,21 +29,7 @@ pub extern "C" fn __errno() -> *mut ::core::ffi::c_int {
 pub extern "C" fn atexit(
     __func: ::core::option::Option<unsafe extern "C" fn()>,
 ) -> ::core::ffi::c_int {
-    let Some(callback) = __func else {
-        set_host_errno(libc::EINVAL);
-        return -1;
-    };
-
-    clear_errno();
-    let status = unsafe {
-        host_cxa_atexit(
-            Some(atexit_trampoline),
-            callback as *const () as *mut ::core::ffi::c_void,
-            ptr::null_mut(),
-        )
-    };
-    sync_host_errno_from_system();
-    status
+    runtime::atexit(__func)
 }
 
 #[unsafe(no_mangle)]
@@ -439,41 +39,25 @@ pub static _ctype_b: [::core::ffi::c_char; 0usize] = [];
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn atoff(__nptr: *const ::core::ffi::c_char) -> f32 {
-    unsafe {
-        let result = atof(__nptr);
-        return result as f32;
-    }
+    runtime::atoff(__nptr)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn fls(arg1: ::core::ffi::c_int) -> ::core::ffi::c_int {
-    for i in (0..32).rev() {
-        if (arg1 & (1 << i)) != 0 {
-            return i + 1;
-        }
-    }
-    0
+    runtime::fls(arg1)
 }
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn flsl(arg1: ::core::ffi::c_long) -> ::core::ffi::c_int {
-    for i in (0..64).rev() {
-        if (arg1 & (1 << i)) != 0 {
-            return i + 1;
-        }
-    }
-    0
+    runtime::flsl(arg1)
 }
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn flsll(arg1: ::core::ffi::c_longlong) -> ::core::ffi::c_int {
-    for i in (0..64).rev() {
-        if (arg1 & (1 << i)) != 0 {
-            return i + 1;
-        }
-    }
-    0
+    runtime::flsll(arg1)
 }
 
 #[unsafe(no_mangle)]
@@ -484,179 +68,175 @@ pub extern "C" fn __assert_func(
     arg3: *const ::core::ffi::c_char,
     arg4: *const ::core::ffi::c_char,
 ) -> ! {
-    let file = c_string_or_placeholder(arg1, "<unknown file>");
-    let function = if arg3.is_null() {
-        None
-    } else {
-        Some(c_string_or_placeholder(arg3, "<unknown function>"))
-    };
-    let expression = c_string_or_placeholder(arg4, "<unknown expression>");
-
-    let mut stderr = io::stderr().lock();
-    let _ = if let Some(function) = function {
-        writeln!(
-            stderr,
-            "assertion \"{}\" failed: file \"{}\", line {}, function: {}",
-            expression, file, arg2, function
-        )
-    } else {
-        writeln!(
-            stderr,
-            "assertion \"{}\" failed: file \"{}\", line {}",
-            expression, file, arg2
-        )
-    };
-
-    std::process::abort()
+    runtime::__assert_func(arg1, arg2, arg3, arg4)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __adddf3(a: f64, b: f64) -> f64 {
-    a + b
+    runtime::__adddf3(a, b)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __subdf3(a: f64, b: f64) -> f64 {
-    a - b
+    runtime::__subdf3(a, b)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __muldf3(a: f64, b: f64) -> f64 {
-    a * b
+    runtime::__muldf3(a, b)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __divdf3(a: f64, b: f64) -> f64 {
-    a / b
+    runtime::__divdf3(a, b)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __eqdf2(a: f64, b: f64) -> ::core::ffi::c_int {
-    compare_f64_nan_high(a, b)
+    runtime::__eqdf2(a, b)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __gedf2(a: f64, b: f64) -> ::core::ffi::c_int {
-    compare_f64_nan_low(a, b)
+    runtime::__gedf2(a, b)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __gtdf2(a: f64, b: f64) -> ::core::ffi::c_int {
-    compare_f64_nan_low(a, b)
+    runtime::__gtdf2(a, b)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __ledf2(a: f64, b: f64) -> ::core::ffi::c_int {
-    compare_f64_nan_high(a, b)
+    runtime::__ledf2(a, b)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __ltdf2(a: f64, b: f64) -> ::core::ffi::c_int {
-    compare_f64_nan_high(a, b)
+    runtime::__ltdf2(a, b)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __extendsfdf2(a: f32) -> f64 {
+    runtime::__extendsfdf2(a)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __truncdfsf2(a: f64) -> f32 {
+    runtime::__truncdfsf2(a)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __extendhfsf2(a: __BindgenFloat16) -> f32 {
+    runtime::__extendhfsf2(a)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __truncsfhf2(a: f32) -> __BindgenFloat16 {
+    runtime::__truncsfhf2(a)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __fixdfsi(a: f64) -> i32 {
-    a as i32
+    runtime::__fixdfsi(a)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __fixdfdi(a: f64) -> i64 {
-    a as i64
+    runtime::__fixdfdi(a)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __fixunsdfsi(a: f64) -> u32 {
-    a as u32
+    runtime::__fixunsdfsi(a)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __floatdisf(a: i64) -> f32 {
-    a as f32
+    runtime::__floatdisf(a)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __floatsidf(a: i32) -> f64 {
-    a as f64
+    runtime::__floatsidf(a)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __floatundidf(a: u64) -> f64 {
-    a as f64
+    runtime::__floatundidf(a)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __floatundisf(a: u64) -> f32 {
-    a as f32
+    runtime::__floatundisf(a)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __floatunsidf(a: u32) -> f64 {
-    a as f64
+    runtime::__floatunsidf(a)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __issignalingf(f: f32) -> ::core::ffi::c_int {
-    let bits = f.to_bits();
-    let exponent = bits & 0x7f80_0000;
-    let mantissa = bits & 0x007f_ffff;
-    let quiet_bit = 0x0040_0000;
-
-    (exponent == 0x7f80_0000 && mantissa != 0 && (mantissa & quiet_bit) == 0) as ::core::ffi::c_int
+    runtime::__issignalingf(f)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __nedf2(a: f64, b: f64) -> ::core::ffi::c_int {
-    compare_f64_nan_high(a, b)
+    runtime::__nedf2(a, b)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __divdi3(a: i64, b: i64) -> i64 {
-    a / b
+    runtime::__divdi3(a, b)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __udivdi3(a: u64, b: u64) -> u64 {
-    a / b
+    runtime::__udivdi3(a, b)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __umoddi3(a: u64, b: u64) -> u64 {
-    a % b
+    runtime::__umoddi3(a, b)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __clzsi2(a: u32) -> ::core::ffi::c_int {
-    a.leading_zeros() as ::core::ffi::c_int
+    runtime::__clzsi2(a)
 }
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __popcountsi2(a: u32) -> ::core::ffi::c_int {
-    a.count_ones() as ::core::ffi::c_int
+    runtime::__popcountsi2(a)
 }
 
 #[unsafe(no_mangle)]
@@ -682,8 +262,9 @@ pub extern "C" fn __popcountsi2(a: u32) -> ::core::ffi::c_int {
 /// runtime touches hardware FP control state, whether it is thread-local, or whether failures are
 /// representable at all.
 pub extern "C" fn fpgetround() -> fp_rnd {
-    host_round_mode_to_badge(unsafe { fegetround() })
+    runtime::fpgetround()
 }
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 /// Set the floating-point rounding mode.
@@ -702,14 +283,9 @@ pub extern "C" fn fpgetround() -> fp_rnd {
 /// Any functioning badge-side implementation would have to come from external libc or libm rather
 /// than the project-local firmware sources vendored here.
 pub extern "C" fn fpsetround(arg1: fp_rnd) -> fp_rnd {
-    let previous = fpgetround();
-    if let Some(host_mode) = badge_round_mode_to_host(arg1) {
-        unsafe {
-            fesetround(host_mode);
-        }
-    }
-    previous
+    runtime::fpsetround(arg1)
 }
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 /// Query the floating-point exception mask.
@@ -730,8 +306,9 @@ pub extern "C" fn fpsetround(arg1: fp_rnd) -> fp_rnd {
 /// whether these bits map to real hardware exception masks, a software shadow register, or a stub
 /// implementation supplied by external libc.
 pub extern "C" fn fpgetmask() -> fp_except {
-    load_fp_mask()
+    runtime::fpgetmask()
 }
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 /// Set the floating-point exception mask.
@@ -748,10 +325,9 @@ pub extern "C" fn fpgetmask() -> fp_except {
 ///
 /// If the symbol exists on the badge, it is resolved outside this repository's firmware sources.
 pub extern "C" fn fpsetmask(arg1: fp_except) -> fp_except {
-    let previous = fpgetmask();
-    store_fp_mask(arg1);
-    previous
+    runtime::fpsetmask(arg1)
 }
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 /// Query floating-point sticky exception flags.
@@ -766,8 +342,9 @@ pub extern "C" fn fpsetmask(arg1: fp_except) -> fp_except {
 /// repository does not reveal whether these flags are latched in hardware, synthesized in software,
 /// or never updated at all.
 pub extern "C" fn fpgetsticky() -> fp_except {
-    host_excepts_to_badge(unsafe { fetestexcept(HOST_FE_ALL_EXCEPT) })
+    runtime::fpgetsticky()
 }
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 /// Set floating-point sticky exception flags.
@@ -781,21 +358,13 @@ pub extern "C" fn fpgetsticky() -> fp_except {
 /// replaces them wholesale, or is unsupported on the actual badge runtime. Any real implementation
 /// would have to come from external libc rather than from vendored project code.
 pub extern "C" fn fpsetsticky(arg1: fp_except) -> fp_except {
-    let previous = fpgetsticky();
-    unsafe {
-        feclearexcept(HOST_FE_ALL_EXCEPT);
-        let requested = badge_excepts_to_host(arg1 & FP_SUPPORTED_MASK);
-        if requested != 0 {
-            feraiseexcept(requested);
-        }
-    }
-    previous
+    runtime::fpsetsticky(arg1)
 }
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn isascii_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
-    let _ = l;
-    unsafe { isascii(c) }
+    runtime::isascii_l(c, l)
 }
 
 #[unsafe(no_mangle)]
@@ -820,21 +389,7 @@ pub extern "C" fn itoa(
     arg2: *mut ::core::ffi::c_char,
     arg3: ::core::ffi::c_int,
 ) -> *mut ::core::ffi::c_char {
-    if arg2.is_null() || !is_valid_radix(arg3) {
-        set_host_errno(libc::EINVAL);
-        return ptr::null_mut();
-    }
-
-    set_host_errno(0);
-
-    let negative = arg3 == 10 && arg1 < 0;
-    let magnitude = if negative {
-        (arg1 as i64).unsigned_abs()
-    } else {
-        (arg1 as ::core::ffi::c_uint) as u64
-    };
-
-    unsafe { format_unsigned_to_buffer(magnitude, arg2, arg3 as u32, negative) }
+    runtime::itoa(arg1, arg2, arg3)
 }
 
 #[unsafe(no_mangle)]
@@ -855,21 +410,7 @@ pub extern "C" fn sig2str(
     signum: ::core::ffi::c_int,
     str_: *mut ::core::ffi::c_char,
 ) -> ::core::ffi::c_int {
-    let Some(name) = signal_name(signum) else {
-        set_host_errno(libc::EINVAL);
-        return -1;
-    };
-
-    if str_.is_null() {
-        set_host_errno(libc::EINVAL);
-        return -1;
-    }
-
-    set_host_errno(0);
-    unsafe {
-        write_c_string_bytes(str_, name);
-    }
-    0
+    runtime::sig2str(signum, str_)
 }
 
 #[unsafe(no_mangle)]
@@ -889,22 +430,7 @@ pub extern "C" fn str2sig(
     str_: *const ::core::ffi::c_char,
     pnum: *mut ::core::ffi::c_int,
 ) -> ::core::ffi::c_int {
-    if str_.is_null() || pnum.is_null() {
-        set_host_errno(libc::EINVAL);
-        return -1;
-    }
-
-    let bytes = unsafe { CStr::from_ptr(str_) }.to_bytes();
-    let Some(signum) = parse_signal_name(bytes) else {
-        set_host_errno(libc::EINVAL);
-        return -1;
-    };
-
-    set_host_errno(0);
-    unsafe {
-        *pnum = signum;
-    }
-    0
+    runtime::str2sig(str_, pnum)
 }
 
 #[unsafe(no_mangle)]
@@ -922,7 +448,7 @@ pub extern "C" fn str2sig(
 /// exact badge-side rules: ASCII-only versus locale-aware conversion, UTF-8 blindness, null
 /// handling, and write-in-place edge cases are all outside the checked-in project code.
 pub extern "C" fn strlwr(arg1: *mut ::core::ffi::c_char) -> *mut ::core::ffi::c_char {
-    unsafe { transform_c_string_in_place(arg1, ascii_lower) }
+    runtime::strlwr(arg1)
 }
 
 #[unsafe(no_mangle)]
@@ -944,43 +470,7 @@ pub extern "C" fn strnstr(
     arg2: *const ::core::ffi::c_char,
     arg3: size_t,
 ) -> *mut ::core::ffi::c_char {
-    if arg1.is_null() || arg2.is_null() {
-        return ptr::null_mut();
-    }
-
-    let needle_len = unsafe { CStr::from_ptr(arg2) }.to_bytes().len();
-    if needle_len == 0 {
-        return arg1 as *mut ::core::ffi::c_char;
-    }
-
-    let haystack = arg1.cast::<u8>();
-    let needle = arg2.cast::<u8>();
-
-    for offset in 0..arg3 {
-        let current = unsafe { *haystack.add(offset) };
-        if current == 0 {
-            break;
-        }
-        if offset + needle_len > arg3 {
-            break;
-        }
-
-        let mut matched = true;
-        for inner in 0..needle_len {
-            let hay = unsafe { *haystack.add(offset + inner) };
-            let nee = unsafe { *needle.add(inner) };
-            if hay == 0 || hay != nee {
-                matched = false;
-                break;
-            }
-        }
-
-        if matched {
-            return unsafe { haystack.add(offset) } as *mut ::core::ffi::c_char;
-        }
-    }
-
-    ptr::null_mut()
+    runtime::strnstr(arg1, arg2, arg3)
 }
 
 #[unsafe(no_mangle)]
@@ -1010,11 +500,7 @@ pub extern "C" fn strtoimax_l(
     arg2: ::core::ffi::c_int,
     arg3: locale_t,
 ) -> intmax_t {
-    let _ = arg3;
-    clear_errno();
-    let result = unsafe { libc::strtoll(arg1.cast(), _restrict.cast(), arg2) } as intmax_t;
-    sync_host_errno_from_system();
-    result
+    runtime::strtoimax_l(arg1, _restrict, arg2, arg3)
 }
 
 #[unsafe(no_mangle)]
@@ -1042,11 +528,7 @@ pub extern "C" fn strtoumax_l(
     arg2: ::core::ffi::c_int,
     arg3: locale_t,
 ) -> uintmax_t {
-    let _ = arg3;
-    clear_errno();
-    let result = unsafe { libc::strtoull(arg1.cast(), _restrict.cast(), arg2) } as uintmax_t;
-    sync_host_errno_from_system();
-    result
+    runtime::strtoumax_l(arg1, _restrict, arg2, arg3)
 }
 
 #[unsafe(no_mangle)]
@@ -1063,7 +545,7 @@ pub extern "C" fn strtoumax_l(
 /// quirks become visible through SDL callers as well. The repository itself does not reveal whether
 /// conversion is ASCII-only, locale-sensitive, UTF-8 unaware, or tolerant of null pointers.
 pub extern "C" fn strupr(arg1: *mut ::core::ffi::c_char) -> *mut ::core::ffi::c_char {
-    unsafe { transform_c_string_in_place(arg1, ascii_upper) }
+    runtime::strupr(arg1)
 }
 
 #[unsafe(no_mangle)]
@@ -1083,17 +565,7 @@ pub extern "C" fn timingsafe_bcmp(
     arg2: *const ::core::ffi::c_void,
     arg3: size_t,
 ) -> ::core::ffi::c_int {
-    if arg3 == 0 {
-        return 0;
-    }
-
-    let left = unsafe { slice::from_raw_parts(arg1.cast::<u8>(), arg3) };
-    let right = unsafe { slice::from_raw_parts(arg2.cast::<u8>(), arg3) };
-    let mut diff = 0u8;
-    for index in 0..arg3 {
-        diff |= left[index] ^ right[index];
-    }
-    diff as ::core::ffi::c_int
+    runtime::timingsafe_bcmp(arg1, arg2, arg3)
 }
 
 #[unsafe(no_mangle)]
@@ -1112,29 +584,7 @@ pub extern "C" fn timingsafe_memcmp(
     arg2: *const ::core::ffi::c_void,
     arg3: size_t,
 ) -> ::core::ffi::c_int {
-    if arg3 == 0 {
-        return 0;
-    }
-
-    let left = unsafe { slice::from_raw_parts(arg1.cast::<u8>(), arg3) };
-    let right = unsafe { slice::from_raw_parts(arg2.cast::<u8>(), arg3) };
-    let mut left_less = 0u32;
-    let mut right_less = 0u32;
-
-    for index in 0..arg3 {
-        let left_byte = left[index] as u32;
-        let right_byte = right[index] as u32;
-        let undecided = 1 ^ (left_less | right_less);
-
-        left_less |= ((left_byte.wrapping_sub(right_byte) >> 31) & 1) & undecided;
-        right_less |= ((right_byte.wrapping_sub(left_byte) >> 31) & 1) & undecided;
-    }
-
-    match (left_less != 0, right_less != 0) {
-        (true, false) => -1,
-        (false, true) => 1,
-        _ => 0,
-    }
+    runtime::timingsafe_memcmp(arg1, arg2, arg3)
 }
 
 #[unsafe(no_mangle)]
@@ -1160,8 +610,7 @@ pub extern "C" fn timingsafe_memcmp(
 /// The checked-in firmware tree does not provide a project-local out-of-line definition, so this
 /// host fallback only matters for symbol-level ABI consumers that bypass the macro.
 pub extern "C" fn toascii_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
-    let _ = l;
-    c & 0x7f
+    runtime::toascii_l(c, l)
 }
 
 #[unsafe(no_mangle)]
@@ -1183,13 +632,7 @@ pub extern "C" fn utoa(
     arg2: *mut ::core::ffi::c_char,
     arg3: ::core::ffi::c_int,
 ) -> *mut ::core::ffi::c_char {
-    if arg2.is_null() || !is_valid_radix(arg3) {
-        set_host_errno(libc::EINVAL);
-        return ptr::null_mut();
-    }
-
-    set_host_errno(0);
-    unsafe { format_unsigned_to_buffer(arg1 as u64, arg2, arg3 as u32, false) }
+    runtime::utoa(arg1, arg2, arg3)
 }
 
 #[unsafe(no_mangle)]
@@ -1217,11 +660,7 @@ pub extern "C" fn wcstoimax_l(
     arg2: ::core::ffi::c_int,
     arg3: locale_t,
 ) -> intmax_t {
-    let _ = arg3;
-    clear_errno();
-    let result = unsafe { wcstoll(arg1, _restrict, arg2) } as intmax_t;
-    sync_host_errno_from_system();
-    result
+    runtime::wcstoimax_l(arg1, _restrict, arg2, arg3)
 }
 
 #[unsafe(no_mangle)]
@@ -1245,11 +684,7 @@ pub extern "C" fn wcstoumax_l(
     arg2: ::core::ffi::c_int,
     arg3: locale_t,
 ) -> uintmax_t {
-    let _ = arg3;
-    clear_errno();
-    let result = unsafe { wcstoull(arg1, _restrict, arg2) } as uintmax_t;
-    sync_host_errno_from_system();
-    result
+    runtime::wcstoumax_l(arg1, _restrict, arg2, arg3)
 }
 
 #[unsafe(no_mangle)]
@@ -1271,7 +706,7 @@ pub extern "C" fn wcstoumax_l(
 /// repository therefore cannot confirm sign handling through `arg2`, `errno` behavior, pole/NaN
 /// handling, or whether the export manifest is stale.
 pub extern "C" fn gammaf_r(arg1: f32, arg2: *mut ::core::ffi::c_int) -> f32 {
-    unsafe { crate::lgammaf_r(arg1, arg2) }
+    runtime::gammaf_r(arg1, arg2)
 }
 
 #[unsafe(no_mangle)]
@@ -1289,7 +724,7 @@ pub extern "C" fn gammaf_r(arg1: f32, arg2: *mut ::core::ffi::c_int) -> f32 {
 /// The repository therefore does not reveal how `arg2` is written, what happens on overflow or
 /// poles, or whether the exported symbol is actually backed by the toolchain at runtime.
 pub extern "C" fn gamma_r(arg1: f64, arg2: *mut ::core::ffi::c_int) -> f64 {
-    unsafe { crate::lgamma_r(arg1, arg2) }
+    runtime::gamma_r(arg1, arg2)
 }
 
 #[unsafe(no_mangle)]
@@ -1307,7 +742,7 @@ pub extern "C" fn gamma_r(arg1: f64, arg2: *mut ::core::ffi::c_int) -> f64 {
 /// actual badge-side symbol returns a canonical IEEE-754 `+inf`, forwards to a toolchain helper, or
 /// is absent at link time.
 pub extern "C" fn infinity() -> f64 {
-    f64::INFINITY
+    runtime::infinity()
 }
 
 #[unsafe(no_mangle)]
@@ -1324,7 +759,7 @@ pub extern "C" fn infinity() -> f64 {
 /// repository does not show where it comes from. As with `infinity()`, most code can instead use
 /// the `INFINITY` macro, which avoids any symbol call entirely.
 pub extern "C" fn infinityf() -> f32 {
-    f32::INFINITY
+    runtime::infinityf()
 }
 
 #[unsafe(no_mangle)]
@@ -1343,8 +778,9 @@ pub extern "C" fn infinityf() -> f32 {
 /// The repository therefore cannot confirm rounding behavior, errno handling, overflow thresholds,
 /// or whether this symbol is provided by the external libm toolchain on the badge.
 pub extern "C" fn exp10(arg1: f64) -> f64 {
-    10.0_f64.powf(arg1)
+    runtime::exp10(arg1)
 }
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 /// Compute $10^x$ in double precision through the historical `pow10` name.
@@ -1359,8 +795,9 @@ pub extern "C" fn exp10(arg1: f64) -> f64 {
 /// behavior therefore remains external to the repository: this could be a toolchain libm symbol, an
 /// alias to `exp10()`, or an unresolved export manifest entry.
 pub extern "C" fn pow10(arg1: f64) -> f64 {
-    exp10(arg1)
+    runtime::pow10(arg1)
 }
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 /// Compute $10^x$ in single precision.
@@ -1374,8 +811,9 @@ pub extern "C" fn pow10(arg1: f64) -> f64 {
 /// unrelated `__sysvnecv70_target`, which is not the badge target in this repository. For the badge
 /// tree actually vendored here, the implementation remains external and uninspectable.
 pub extern "C" fn exp10f(arg1: f32) -> f32 {
-    10.0_f32.powf(arg1)
+    runtime::exp10f(arg1)
 }
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 /// Compute $10^x$ in single precision through the historical `pow10f` name.
@@ -1388,7 +826,7 @@ pub extern "C" fn exp10f(arg1: f32) -> f32 {
 /// The repository therefore cannot reveal whether the badge treats this as an alias of `exp10f()`,
 /// an independent libm entry point, or merely a stale export declaration.
 pub extern "C" fn pow10f(arg1: f32) -> f32 {
-    exp10f(arg1)
+    runtime::pow10f(arg1)
 }
 
 #[unsafe(no_mangle)]
@@ -1396,9 +834,9 @@ pub extern "C" fn pow10f(arg1: f32) -> f32 {
 pub unsafe extern "C" fn diprintf(
     a: ::core::ffi::c_int,
     b: *const ::core::ffi::c_char,
-    args: ...
+    mut args: ...
 ) -> ::core::ffi::c_int {
-    unsafe { args.with_copy(|mut copy| host_vdprintf(a, b, copy.as_va_list())) }
+    unsafe { runtime::diprintf_with_args(a, b, args.as_va_list()) }
 }
 
 #[unsafe(no_mangle)]
@@ -1442,65 +880,11 @@ pub unsafe extern "C" fn asnprintf(
     str_: *mut ::core::ffi::c_char,
     lenp: *mut size_t,
     fmt: *const ::core::ffi::c_char,
-    args: ...
+    mut args: ...
 ) -> *mut ::core::ffi::c_char {
-    if lenp.is_null() || fmt.is_null() {
-        set_host_errno(libc::EINVAL);
-        return ptr::null_mut();
-    }
-
-    let mut capacity = unsafe { *lenp };
-    let mut buffer = str_;
-    let mut allocated = false;
-
-    let required = unsafe {
-        args.with_copy(|mut copy| host_vsnprintf(ptr::null_mut(), 0, fmt, copy.as_va_list()))
-    };
-    if required < 0 {
-        sync_host_errno_from_system();
-        return ptr::null_mut();
-    }
-
-    let required_len = required as usize;
-    let required_capacity = required_len.saturating_add(1);
-
-    if buffer.is_null() || capacity < required_capacity {
-        buffer = unsafe { libc::malloc(required_capacity) }.cast::<::core::ffi::c_char>();
-        if buffer.is_null() {
-            set_host_errno(libc::ENOMEM);
-            return ptr::null_mut();
-        }
-        capacity = required_capacity;
-        allocated = true;
-    }
-
-    let written = unsafe {
-        args.with_copy(|mut copy| host_vsnprintf(buffer, capacity, fmt, copy.as_va_list()))
-    };
-    if written < 0 {
-        if allocated {
-            unsafe {
-                libc::free(buffer.cast());
-            }
-        }
-        sync_host_errno_from_system();
-        return ptr::null_mut();
-    }
-
-    if allocated {
-        let shrunk = unsafe { libc::realloc(buffer.cast(), required_capacity) }
-            .cast::<::core::ffi::c_char>();
-        if !shrunk.is_null() {
-            buffer = shrunk;
-        }
-    }
-
-    unsafe {
-        *lenp = written as usize;
-    }
-    sync_host_errno_from_system();
-    buffer
+    unsafe { runtime::asnprintf_with_args(str_, lenp, fmt, args.as_va_list()) }
 }
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 /// Format a `float` into a caller-provided buffer using `%g` semantics.
@@ -1527,17 +911,9 @@ pub extern "C" fn gcvtf(
     arg2: ::core::ffi::c_int,
     arg3: *mut ::core::ffi::c_char,
 ) -> *mut ::core::ffi::c_char {
-    if arg3.is_null() {
-        set_host_errno(libc::EINVAL);
-        return ptr::null_mut();
-    }
-
-    unsafe {
-        sprintf(arg3, c"%.*g".as_ptr(), arg2, arg1 as f64);
-    }
-    sync_host_errno_from_system();
-    arg3
+    runtime::gcvtf(arg1, arg2, arg3)
 }
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 /// Format a `long double` into a caller-provided buffer using `%Lg` semantics.
@@ -1561,8 +937,9 @@ pub extern "C" fn gcvtl(
     _arg2: ::core::ffi::c_int,
     _arg3: *mut ::core::ffi::c_char,
 ) -> *mut ::core::ffi::c_char {
-    unimplemented!("If you need this function please open an issue or PR to implement it");
+    runtime::gcvtl(_arg1, _arg2, _arg3)
 }
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 /// Construct a buffered `FILE *` around caller-supplied cookie callbacks.
@@ -1636,334 +1013,5 @@ pub extern "C" fn funopen(
         unsafe extern "C" fn(cookie: *mut ::core::ffi::c_void) -> ::core::ffi::c_int,
     >,
 ) -> *mut FILE {
-    unimplemented!("If you need this function please open an issue or PR to implement it");
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[cfg(unix)]
-    use std::{ffi::CStr, os::unix::process::ExitStatusExt, process::Command};
-
-    #[test]
-    fn floatundidf_matches_host_conversion() {
-        assert_eq!(__floatundidf(0), 0.0);
-        assert_eq!(__floatundidf(1), 1.0);
-        assert_eq!(__floatundidf(1u64 << 63), (1u64 << 63) as f64);
-        assert_eq!(__floatundidf(u64::MAX), u64::MAX as f64);
-    }
-
-    #[test]
-    fn floatundisf_matches_host_conversion() {
-        assert_eq!(__floatundisf(0), 0.0);
-        assert_eq!(__floatundisf(1), 1.0);
-        assert_eq!(__floatundisf(1u64 << 24), (1u64 << 24) as f32);
-        assert_eq!(__floatundisf(u64::MAX), u64::MAX as f32);
-    }
-
-    #[test]
-    fn compiler_rt_arithmetic_and_conversion_helpers_match_host_ops() {
-        assert_eq!(__adddf3(1.25, 2.5), 3.75);
-        assert_eq!(__subdf3(5.5, 2.0), 3.5);
-        assert_eq!(__muldf3(1.5, 4.0), 6.0);
-        assert_eq!(__divdf3(9.0, 4.0), 2.25);
-
-        assert_eq!(__floatsidf(-42), -42.0);
-        assert_eq!(__floatdisf(-123_456_789), -123_456_789_f32);
-        assert_eq!(__floatunsidf(u32::MAX), u32::MAX as f64);
-        assert_eq!(__fixdfsi(42.9), 42);
-        assert_eq!(__fixdfdi(-42.9), -42);
-        assert_eq!(__fixunsdfsi(42.9), 42);
-    }
-
-    #[test]
-    fn compiler_rt_comparison_helpers_follow_expected_ordering() {
-        assert_eq!(__eqdf2(2.0, 2.0), 0);
-        assert_ne!(__eqdf2(1.0, 2.0), 0);
-
-        assert!(__ledf2(1.0, 2.0) < 0);
-        assert_eq!(__ledf2(2.0, 2.0), 0);
-        assert!(__ledf2(f64::NAN, 2.0) > 0);
-
-        assert!(__ltdf2(1.0, 2.0) < 0);
-        assert!(__ltdf2(f64::NAN, 2.0) > 0);
-
-        assert!(__gtdf2(2.0, 1.0) > 0);
-        assert!(__gtdf2(f64::NAN, 2.0) < 0);
-
-        assert!(__gedf2(2.0, 1.0) > 0);
-        assert_eq!(__gedf2(2.0, 2.0), 0);
-        assert!(__gedf2(f64::NAN, 2.0) < 0);
-    }
-
-    #[test]
-    fn compiler_rt_integer_helpers_match_host_ops() {
-        assert_eq!(__divdi3(81, -9), -9);
-        assert_eq!(__udivdi3(81, 9), 9);
-        assert_eq!(__umoddi3(82, 9), 1);
-        assert_eq!(__clzsi2(0), 32);
-        assert_eq!(__clzsi2(1), 31);
-        assert_eq!(__popcountsi2(0b1011_0001), 4);
-    }
-
-    #[test]
-    fn nedf2_uses_compiler_rt_ordering() {
-        assert_eq!(__nedf2(1.0, 2.0), -1);
-        assert_eq!(__nedf2(2.0, 2.0), 0);
-        assert_eq!(__nedf2(3.0, 2.0), 1);
-        assert_eq!(__nedf2(f64::NAN, 2.0), 1);
-        assert_eq!(__nedf2(2.0, f64::NAN), 1);
-    }
-
-    #[test]
-    fn issignalingf_distinguishes_signaling_nan() {
-        let signaling_nan = f32::from_bits(0x7f80_0001);
-        let quiet_nan = f32::from_bits(0x7fc0_0000);
-
-        assert_eq!(__issignalingf(signaling_nan), 1);
-        assert_eq!(__issignalingf(quiet_nan), 0);
-        assert_eq!(__issignalingf(f32::INFINITY), 0);
-        assert_eq!(__issignalingf(1.0), 0);
-    }
-
-    #[test]
-    #[cfg(unix)]
-    fn assert_func_aborts() {
-        const ENV_NAME: &str = "WHY2025_ASSERT_FUNC_TEST";
-        const TEST_NAME: &str = "emulated::libc_fallback::tests::assert_func_aborts";
-
-        if std::env::var_os(ENV_NAME).is_some() {
-            __assert_func(
-                b"test.c\0".as_ptr().cast(),
-                42,
-                b"demo_function\0".as_ptr().cast(),
-                b"x != 0\0".as_ptr().cast(),
-            );
-        }
-
-        let output = Command::new(std::env::current_exe().expect("current test binary path"))
-            .arg("--exact")
-            .arg(TEST_NAME)
-            .env(ENV_NAME, "1")
-            .output()
-            .expect("spawn child test process");
-
-        assert!(!output.status.success());
-        assert_eq!(output.status.signal(), Some(libc::SIGABRT));
-
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        assert!(stderr.contains("assertion \"x != 0\" failed"));
-        assert!(stderr.contains("file \"test.c\", line 42"));
-        assert!(stderr.contains("function: demo_function"));
-    }
-
-    #[test]
-    fn toascii_l_masks_to_low_seven_bits() {
-        assert_eq!(toascii_l(0x141, 123), 0x41);
-    }
-
-    #[test]
-    fn itoa_and_utoa_format_expected_radices() {
-        let mut signed = [0 as c_char; 32];
-        let mut unsigned = [0 as c_char; 32];
-
-        let signed_ptr = itoa(-42, signed.as_mut_ptr(), 10);
-        let unsigned_ptr = utoa(255, unsigned.as_mut_ptr(), 16);
-
-        assert_eq!(signed_ptr, signed.as_mut_ptr());
-        assert_eq!(unsigned_ptr, unsigned.as_mut_ptr());
-        assert_eq!(
-            unsafe { CStr::from_ptr(signed.as_ptr()) }.to_bytes(),
-            b"-42"
-        );
-        assert_eq!(
-            unsafe { CStr::from_ptr(unsigned.as_ptr()) }.to_bytes(),
-            b"ff"
-        );
-    }
-
-    #[test]
-    fn case_conversion_helpers_are_ascii_only() {
-        let mut lower = *b"AbC123!\0";
-        let mut upper = *b"aBc123!\0";
-
-        strlwr(lower.as_mut_ptr().cast());
-        strupr(upper.as_mut_ptr().cast());
-
-        assert_eq!(&lower[..7], b"abc123!");
-        assert_eq!(&upper[..7], b"ABC123!");
-    }
-
-    #[test]
-    fn strnstr_respects_length_limit() {
-        let haystack = b"abcdef\0";
-        let needle = b"bcd\0";
-
-        let found = strnstr(haystack.as_ptr().cast(), needle.as_ptr().cast(), 6);
-        let missing = strnstr(haystack.as_ptr().cast(), needle.as_ptr().cast(), 3);
-
-        assert_eq!(found, unsafe { haystack.as_ptr().add(1) }.cast_mut().cast());
-        assert!(missing.is_null());
-    }
-
-    #[test]
-    fn locale_wrappers_delegate_to_host_parsers() {
-        let input = b"123xyz\0";
-        let mut end = ptr::null_mut();
-
-        let value = strtoimax_l(input.as_ptr().cast(), &mut end, 10, 0);
-
-        assert_eq!(value, 123);
-        assert_eq!(end, unsafe { input.as_ptr().add(3) }.cast_mut().cast());
-        assert_eq!(unsafe { *__errno() }, 0);
-    }
-
-    #[test]
-    fn wide_locale_wrappers_delegate_to_host_parsers() {
-        let input: [_wchar_t; 5] = [b'4' as _wchar_t, b'2' as _wchar_t, b'x' as _wchar_t, 0, 0];
-        let mut end = ptr::null_mut();
-
-        let value = wcstoimax_l(input.as_ptr(), &mut end, 10, 0);
-
-        assert_eq!(value, 42);
-        assert_eq!(end, unsafe { input.as_ptr().add(2) }.cast_mut());
-        assert_eq!(unsafe { *__errno() }, 0);
-    }
-
-    #[test]
-    fn timing_safe_compares_match_expected_results() {
-        let left = b"abc";
-        let equal = b"abc";
-        let greater = b"abd";
-
-        assert_eq!(
-            timingsafe_bcmp(left.as_ptr().cast(), equal.as_ptr().cast(), left.len()),
-            0
-        );
-        assert_ne!(
-            timingsafe_bcmp(left.as_ptr().cast(), greater.as_ptr().cast(), left.len()),
-            0
-        );
-        assert_eq!(
-            timingsafe_memcmp(left.as_ptr().cast(), equal.as_ptr().cast(), left.len()),
-            0
-        );
-        assert_eq!(
-            timingsafe_memcmp(left.as_ptr().cast(), greater.as_ptr().cast(), left.len()),
-            -1
-        );
-        assert_eq!(
-            timingsafe_memcmp(greater.as_ptr().cast(), left.as_ptr().cast(), left.len()),
-            1
-        );
-    }
-
-    #[test]
-    fn signal_conversion_uses_badge_names() {
-        let mut buffer = [0 as c_char; 17];
-        let mut signum = 0;
-
-        assert_eq!(sig2str(30, buffer.as_mut_ptr()), 0);
-        assert_eq!(
-            unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_bytes(),
-            b"USR1"
-        );
-
-        assert_eq!(str2sig(c"sigpoll".as_ptr(), &mut signum), 0);
-        assert_eq!(signum, 23);
-    }
-
-    #[test]
-    fn floating_point_helpers_roundtrip_host_state() {
-        let previous_round = fpgetround();
-        let previous_mask = fpgetmask();
-
-        assert_eq!(fpsetround(FP_RZ_CONST), previous_round);
-        assert_eq!(fpgetround(), FP_RZ_CONST);
-
-        assert_eq!(fpsetmask(FP_X_INV_CONST | FP_X_IMP_CONST), previous_mask);
-        assert_eq!(fpgetmask(), FP_X_INV_CONST | FP_X_IMP_CONST);
-
-        fpsetsticky(0);
-        assert_eq!(fpgetsticky(), 0);
-
-        fpsetround(previous_round);
-        fpsetmask(previous_mask);
-    }
-
-    #[test]
-    fn infinity_and_pow10_helpers_match_host_math() {
-        assert!(infinity().is_infinite() && infinity().is_sign_positive());
-        assert!(infinityf().is_infinite() && infinityf().is_sign_positive());
-        assert_eq!(exp10(3.0), 1000.0);
-        assert_eq!(pow10(2.0), 100.0);
-        assert_eq!(exp10f(3.0), 1000.0);
-        assert_eq!(pow10f(2.0), 100.0);
-    }
-
-    #[test]
-    fn asnprintf_formats_and_reports_length() {
-        let mut len = 4usize;
-        let buffer = unsafe { libc::malloc(len) }.cast::<c_char>();
-        assert!(!buffer.is_null());
-
-        let result = unsafe { asnprintf(buffer, &mut len, c"%s %d".as_ptr(), c"hi".as_ptr(), 42) };
-
-        assert!(!result.is_null());
-        assert_eq!(len, 5);
-        assert_eq!(unsafe { CStr::from_ptr(result) }.to_bytes(), b"hi 42");
-
-        unsafe {
-            libc::free(result.cast());
-        }
-    }
-
-    #[test]
-    fn gcvtf_uses_general_formatting() {
-        let mut buffer = [0 as c_char; 32];
-        let result = gcvtf(12.5, 4, buffer.as_mut_ptr());
-
-        assert_eq!(result, buffer.as_mut_ptr());
-        assert_eq!(
-            unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_bytes(),
-            b"12.5"
-        );
-    }
-
-    #[test]
-    fn diprintf_formats_to_file_descriptor() {
-        let mut fds = [0; 2];
-        assert_eq!(unsafe { libc::pipe(fds.as_mut_ptr()) }, 0);
-
-        let written = unsafe { diprintf(fds[1], c"%s %d".as_ptr(), c"hi".as_ptr(), 42) };
-        assert_eq!(written, 5);
-
-        assert_eq!(unsafe { libc::close(fds[1]) }, 0);
-
-        let mut buffer = [0_u8; 32];
-        let read = unsafe { libc::read(fds[0], buffer.as_mut_ptr().cast(), buffer.len()) };
-        assert_eq!(read, 5);
-        assert_eq!(&buffer[..read as usize], b"hi 42");
-
-        assert_eq!(unsafe { libc::close(fds[0]) }, 0);
-    }
-
-    #[test]
-    fn gamma_helpers_delegate_to_lgamma_helpers() {
-        let mut expected_sign_f32 = 0;
-        let mut actual_sign_f32 = 0;
-        let expected_f32 = unsafe { crate::lgammaf_r(0.5, &mut expected_sign_f32) };
-        let actual_f32 = gammaf_r(0.5, &mut actual_sign_f32);
-
-        assert_eq!(actual_sign_f32, expected_sign_f32);
-        assert_eq!(actual_f32, expected_f32);
-
-        let mut expected_sign_f64 = 0;
-        let mut actual_sign_f64 = 0;
-        let expected_f64 = unsafe { crate::lgamma_r(0.5, &mut expected_sign_f64) };
-        let actual_f64 = gamma_r(0.5, &mut actual_sign_f64);
-
-        assert_eq!(actual_sign_f64, expected_sign_f64);
-        assert_eq!(actual_f64, expected_f64);
-    }
+    runtime::funopen(_cookie, _readfn, _writefn, _seekfn, _closefn)
 }

@@ -25,6 +25,30 @@ pub static mut environ: *mut *mut c_char = core::ptr::null_mut();
 static INIT_WRAPPED_OBJECTS: extern "C" fn() = runtime::init_wrapped_objects;
 
 #[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why__Exit` is just `why_exit(status)`, which logs and deletes only the current task.
+/// - Host forwarding uses libc `_Exit()` and terminates the whole host process immediately.
+pub unsafe extern "C" fn _Exit(status: c_int) -> ! {
+    call_resolved!(runtime::real_exit_cap, status)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why__exit` is just `why_exit(status)`, which logs and deletes only the current task.
+/// - Host forwarding uses libc `_exit()` and terminates the whole host process immediately.
+pub unsafe extern "C" fn _exit(status: c_int) -> ! {
+    call_resolved!(runtime::real_exit_underscore, status)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_abort` logs a warning and deletes only the current task.
+/// - Host forwarding uses libc `abort()` and raises a real process abort instead.
+pub unsafe extern "C" fn abort() -> ! {
+    call_resolved!(runtime::real_abort)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn accept(
     sockfd: c_int,
     addr: *mut sockaddr,
@@ -81,6 +105,14 @@ pub unsafe extern "C" fn connect(
 /// - Host forwarding keeps libc `ctime()` storage semantics instead of BadgeVMS's per-task buffer.
 pub unsafe extern "C" fn ctime(timer: *const time_t) -> *mut c_char {
     call_resolved!(runtime::real_ctime, timer)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_exit` logs the task PID, ignores the status, and deletes only the current task.
+/// - Host forwarding uses libc `exit()`, which terminates the whole host process, flushes stdio, and runs `atexit` handlers.
+pub unsafe extern "C" fn exit(status: c_int) -> ! {
+    call_resolved!(runtime::real_exit, status)
 }
 
 #[unsafe(no_mangle)]
@@ -689,8 +721,32 @@ pub unsafe extern "C" fn strerror(errnum: c_int) -> *mut c_char {
 }
 
 #[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_strerror_r`; badge callers mostly use `why_strerror` instead.
+/// - These bindings expose the GNU `char *` form, so host forwarding matches glibc rather than the POSIX `int` variant some libcs provide.
+pub unsafe extern "C" fn strerror_r(errnum: c_int, buf: *mut c_char, size: usize) -> *mut c_char {
+    call_resolved!(runtime::real_strerror_r, errnum, buf, size)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_strlcat`; badge behavior comes straight from whatever libc exports this BSD extension.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn strlcat(dst: *mut c_char, src: *const c_char, size: c_uint) -> c_uint {
+    call_resolved!(runtime::real_strlcat, dst, src, size)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn strlen(value: *const c_char) -> c_uint {
     call_resolved!(runtime::real_strlen, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_strlcpy`; badge behavior comes straight from whatever libc exports this BSD extension.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn strlcpy(dst: *mut c_char, src: *const c_char, size: c_uint) -> c_uint {
+    call_resolved!(runtime::real_strlcpy, dst, src, size)
 }
 
 #[unsafe(no_mangle)]
@@ -761,6 +817,14 @@ pub unsafe extern "C" fn strtok_r(
     saveptr: *mut *mut c_char,
 ) -> *mut c_char {
     call_resolved!(runtime::real_strtok_r, value, delim, saveptr)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_strverscmp`; badge behavior comes straight from the badge libc's GNU extension.
+/// - Host forwarding matches host glibc's `strverscmp()` semantics and availability instead of a badge-specific wrapper.
+pub unsafe extern "C" fn strverscmp(left: *const c_char, right: *const c_char) -> c_int {
+    call_resolved!(runtime::real_strverscmp, left, right)
 }
 
 #[unsafe(no_mangle)]

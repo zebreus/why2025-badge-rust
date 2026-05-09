@@ -104,6 +104,9 @@ macro_rules! call_resolved {
 
 pub(crate) use call_resolved;
 
+dlsym_resolver!(REAL__EXIT_CAP, real_exit_cap, b"_Exit\0", fn exit_cap(status: c_int) -> !);
+dlsym_resolver!(REAL__EXIT, real_exit_underscore, b"_exit\0", fn exit_underscore(status: c_int) -> !);
+dlsym_resolver!(REAL_ABORT, real_abort, b"abort\0", fn abort() -> !);
 dlsym_resolver!(REAL_ACCEPT, real_accept, b"accept\0", fn accept(sockfd: c_int, addr: *mut sockaddr, addrlen: *mut socklen_t) -> c_int);
 dlsym_resolver!(REAL_ASCTIME, real_asctime, b"asctime\0", fn asctime(tblock: *const tm) -> *mut c_char);
 dlsym_resolver!(REAL_BIND, real_bind, b"bind\0", fn bind(sockfd: c_int, addr: *const sockaddr, addrlen: socklen_t) -> c_int);
@@ -113,6 +116,7 @@ dlsym_resolver!(REAL_CLEARERR, real_clearerr, b"clearerr\0", fn clearerr(stream:
 dlsym_resolver!(REAL_CLEARERR_UNLOCKED, real_clearerr_unlocked, b"clearerr_unlocked\0", fn clearerr_unlocked(stream: *mut FILE) -> ());
 dlsym_resolver!(REAL_CONNECT, real_connect, b"connect\0", fn connect(sockfd: c_int, addr: *const sockaddr, addrlen: socklen_t) -> c_int);
 dlsym_resolver!(REAL_CTIME, real_ctime, b"ctime\0", fn ctime(timer: *const time_t) -> *mut c_char);
+dlsym_resolver!(REAL_EXIT, real_exit, b"exit\0", fn exit(status: c_int) -> !);
 dlsym_resolver!(REAL_FCLOSE, real_fclose, b"fclose\0", fn fclose(stream: *mut FILE) -> c_int);
 dlsym_resolver!(REAL_FDOPEN, real_fdopen, b"fdopen\0", fn fdopen(fd: c_int, mode: *const c_char) -> *mut FILE);
 dlsym_resolver!(REAL_FEOF, real_feof, b"feof\0", fn feof(stream: *mut FILE) -> c_int);
@@ -208,7 +212,10 @@ dlsym_resolver!(REAL_STRCPY, real_strcpy, b"strcpy\0", fn strcpy(dst: *mut c_cha
 dlsym_resolver!(REAL_STRCSPN, real_strcspn, b"strcspn\0", fn strcspn(value: *const c_char, reject: *const c_char) -> c_uint);
 dlsym_resolver!(REAL_STRDUP, real_strdup, b"strdup\0", fn strdup(value: *const c_char) -> *mut c_char);
 dlsym_resolver!(REAL_STRERROR, real_strerror, b"strerror\0", fn strerror(errnum: c_int) -> *mut c_char);
+dlsym_resolver!(REAL_STRERROR_R, real_strerror_r, b"strerror_r\0", fn strerror_r(errnum: c_int, buf: *mut c_char, size: usize) -> *mut c_char);
+dlsym_resolver!(REAL_STRLCAT, real_strlcat, b"strlcat\0", fn strlcat(dst: *mut c_char, src: *const c_char, size: c_uint) -> c_uint);
 dlsym_resolver!(REAL_STRLEN, real_strlen, b"strlen\0", fn strlen(value: *const c_char) -> c_uint);
+dlsym_resolver!(REAL_STRLCPY, real_strlcpy, b"strlcpy\0", fn strlcpy(dst: *mut c_char, src: *const c_char, size: c_uint) -> c_uint);
 dlsym_resolver!(REAL_STRNCAT, real_strncat, b"strncat\0", fn strncat(dst: *mut c_char, src: *const c_char, count: c_uint) -> *mut c_char);
 dlsym_resolver!(REAL_STRNCMP, real_strncmp, b"strncmp\0", fn strncmp(left: *const c_char, right: *const c_char, count: c_uint) -> c_int);
 dlsym_resolver!(REAL_STRNCPY, real_strncpy, b"strncpy\0", fn strncpy(dst: *mut c_char, src: *const c_char, count: c_uint) -> *mut c_char);
@@ -221,6 +228,7 @@ dlsym_resolver!(REAL_STRSPN, real_strspn, b"strspn\0", fn strspn(value: *const c
 dlsym_resolver!(REAL_STRSTR, real_strstr, b"strstr\0", fn strstr(haystack: *const c_char, needle: *const c_char) -> *mut c_char);
 dlsym_resolver!(REAL_STRTOK, real_strtok, b"strtok\0", fn strtok(value: *mut c_char, delim: *const c_char) -> *mut c_char);
 dlsym_resolver!(REAL_STRTOK_R, real_strtok_r, b"strtok_r\0", fn strtok_r(value: *mut c_char, delim: *const c_char, saveptr: *mut *mut c_char) -> *mut c_char);
+dlsym_resolver!(REAL_STRVERSCMP, real_strverscmp, b"strverscmp\0", fn strverscmp(left: *const c_char, right: *const c_char) -> c_int);
 dlsym_resolver!(REAL_SYSTEM, real_system, b"system\0", fn system(command: *const c_char) -> c_int);
 dlsym_resolver!(REAL_TCGETATTR, real_tcgetattr, b"tcgetattr\0", fn tcgetattr(fd: c_int, termios_p: *mut termios) -> c_int);
 dlsym_resolver!(REAL_TCSETATTR, real_tcsetattr, b"tcsetattr\0", fn tcsetattr(fd: c_int, action: c_int, termios_p: *const termios) -> c_int);
@@ -461,6 +469,47 @@ mod tests {
     use core::slice;
     use std::ffi::{CStr, CString};
     use std::os::unix::ffi::OsStrExt;
+    #[cfg(unix)]
+    use std::{
+        fs,
+        os::unix::process::ExitStatusExt,
+        path::Path,
+        process::{Command, Output},
+    };
+
+    #[cfg(unix)]
+    const PROCESS_LIFETIME_ENV: &str = "WHY2025_BADGE_WRAPPED_LIBC_PROCESS_LIFETIME";
+    #[cfg(unix)]
+    const PROCESS_LIFETIME_MODE_ENV: &str = "WHY2025_BADGE_WRAPPED_LIBC_PROCESS_LIFETIME_MODE";
+    #[cfg(unix)]
+    const PROCESS_LIFETIME_MARKER_ENV: &str = "WHY2025_BADGE_WRAPPED_LIBC_PROCESS_LIFETIME_MARKER";
+
+    #[cfg(unix)]
+    unsafe extern "C" fn write_process_lifetime_marker() {
+        if let Some(path) = std::env::var_os(PROCESS_LIFETIME_MARKER_ENV) {
+            fs::write(path, b"atexit").expect("write atexit marker");
+        }
+    }
+
+    #[cfg(unix)]
+    fn spawn_process_lifetime_child(
+        test_name: &str,
+        mode: &str,
+        marker_path: Option<&Path>,
+    ) -> Output {
+        let mut command = Command::new(std::env::current_exe().expect("current test binary path"));
+        command
+            .arg("--exact")
+            .arg(test_name)
+            .env(PROCESS_LIFETIME_ENV, "1")
+            .env(PROCESS_LIFETIME_MODE_ENV, mode);
+
+        if let Some(marker_path) = marker_path {
+            command.env(PROCESS_LIFETIME_MARKER_ENV, marker_path);
+        }
+
+        command.output().expect("spawn child test process")
+    }
 
     #[test]
     fn host_getpid_interposes_direct_badge_calls() {
@@ -825,6 +874,138 @@ mod tests {
         unsafe { real_srandom()(0x4321) };
         let host_random = [unsafe { real_random()() }, unsafe { real_random()() }];
         assert_eq!(badge_random, host_random);
+    }
+
+    #[test]
+    fn host_portability_edge_helpers_roundtrip() {
+        let source = CString::new("badge").unwrap();
+
+        let mut wrapped_lcpy = [0 as c_char; 4];
+        let mut host_lcpy = [0 as c_char; 4];
+        let wrapped_lcpy_len = unsafe {
+            exports::strlcpy(
+                wrapped_lcpy.as_mut_ptr(),
+                source.as_ptr(),
+                wrapped_lcpy.len() as c_uint,
+            )
+        };
+        let host_lcpy_len = unsafe {
+            real_strlcpy()(host_lcpy.as_mut_ptr(), source.as_ptr(), host_lcpy.len() as c_uint)
+        };
+        assert_eq!(wrapped_lcpy_len, host_lcpy_len);
+        assert_eq!(wrapped_lcpy, host_lcpy);
+
+        let mut wrapped_lcat = [0 as c_char; 6];
+        let mut host_lcat = [0 as c_char; 6];
+        unsafe {
+            exports::strcpy(wrapped_lcat.as_mut_ptr(), b"hi\0".as_ptr().cast());
+            real_strcpy()(host_lcat.as_mut_ptr(), b"hi\0".as_ptr().cast());
+        }
+        let wrapped_lcat_len = unsafe {
+            exports::strlcat(
+                wrapped_lcat.as_mut_ptr(),
+                source.as_ptr(),
+                wrapped_lcat.len() as c_uint,
+            )
+        };
+        let host_lcat_len = unsafe {
+            real_strlcat()(host_lcat.as_mut_ptr(), source.as_ptr(), host_lcat.len() as c_uint)
+        };
+        assert_eq!(wrapped_lcat_len, host_lcat_len);
+        assert_eq!(wrapped_lcat, host_lcat);
+
+        let mut wrapped_buf = [0 as c_char; 128];
+        let mut host_buf = [0 as c_char; 128];
+        let wrapped_ptr = unsafe {
+            exports::strerror_r(libc::ENOENT, wrapped_buf.as_mut_ptr(), wrapped_buf.len())
+        };
+        let host_ptr = unsafe {
+            real_strerror_r()(libc::ENOENT, host_buf.as_mut_ptr(), host_buf.len())
+        };
+        assert_eq!(unsafe { CStr::from_ptr(wrapped_ptr) }.to_bytes(), unsafe {
+            CStr::from_ptr(host_ptr)
+        }
+        .to_bytes());
+
+        let file9 = CString::new("file9").unwrap();
+        let file10 = CString::new("file10").unwrap();
+        let wrapped_cmp = unsafe { exports::strverscmp(file9.as_ptr(), file10.as_ptr()) };
+        let host_cmp = unsafe { real_strverscmp()(file9.as_ptr(), file10.as_ptr()) };
+        assert_eq!(wrapped_cmp.signum(), host_cmp.signum());
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn host_exit_family_and_atexit_follow_host_process_semantics() {
+        const TEST_NAME: &str =
+            "emulated::wrapped_libc::runtime::tests::host_exit_family_and_atexit_follow_host_process_semantics";
+
+        if std::env::var_os(PROCESS_LIFETIME_ENV).is_some() {
+            match std::env::var(PROCESS_LIFETIME_MODE_ENV)
+                .expect("process lifetime mode")
+                .as_str()
+            {
+                "exit" => {
+                    assert_eq!(
+                        crate::emulated::libc_fallback::atexit(Some(write_process_lifetime_marker)),
+                        0
+                    );
+                    unsafe { exports::exit(23) }
+                }
+                "_exit" => {
+                    assert_eq!(
+                        crate::emulated::libc_fallback::atexit(Some(write_process_lifetime_marker)),
+                        0
+                    );
+                    unsafe { exports::_exit(24) }
+                }
+                "_Exit" => {
+                    assert_eq!(
+                        crate::emulated::libc_fallback::atexit(Some(write_process_lifetime_marker)),
+                        0
+                    );
+                    unsafe { exports::_Exit(25) }
+                }
+                other => panic!("unexpected process lifetime mode: {other}"),
+            }
+        }
+
+        let mut exit_marker = std::env::temp_dir();
+        exit_marker.push(format!("why2025-badge-atexit-exit-{}", std::process::id()));
+        let _ = fs::remove_file(&exit_marker);
+        let output = spawn_process_lifetime_child(TEST_NAME, "exit", Some(&exit_marker));
+        assert_eq!(output.status.code(), Some(23));
+        assert_eq!(fs::read(&exit_marker).expect("read exit marker"), b"atexit");
+        let _ = fs::remove_file(&exit_marker);
+
+        let mut underscore_marker = std::env::temp_dir();
+        underscore_marker.push(format!("why2025-badge-atexit-_exit-{}", std::process::id()));
+        let _ = fs::remove_file(&underscore_marker);
+        let output = spawn_process_lifetime_child(TEST_NAME, "_exit", Some(&underscore_marker));
+        assert_eq!(output.status.code(), Some(24));
+        assert!(!underscore_marker.exists());
+
+        let mut exit_cap_marker = std::env::temp_dir();
+        exit_cap_marker.push(format!("why2025-badge-atexit-_Exit-{}", std::process::id()));
+        let _ = fs::remove_file(&exit_cap_marker);
+        let output = spawn_process_lifetime_child(TEST_NAME, "_Exit", Some(&exit_cap_marker));
+        assert_eq!(output.status.code(), Some(25));
+        assert!(!exit_cap_marker.exists());
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn host_abort_follows_host_process_abort_semantics() {
+        const TEST_NAME: &str =
+            "emulated::wrapped_libc::runtime::tests::host_abort_follows_host_process_abort_semantics";
+
+        if std::env::var_os(PROCESS_LIFETIME_ENV).is_some() {
+            unsafe { exports::abort() }
+        }
+
+        let output = spawn_process_lifetime_child(TEST_NAME, "abort", None);
+        assert!(!output.status.success());
+        assert_eq!(output.status.signal(), Some(libc::SIGABRT));
     }
 
     #[test]

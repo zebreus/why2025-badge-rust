@@ -26,6 +26,9 @@ pub extern "C" fn __errno() -> *mut ::core::ffi::c_int {
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_atexit` only logs and returns `0`; it does not register the callback.
+/// - The host fallback registers a real host exit handler through `__cxa_atexit`, so callbacks do run at host process exit.
 pub extern "C" fn atexit(
     __func: ::core::option::Option<unsafe extern "C" fn()>,
 ) -> ::core::ffi::c_int {

@@ -8,8 +8,8 @@ fn badge_link_metadata(var: &str) -> Option<String> {
     })
 }
 
-pub fn configure(build_script_path: &str) {
-    println!("cargo::rerun-if-changed={build_script_path}");
+pub fn configure() {
+    println!("cargo::rerun-if-changed=build.rs");
 
     if env::var("TARGET").as_deref() != Ok(BADGE_TARGET) {
         return;

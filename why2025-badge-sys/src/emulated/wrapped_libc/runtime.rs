@@ -239,6 +239,7 @@ dlsym_resolver!(REAL_UNGETC, real_ungetc, b"ungetc\0", fn ungetc(value: c_int, s
 dlsym_resolver!(REAL_UNLINK, real_unlink, b"unlink\0", fn unlink(path: *const c_char) -> c_int);
 dlsym_resolver!(REAL_WCSDUP, real_wcsdup, b"wcsdup\0", fn wcsdup(value: *const wchar_t) -> *mut wchar_t);
 dlsym_resolver!(REAL_WCSCHR, real_wcschr, b"wcschr\0", fn wcschr(value: *const wchar_t, needle: c_int) -> *mut wchar_t);
+dlsym_resolver!(REAL_WCSCAT, real_wcscat, b"wcscat\0", fn wcscat(dst: *mut wchar_t, src: *const wchar_t) -> *mut wchar_t);
 dlsym_resolver!(REAL_WCSCMP, real_wcscmp, b"wcscmp\0", fn wcscmp(left: *const wchar_t, right: *const wchar_t) -> c_int);
 dlsym_resolver!(REAL_WSCPY, real_wcscpy, b"wcscpy\0", fn wcscpy(dst: *mut wchar_t, src: *const wchar_t) -> *mut wchar_t);
 dlsym_resolver!(REAL_WCSCSPN, real_wcscspn, b"wcscspn\0", fn wcscspn(value: *const wchar_t, reject: *const wchar_t) -> usize);
@@ -246,9 +247,18 @@ dlsym_resolver!(REAL_WCSLEN, real_wcslen, b"wcslen\0", fn wcslen(value: *const w
 dlsym_resolver!(REAL_WCSNCMP, real_wcsncmp, b"wcsncmp\0", fn wcsncmp(left: *const wchar_t, right: *const wchar_t, count: c_uint) -> c_int);
 dlsym_resolver!(REAL_WCSNCPY, real_wcsncpy, b"wcsncpy\0", fn wcsncpy(dst: *mut wchar_t, src: *const wchar_t, count: usize) -> *mut wchar_t);
 dlsym_resolver!(REAL_WCSNLEN, real_wcsnlen, b"wcsnlen\0", fn wcsnlen(value: *const wchar_t, count: usize) -> usize);
+dlsym_resolver!(REAL_WCSNCAT, real_wcsncat, b"wcsncat\0", fn wcsncat(dst: *mut wchar_t, src: *const wchar_t, count: usize) -> *mut wchar_t);
+dlsym_resolver!(REAL_WCSPBRK, real_wcspbrk, b"wcspbrk\0", fn wcspbrk(value: *const wchar_t, accept: *const wchar_t) -> *mut wchar_t);
 dlsym_resolver!(REAL_WCSRCHR, real_wcsrchr, b"wcsrchr\0", fn wcsrchr(value: *const wchar_t, needle: wchar_t) -> *mut wchar_t);
+dlsym_resolver!(REAL_WCSSPN, real_wcsspn, b"wcsspn\0", fn wcsspn(value: *const wchar_t, accept: *const wchar_t) -> usize);
+dlsym_resolver!(REAL_WCSSTR, real_wcsstr, b"wcsstr\0", fn wcsstr(haystack: *const wchar_t, needle: *const wchar_t) -> *mut wchar_t);
+dlsym_resolver!(REAL_WCSTOK, real_wcstok, b"wcstok\0", fn wcstok(value: *mut wchar_t, delim: *const wchar_t, saveptr: *mut *mut wchar_t) -> *mut wchar_t);
 dlsym_resolver!(REAL_WMEMCMP, real_wmemcmp, b"wmemcmp\0", fn wmemcmp(left: *const wchar_t, right: *const wchar_t, count: c_uint) -> c_int);
+dlsym_resolver!(REAL_WMEMCHR, real_wmemchr, b"wmemchr\0", fn wmemchr(value: *const wchar_t, needle: c_int, count: c_uint) -> *mut wchar_t);
 dlsym_resolver!(REAL_WMEMCPY, real_wmemcpy, b"wmemcpy\0", fn wmemcpy(dst: *mut wchar_t, src: *const wchar_t, count: c_uint) -> *mut wchar_t);
+dlsym_resolver!(REAL_WMEMMOVE, real_wmemmove, b"wmemmove\0", fn wmemmove(dst: *mut wchar_t, src: *const wchar_t, count: c_uint) -> *mut wchar_t);
+dlsym_resolver!(REAL_WMEMPCPY, real_wmempcpy, b"wmempcpy\0", fn wmempcpy(dst: *mut wchar_t, src: *const wchar_t, count: usize) -> *mut wchar_t);
+dlsym_resolver!(REAL_WMEMSET, real_wmemset, b"wmemset\0", fn wmemset(dst: *mut wchar_t, value: wchar_t, count: usize) -> *mut wchar_t);
 dlsym_resolver!(REAL_ISWALNUM, real_iswalnum, b"iswalnum\0", fn iswalnum(value: wint_t) -> c_int);
 dlsym_resolver!(REAL_ISWALPHA, real_iswalpha, b"iswalpha\0", fn iswalpha(value: wint_t) -> c_int);
 dlsym_resolver!(REAL_ISWBLANK, real_iswblank, b"iswblank\0", fn iswblank(value: wint_t) -> c_int);
@@ -494,6 +504,7 @@ mod tests {
     use core::slice;
     use std::ffi::{CStr, CString};
     use std::os::unix::ffi::OsStrExt;
+    use std::ptr;
     #[cfg(unix)]
     use std::{
         fs,
@@ -1011,6 +1022,81 @@ mod tests {
         let mut different = wide_copy;
         different[2] = '!' as wchar_t;
         assert_ne!(unsafe { exports::wmemcmp(different.as_ptr(), why.as_ptr(), why.len() as c_uint) }, 0);
+    }
+
+    #[test]
+    fn host_additional_wide_string_helpers_roundtrip() {
+        let badge = ['b' as wchar_t, 'a' as wchar_t, 'd' as wchar_t, 'g' as wchar_t, 'e' as wchar_t, 0];
+        let rust = ['r' as wchar_t, 'u' as wchar_t, 's' as wchar_t, 't' as wchar_t, 0];
+        let digits = ['2' as wchar_t, '0' as wchar_t, '2' as wchar_t, '5' as wchar_t, 0];
+        let vowels = ['a' as wchar_t, 'e' as wchar_t, 'i' as wchar_t, 'o' as wchar_t, 'u' as wchar_t, 0];
+        let delimiters = [':' as wchar_t, '/' as wchar_t, 0];
+        let needle = ['r' as wchar_t, 'u' as wchar_t, 0];
+
+        let mut appended = [0 as wchar_t; 16];
+        appended[..badge.len()].copy_from_slice(&badge);
+        assert_eq!(unsafe { exports::wcscat(appended.as_mut_ptr(), rust.as_ptr()) }, appended.as_mut_ptr());
+        assert_eq!(&appended[..9], &['b' as wchar_t, 'a' as wchar_t, 'd' as wchar_t, 'g' as wchar_t, 'e' as wchar_t, 'r' as wchar_t, 'u' as wchar_t, 's' as wchar_t, 't' as wchar_t]);
+
+        let mut partial = [0 as wchar_t; 16];
+        partial[..badge.len()].copy_from_slice(&badge);
+        assert_eq!(unsafe { exports::wcsncat(partial.as_mut_ptr(), digits.as_ptr(), 2) }, partial.as_mut_ptr());
+        assert_eq!(&partial[..7], &['b' as wchar_t, 'a' as wchar_t, 'd' as wchar_t, 'g' as wchar_t, 'e' as wchar_t, '2' as wchar_t, '0' as wchar_t]);
+
+        let first_vowel = unsafe { exports::wcspbrk(rust.as_ptr(), vowels.as_ptr()) };
+        assert!(!first_vowel.is_null());
+        assert_eq!(unsafe { first_vowel.offset_from(rust.as_ptr()) }, 1);
+        assert_eq!(unsafe { exports::wcsspn(badge.as_ptr(), vowels.as_ptr()) }, 0);
+
+        let found = unsafe { exports::wcsstr(appended.as_ptr(), needle.as_ptr()) };
+        assert!(!found.is_null());
+        assert_eq!(unsafe { found.offset_from(appended.as_ptr()) }, 5);
+
+        let mut tokens = [
+            'b' as wchar_t,
+            'a' as wchar_t,
+            'd' as wchar_t,
+            'g' as wchar_t,
+            'e' as wchar_t,
+            ':' as wchar_t,
+            'r' as wchar_t,
+            'u' as wchar_t,
+            's' as wchar_t,
+            't' as wchar_t,
+            '/' as wchar_t,
+            '2' as wchar_t,
+            '0' as wchar_t,
+            '2' as wchar_t,
+            '5' as wchar_t,
+            0,
+        ];
+        let mut save = ptr::null_mut();
+        let first = unsafe { exports::wcstok(tokens.as_mut_ptr(), delimiters.as_ptr(), &mut save) };
+        let second = unsafe { exports::wcstok(ptr::null_mut(), delimiters.as_ptr(), &mut save) };
+        let third = unsafe { exports::wcstok(ptr::null_mut(), delimiters.as_ptr(), &mut save) };
+        let fourth = unsafe { exports::wcstok(ptr::null_mut(), delimiters.as_ptr(), &mut save) };
+        assert_eq!(unsafe { slice::from_raw_parts(first, 5) }, &badge[..5]);
+        assert_eq!(unsafe { slice::from_raw_parts(second, 4) }, &rust[..4]);
+        assert_eq!(unsafe { slice::from_raw_parts(third, 4) }, &digits[..4]);
+        assert!(fourth.is_null());
+
+        let why = ['W' as wchar_t, 'H' as wchar_t, 'Y' as wchar_t, 0];
+        let ch = unsafe { exports::wmemchr(why.as_ptr(), 'H' as c_int, why.len() as c_uint) };
+        assert!(!ch.is_null());
+        assert_eq!(unsafe { ch.offset_from(why.as_ptr()) }, 1);
+
+        let mut moved = ['A' as wchar_t, 'B' as wchar_t, 'C' as wchar_t, 'D' as wchar_t, 0];
+        assert_eq!(unsafe { exports::wmemmove(moved.as_mut_ptr().add(1), moved.as_ptr(), 3) }, unsafe { moved.as_mut_ptr().add(1) });
+        assert_eq!(&moved[..4], &['A' as wchar_t, 'A' as wchar_t, 'B' as wchar_t, 'C' as wchar_t]);
+
+        let mut padded = [0 as wchar_t; 6];
+        assert_eq!(unsafe { exports::wmemset(padded.as_mut_ptr(), 'Z' as wchar_t, 4) }, padded.as_mut_ptr());
+        assert_eq!(&padded[..4], &['Z' as wchar_t, 'Z' as wchar_t, 'Z' as wchar_t, 'Z' as wchar_t]);
+
+        let mut copied = [0 as wchar_t; 6];
+        let tail = unsafe { exports::wmempcpy(copied.as_mut_ptr(), why.as_ptr(), 3) };
+        assert_eq!(tail, unsafe { copied.as_mut_ptr().add(3) });
+        assert_eq!(&copied[..3], &why[..3]);
     }
 
     #[test]

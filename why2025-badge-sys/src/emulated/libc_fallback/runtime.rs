@@ -814,6 +814,76 @@ pub(super) fn fpsetsticky(arg1: fp_except) -> fp_except {
     previous
 }
 
+pub(super) fn isalnum_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    let _ = l;
+    unsafe { crate::isalnum(c) }
+}
+
+pub(super) fn isalpha_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    let _ = l;
+    unsafe { crate::isalpha(c) }
+}
+
+pub(super) fn isblank_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    let _ = l;
+    unsafe { crate::isblank(c) }
+}
+
+pub(super) fn iscntrl_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    let _ = l;
+    unsafe { crate::iscntrl(c) }
+}
+
+pub(super) fn isdigit_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    let _ = l;
+    unsafe { crate::isdigit(c) }
+}
+
+pub(super) fn isgraph_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    let _ = l;
+    unsafe { crate::isgraph(c) }
+}
+
+pub(super) fn islower_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    let _ = l;
+    unsafe { crate::islower(c) }
+}
+
+pub(super) fn isprint_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    let _ = l;
+    unsafe { crate::isprint(c) }
+}
+
+pub(super) fn ispunct_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    let _ = l;
+    unsafe { crate::ispunct(c) }
+}
+
+pub(super) fn isspace_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    let _ = l;
+    unsafe { crate::isspace(c) }
+}
+
+pub(super) fn isupper_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    let _ = l;
+    unsafe { crate::isupper(c) }
+}
+
+pub(super) fn isxdigit_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    let _ = l;
+    unsafe { crate::isxdigit(c) }
+}
+
+pub(super) fn tolower_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    let _ = l;
+    unsafe { crate::tolower(c) }
+}
+
+pub(super) fn toupper_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    let _ = l;
+    unsafe { crate::toupper(c) }
+}
+
 pub(super) fn isascii_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
     let _ = l;
     unsafe { isascii(c) }
@@ -1753,6 +1823,27 @@ mod tests {
     #[test]
     fn toascii_l_masks_to_low_seven_bits() {
         assert_eq!(toascii_l(0x141, 123), 0x41);
+    }
+
+    #[test]
+    fn locale_ctype_wrappers_ignore_locale_and_match_plain_helpers() {
+        for locale in [0, 77] {
+            assert_eq!(isalnum_l('A' as c_char as i32, locale), unsafe { crate::isalnum('A' as c_char as i32) });
+            assert_eq!(isalpha_l('Q' as c_char as i32, locale), unsafe { crate::isalpha('Q' as c_char as i32) });
+            assert_eq!(isblank_l(' ' as c_char as i32, locale), unsafe { crate::isblank(' ' as c_char as i32) });
+            assert_eq!(iscntrl_l('\n' as c_char as i32, locale), unsafe { crate::iscntrl('\n' as c_char as i32) });
+            assert_eq!(isdigit_l('7' as c_char as i32, locale), unsafe { crate::isdigit('7' as c_char as i32) });
+            assert_eq!(isgraph_l('!' as c_char as i32, locale), unsafe { crate::isgraph('!' as c_char as i32) });
+            assert_eq!(islower_l('q' as c_char as i32, locale), unsafe { crate::islower('q' as c_char as i32) });
+            assert_eq!(isprint_l(' ' as c_char as i32, locale), unsafe { crate::isprint(' ' as c_char as i32) });
+            assert_eq!(ispunct_l('!' as c_char as i32, locale), unsafe { crate::ispunct('!' as c_char as i32) });
+            assert_eq!(isspace_l('\t' as c_char as i32, locale), unsafe { crate::isspace('\t' as c_char as i32) });
+            assert_eq!(isupper_l('Q' as c_char as i32, locale), unsafe { crate::isupper('Q' as c_char as i32) });
+            assert_eq!(isxdigit_l('f' as c_char as i32, locale), unsafe { crate::isxdigit('f' as c_char as i32) });
+            assert_eq!(tolower_l('Q' as c_char as i32, locale), unsafe { crate::tolower('Q' as c_char as i32) });
+            assert_eq!(toupper_l('q' as c_char as i32, locale), unsafe { crate::toupper('q' as c_char as i32) });
+            assert_eq!(isascii_l(0x41, locale), unsafe { crate::isascii(0x41) });
+        }
     }
 
     #[test]

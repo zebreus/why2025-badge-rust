@@ -366,6 +366,166 @@ pub extern "C" fn fpsetsticky(arg1: fp_except) -> fp_except {
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` defines this as an inline wrapper that discards `locale_t` and
+/// delegates to `isalnum(c)`. The vendored tree ships no out-of-line definition, so this fallback
+/// only matters for symbol-level ABI consumers that bypass the inline.
+pub extern "C" fn isalnum_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    runtime::isalnum_l(c, l)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` defines this as an inline wrapper that discards `locale_t` and
+/// delegates to `isalpha(c)`. The vendored tree ships no out-of-line definition, so this fallback
+/// only matters for symbol-level ABI consumers that bypass the inline.
+pub extern "C" fn isalpha_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    runtime::isalpha_l(c, l)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` defines this as an inline wrapper that discards `locale_t` and
+/// delegates to `isblank(c)`. The vendored tree ships no out-of-line definition, so this fallback
+/// only matters for symbol-level ABI consumers that bypass the inline.
+pub extern "C" fn isblank_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    runtime::isblank_l(c, l)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` defines this as an inline wrapper that discards `locale_t` and
+/// delegates to `iscntrl(c)`. The vendored tree ships no out-of-line definition, so this fallback
+/// only matters for symbol-level ABI consumers that bypass the inline.
+pub extern "C" fn iscntrl_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    runtime::iscntrl_l(c, l)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` defines this as an inline wrapper that discards `locale_t` and
+/// delegates to `isdigit(c)`. The vendored tree ships no out-of-line definition, so this fallback
+/// only matters for symbol-level ABI consumers that bypass the inline.
+pub extern "C" fn isdigit_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    runtime::isdigit_l(c, l)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` defines this as an inline wrapper that discards `locale_t` and
+/// delegates to `isgraph(c)`. The vendored tree ships no out-of-line definition, so this fallback
+/// only matters for symbol-level ABI consumers that bypass the inline.
+pub extern "C" fn isgraph_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    runtime::isgraph_l(c, l)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` defines this as an inline wrapper that discards `locale_t` and
+/// delegates to `islower(c)`. The vendored tree ships no out-of-line definition, so this fallback
+/// only matters for symbol-level ABI consumers that bypass the inline.
+pub extern "C" fn islower_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    runtime::islower_l(c, l)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` defines this as an inline wrapper that discards `locale_t` and
+/// delegates to `isprint(c)`. The vendored tree ships no out-of-line definition, so this fallback
+/// only matters for symbol-level ABI consumers that bypass the inline.
+pub extern "C" fn isprint_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    runtime::isprint_l(c, l)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` defines this as an inline wrapper that discards `locale_t` and
+/// delegates to `ispunct(c)`. The vendored tree ships no out-of-line definition, so this fallback
+/// only matters for symbol-level ABI consumers that bypass the inline.
+pub extern "C" fn ispunct_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    runtime::ispunct_l(c, l)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` defines this as an inline wrapper that discards `locale_t` and
+/// delegates to `isspace(c)`. The vendored tree ships no out-of-line definition, so this fallback
+/// only matters for symbol-level ABI consumers that bypass the inline.
+pub extern "C" fn isspace_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    runtime::isspace_l(c, l)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` defines this as an inline wrapper that discards `locale_t` and
+/// delegates to `isupper(c)`. The vendored tree ships no out-of-line definition, so this fallback
+/// only matters for symbol-level ABI consumers that bypass the inline.
+pub extern "C" fn isupper_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    runtime::isupper_l(c, l)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` defines this as an inline wrapper that discards `locale_t` and
+/// delegates to `isxdigit(c)`. The vendored tree ships no out-of-line definition, so this fallback
+/// only matters for symbol-level ABI consumers that bypass the inline.
+pub extern "C" fn isxdigit_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    runtime::isxdigit_l(c, l)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` defines this as an inline wrapper that discards `locale_t` and
+/// delegates to `tolower(c)`. The vendored tree ships no out-of-line definition, so this fallback
+/// only matters for symbol-level ABI consumers that bypass the inline.
+pub extern "C" fn tolower_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    runtime::tolower_l(c, l)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` defines this as an inline wrapper that discards `locale_t` and
+/// delegates to `toupper(c)`. The vendored tree ships no out-of-line definition, so this fallback
+/// only matters for symbol-level ABI consumers that bypass the inline.
+pub extern "C" fn toupper_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
+    runtime::toupper_l(c, l)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Exact upstream behavior
+///
+/// `firmware/sdk_include/ctype.h` declares `isascii_l` and defines it as a macro that discards
+/// `locale_t` and checks whether the input fits in 7-bit ASCII. The vendored tree ships no
+/// out-of-line definition, so this fallback only matters for symbol-level ABI consumers that bypass
+/// the macro.
 pub extern "C" fn isascii_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
     runtime::isascii_l(c, l)
 }

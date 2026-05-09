@@ -1,6 +1,6 @@
 use crate::{
     _ssize_t, DIR, FILE, addrinfo, dirent, fpos_t, iconv_t, in_addr, mode_t, off_t, pid_t, re_guts,
-    regex_t, sockaddr, socklen_t, stat as stat_t, termios, time_t, tm,
+    regex_t, sockaddr, socklen_t, stat as stat_t, termios, time_t, tm, wchar_t,
 };
 use core::ffi::{c_char, c_int, c_long, c_uint, c_void};
 use core::mem;
@@ -180,6 +180,8 @@ dlsym_resolver!(REAL_MKDIR, real_mkdir, b"mkdir\0", fn mkdir(path: *const c_char
 dlsym_resolver!(REAL_OPENDIR, real_opendir, b"opendir\0", fn opendir(name: *const c_char) -> *mut DIR);
 dlsym_resolver!(REAL_PUTCHAR, real_putchar, b"putchar\0", fn putchar(value: c_int) -> c_int);
 dlsym_resolver!(REAL_PUTS, real_puts, b"puts\0", fn puts(value: *const c_char) -> c_int);
+dlsym_resolver!(REAL_RAND, real_rand, b"rand\0", fn rand() -> c_int);
+dlsym_resolver!(REAL_RANDOM, real_random, b"random\0", fn random() -> c_long);
 dlsym_resolver!(REAL_READ, real_read, b"read\0", fn read(fd: c_int, buf: *mut c_void, count: usize) -> isize);
 dlsym_resolver!(REAL_READDIR, real_readdir, b"readdir\0", fn readdir(dir: *mut DIR) -> *mut dirent);
 dlsym_resolver!(REAL_REMOVE, real_remove, b"remove\0", fn remove(path: *const c_char) -> c_int);
@@ -192,6 +194,8 @@ dlsym_resolver!(REAL_SETBUFFER, real_setbuffer, b"setbuffer\0", fn setbuffer(str
 dlsym_resolver!(REAL_SETLINEBUF, real_setlinebuf, b"setlinebuf\0", fn setlinebuf(stream: *mut FILE) -> ());
 dlsym_resolver!(REAL_SETVBUF, real_setvbuf, b"setvbuf\0", fn setvbuf(stream: *mut FILE, buf: *mut c_char, mode: c_int, size: usize) -> c_int);
 dlsym_resolver!(REAL_SOCKET, real_socket, b"socket\0", fn socket(domain: c_int, ty: c_int, protocol: c_int) -> c_int);
+dlsym_resolver!(REAL_SRAND, real_srand, b"srand\0", fn srand(seed: c_uint) -> ());
+dlsym_resolver!(REAL_SRANDOM, real_srandom, b"srandom\0", fn srandom(seed: c_uint) -> ());
 dlsym_resolver!(REAL_STAT, real_stat, b"stat\0", fn stat(path: *const c_char, buf: *mut stat_t) -> c_int);
 dlsym_resolver!(REAL_STPCPY, real_stpcpy, b"stpcpy\0", fn stpcpy(dst: *mut c_char, src: *const c_char) -> *mut c_char);
 dlsym_resolver!(REAL_STPNCPY, real_stpncpy, b"stpncpy\0", fn stpncpy(dst: *mut c_char, src: *const c_char, count: c_uint) -> *mut c_char);
@@ -202,17 +206,20 @@ dlsym_resolver!(REAL_STRCHRNUL, real_strchrnul, b"strchrnul\0", fn strchrnul(val
 dlsym_resolver!(REAL_STRCMP, real_strcmp, b"strcmp\0", fn strcmp(left: *const c_char, right: *const c_char) -> c_int);
 dlsym_resolver!(REAL_STRCPY, real_strcpy, b"strcpy\0", fn strcpy(dst: *mut c_char, src: *const c_char) -> *mut c_char);
 dlsym_resolver!(REAL_STRCSPN, real_strcspn, b"strcspn\0", fn strcspn(value: *const c_char, reject: *const c_char) -> c_uint);
+dlsym_resolver!(REAL_STRDUP, real_strdup, b"strdup\0", fn strdup(value: *const c_char) -> *mut c_char);
 dlsym_resolver!(REAL_STRERROR, real_strerror, b"strerror\0", fn strerror(errnum: c_int) -> *mut c_char);
 dlsym_resolver!(REAL_STRLEN, real_strlen, b"strlen\0", fn strlen(value: *const c_char) -> c_uint);
 dlsym_resolver!(REAL_STRNCAT, real_strncat, b"strncat\0", fn strncat(dst: *mut c_char, src: *const c_char, count: c_uint) -> *mut c_char);
 dlsym_resolver!(REAL_STRNCMP, real_strncmp, b"strncmp\0", fn strncmp(left: *const c_char, right: *const c_char, count: c_uint) -> c_int);
 dlsym_resolver!(REAL_STRNCPY, real_strncpy, b"strncpy\0", fn strncpy(dst: *mut c_char, src: *const c_char, count: c_uint) -> *mut c_char);
+dlsym_resolver!(REAL_STRNDUP, real_strndup, b"strndup\0", fn strndup(value: *const c_char, count: c_uint) -> *mut c_char);
 dlsym_resolver!(REAL_STRNLEN, real_strnlen, b"strnlen\0", fn strnlen(value: *const c_char, count: usize) -> usize);
 dlsym_resolver!(REAL_STRPBRK, real_strpbrk, b"strpbrk\0", fn strpbrk(value: *const c_char, accept: *const c_char) -> *mut c_char);
 dlsym_resolver!(REAL_STRRCHR, real_strrchr, b"strrchr\0", fn strrchr(value: *const c_char, needle: c_int) -> *mut c_char);
 dlsym_resolver!(REAL_STRSEP, real_strsep, b"strsep\0", fn strsep(stringp: *mut *mut c_char, delim: *const c_char) -> *mut c_char);
 dlsym_resolver!(REAL_STRSPN, real_strspn, b"strspn\0", fn strspn(value: *const c_char, accept: *const c_char) -> c_uint);
 dlsym_resolver!(REAL_STRSTR, real_strstr, b"strstr\0", fn strstr(haystack: *const c_char, needle: *const c_char) -> *mut c_char);
+dlsym_resolver!(REAL_STRTOK, real_strtok, b"strtok\0", fn strtok(value: *mut c_char, delim: *const c_char) -> *mut c_char);
 dlsym_resolver!(REAL_STRTOK_R, real_strtok_r, b"strtok_r\0", fn strtok_r(value: *mut c_char, delim: *const c_char, saveptr: *mut *mut c_char) -> *mut c_char);
 dlsym_resolver!(REAL_SYSTEM, real_system, b"system\0", fn system(command: *const c_char) -> c_int);
 dlsym_resolver!(REAL_TCGETATTR, real_tcgetattr, b"tcgetattr\0", fn tcgetattr(fd: c_int, termios_p: *mut termios) -> c_int);
@@ -222,6 +229,7 @@ dlsym_resolver!(REAL_TOASCII, real_toascii, b"toascii\0", fn toascii(value: c_in
 dlsym_resolver!(REAL_TOUPPER, real_toupper, b"toupper\0", fn toupper(value: c_int) -> c_int);
 dlsym_resolver!(REAL_UNGETC, real_ungetc, b"ungetc\0", fn ungetc(value: c_int, stream: *mut FILE) -> c_int);
 dlsym_resolver!(REAL_UNLINK, real_unlink, b"unlink\0", fn unlink(path: *const c_char) -> c_int);
+dlsym_resolver!(REAL_WCSDUP, real_wcsdup, b"wcsdup\0", fn wcsdup(value: *const wchar_t) -> *mut wchar_t);
 dlsym_resolver!(REAL_WRITE, real_write, b"write\0", fn write(fd: c_int, buf: *const c_void, count: usize) -> isize);
 
 static REAL_OPEN: OnceLock<unsafe extern "C" fn(*const c_char, c_int, ...) -> c_int> =
@@ -773,6 +781,50 @@ mod tests {
             CStr::from_ptr(host)
         }
         .to_bytes());
+    }
+
+    #[test]
+    fn host_duplication_and_rng_helpers_roundtrip() {
+        let text = CString::new("badge-rust").unwrap();
+
+        let duplicated = unsafe { exports::strdup(text.as_ptr()) };
+        assert!(!duplicated.is_null());
+        assert_eq!(unsafe { CStr::from_ptr(duplicated) }.to_bytes(), b"badge-rust");
+        unsafe { libc::free(duplicated.cast::<c_void>()) };
+
+        let duplicated_prefix = unsafe { exports::strndup(text.as_ptr(), 5) };
+        assert!(!duplicated_prefix.is_null());
+        assert_eq!(unsafe { CStr::from_ptr(duplicated_prefix) }.to_bytes(), b"badge");
+        unsafe { libc::free(duplicated_prefix.cast::<c_void>()) };
+
+        let wide = ['W' as wchar_t, 'H' as wchar_t, 'Y' as wchar_t, 0];
+        let wide_dup = unsafe { exports::wcsdup(wide.as_ptr()) };
+        assert!(!wide_dup.is_null());
+        let wide_slice = unsafe { slice::from_raw_parts(wide_dup, wide.len()) };
+        assert_eq!(wide_slice, &wide);
+        unsafe { libc::free(wide_dup.cast::<c_void>()) };
+
+        let comma = CString::new(",").unwrap();
+        let mut colors = b"red,green,blue\0".to_vec();
+        let token1 = unsafe { exports::strtok(colors.as_mut_ptr().cast::<c_char>(), comma.as_ptr()) };
+        assert_eq!(unsafe { CStr::from_ptr(token1) }.to_bytes(), b"red");
+        let token2 = unsafe { exports::strtok(core::ptr::null_mut(), comma.as_ptr()) };
+        assert_eq!(unsafe { CStr::from_ptr(token2) }.to_bytes(), b"green");
+        let token3 = unsafe { exports::strtok(core::ptr::null_mut(), comma.as_ptr()) };
+        assert_eq!(unsafe { CStr::from_ptr(token3) }.to_bytes(), b"blue");
+        assert!(unsafe { exports::strtok(core::ptr::null_mut(), comma.as_ptr()) }.is_null());
+
+        unsafe { exports::srand(0x1234) };
+        let badge_rand = [unsafe { exports::rand() }, unsafe { exports::rand() }];
+        unsafe { real_srand()(0x1234) };
+        let host_rand = [unsafe { real_rand()() }, unsafe { real_rand()() }];
+        assert_eq!(badge_rand, host_rand);
+
+        unsafe { exports::srandom(0x4321) };
+        let badge_random = [unsafe { exports::random() }, unsafe { exports::random() }];
+        unsafe { real_srandom()(0x4321) };
+        let host_random = [unsafe { real_random()() }, unsafe { real_random()() }];
+        assert_eq!(badge_random, host_random);
     }
 
     #[test]

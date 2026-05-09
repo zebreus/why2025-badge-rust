@@ -1,6 +1,6 @@
 use crate::{
     _ssize_t, DIR, FILE, addrinfo, fpos_t, iconv_t, in_addr, mode_t, off_t, pid_t, regex_t,
-    sockaddr, socklen_t, stat as stat_t, termios, time_t, tm,
+    sockaddr, socklen_t, stat as stat_t, termios, time_t, tm, wchar_t,
 };
 use core::ffi::{c_char, c_int, c_long, c_uint, c_void};
 
@@ -34,6 +34,9 @@ pub unsafe extern "C" fn accept(
 }
 
 #[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_asctime` calls `asctime_r` into a task-local buffer.
+/// - Host forwarding keeps libc `asctime()` storage semantics instead of BadgeVMS's per-task buffer.
 pub unsafe extern "C" fn asctime(tblock: *const tm) -> *mut c_char {
     call_resolved!(runtime::real_asctime, tblock)
 }
@@ -73,6 +76,9 @@ pub unsafe extern "C" fn connect(
 }
 
 #[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_ctime` calls `ctime_r` into a task-local buffer.
+/// - Host forwarding keeps libc `ctime()` storage semantics instead of BadgeVMS's per-task buffer.
 pub unsafe extern "C" fn ctime(timer: *const time_t) -> *mut c_char {
     call_resolved!(runtime::real_ctime, timer)
 }
@@ -261,6 +267,9 @@ pub unsafe extern "C" fn gets(buf: *mut c_char) -> *mut c_char {
 }
 
 #[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_gmtime` calls `gmtime_r` into a task-local `tm`.
+/// - Host forwarding keeps libc `gmtime()` storage semantics instead of BadgeVMS's per-task struct.
 pub unsafe extern "C" fn gmtime(timer: *const time_t) -> *mut tm {
     call_resolved!(runtime::real_gmtime, timer)
 }
@@ -361,6 +370,9 @@ pub unsafe extern "C" fn listen(sockfd: c_int, backlog: c_int) -> c_int {
 }
 
 #[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_localtime` calls `localtime_r` into a task-local `tm`.
+/// - Host forwarding keeps libc `localtime()` storage semantics instead of BadgeVMS's per-task struct.
 pub unsafe extern "C" fn localtime(timer: *const time_t) -> *mut tm {
     call_resolved!(runtime::real_localtime, timer)
 }
@@ -479,6 +491,22 @@ pub unsafe extern "C" fn puts(value: *const c_char) -> c_int {
 }
 
 #[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_rand` uses `rand_r(&task_info->seed)`, so RNG state is per-task.
+/// - Host forwarding keeps libc `rand()` semantics and its process-global RNG state.
+pub unsafe extern "C" fn rand() -> c_int {
+    call_resolved!(runtime::real_rand)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_random` is just task-local `rand_r` widened to `long`.
+/// - Host forwarding keeps libc `random()` semantics, which may use a different generator and global state.
+pub unsafe extern "C" fn random() -> c_long {
+    call_resolved!(runtime::real_random)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn read(fd: c_int, buf: *mut c_void, count: usize) -> isize {
     call_resolved!(runtime::real_read, fd, buf, count)
 }
@@ -579,6 +607,22 @@ pub unsafe extern "C" fn socket(domain: c_int, ty: c_int, protocol: c_int) -> c_
 }
 
 #[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_srand` only seeds `task_info->seed` for the current task.
+/// - Host forwarding seeds libc's global `rand()` state instead.
+pub unsafe extern "C" fn srand(seed: c_uint) {
+    call_resolved!(runtime::real_srand, seed)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_srandom` is another setter for the same task-local `seed` used by `why_random`.
+/// - Host forwarding seeds libc's global `random()` state instead.
+pub unsafe extern "C" fn srandom(seed: c_uint) {
+    call_resolved!(runtime::real_srandom, seed)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn stat(path: *const c_char, buf: *mut stat_t) -> c_int {
     call_resolved!(runtime::real_stat, path, buf)
 }
@@ -629,6 +673,17 @@ pub unsafe extern "C" fn strcspn(value: *const c_char, reject: *const c_char) ->
 }
 
 #[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_strdup` returns `NULL` for `NULL` input; canonical libc leaves that undefined.
+/// - Upstream allocates with `why_malloc`; host forwarding allocates from libc and must be freed with host `free()`.
+pub unsafe extern "C" fn strdup(value: *const c_char) -> *mut c_char {
+    call_resolved!(runtime::real_strdup, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_strerror` formats into a task-local buffer via `strerror_r`.
+/// - Host forwarding keeps libc `strerror()` storage semantics instead of BadgeVMS's per-task buffer.
 pub unsafe extern "C" fn strerror(errnum: c_int) -> *mut c_char {
     call_resolved!(runtime::real_strerror, errnum)
 }
@@ -651,6 +706,14 @@ pub unsafe extern "C" fn strncmp(left: *const c_char, right: *const c_char, coun
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn strncpy(dst: *mut c_char, src: *const c_char, count: c_uint) -> *mut c_char {
     call_resolved!(runtime::real_strncpy, dst, src, count)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_strndup` returns `NULL` for `NULL` input; canonical libc leaves that undefined.
+/// - Upstream allocates with `why_malloc`; host forwarding allocates from libc and must be freed with host `free()`.
+pub unsafe extern "C" fn strndup(value: *const c_char, count: c_uint) -> *mut c_char {
+    call_resolved!(runtime::real_strndup, value, count)
 }
 
 #[unsafe(no_mangle)]
@@ -684,6 +747,14 @@ pub unsafe extern "C" fn strstr(haystack: *const c_char, needle: *const c_char) 
 }
 
 #[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_strtok` is a task-local wrapper around `strtok_r` using `task_info->strtok_saveptr`.
+/// - Host forwarding keeps libc `strtok()` semantics and its hidden tokenizer state instead.
+pub unsafe extern "C" fn strtok(value: *mut c_char, delim: *const c_char) -> *mut c_char {
+    call_resolved!(runtime::real_strtok, value, delim)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn strtok_r(
     value: *mut c_char,
     delim: *const c_char,
@@ -693,8 +764,19 @@ pub unsafe extern "C" fn strtok_r(
 }
 
 #[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_system` is a stub that returns `0` without executing anything.
+/// - Host forwarding uses libc `system()` and therefore runs a real host shell command.
 pub unsafe extern "C" fn system(command: *const c_char) -> c_int {
     call_resolved!(runtime::real_system, command)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - Upstream `why_wcsdup` returns `NULL` for `NULL` input; canonical libc leaves that undefined.
+/// - Upstream allocates with `why_malloc`; host forwarding allocates from libc and must be freed with host `free()`.
+pub unsafe extern "C" fn wcsdup(value: *const wchar_t) -> *mut wchar_t {
+    call_resolved!(runtime::real_wcsdup, value)
 }
 
 #[unsafe(no_mangle)]

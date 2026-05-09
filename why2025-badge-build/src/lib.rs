@@ -3,9 +3,9 @@ use std::env;
 const BADGE_TARGET: &str = "riscv32imafc-unknown-none-elf";
 
 fn badge_link_metadata(var: &str) -> Option<String> {
-    env::var(format!("DEP_WHY2025_BADGE_APP_NO_STD_{var}")).ok().or_else(|| {
-        env::var(format!("DEP_WHY2025_BADGE_SYS_{var}")).ok()
-    })
+    env::var(format!("DEP_WHY2025_BADGE_APP_NO_STD_{var}"))
+        .ok()
+        .or_else(|| env::var(format!("DEP_WHY2025_BADGE_SYS_{var}")).ok())
 }
 
 pub fn configure() {

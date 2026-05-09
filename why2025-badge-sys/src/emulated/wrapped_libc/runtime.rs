@@ -240,10 +240,12 @@ dlsym_resolver!(REAL_UNLINK, real_unlink, b"unlink\0", fn unlink(path: *const c_
 dlsym_resolver!(REAL_WCSDUP, real_wcsdup, b"wcsdup\0", fn wcsdup(value: *const wchar_t) -> *mut wchar_t);
 dlsym_resolver!(REAL_WCSCHR, real_wcschr, b"wcschr\0", fn wcschr(value: *const wchar_t, needle: c_int) -> *mut wchar_t);
 dlsym_resolver!(REAL_WCSCAT, real_wcscat, b"wcscat\0", fn wcscat(dst: *mut wchar_t, src: *const wchar_t) -> *mut wchar_t);
+dlsym_resolver!(REAL_WCSCASECMP, real_wcscasecmp, b"wcscasecmp\0", fn wcscasecmp(left: *const wchar_t, right: *const wchar_t) -> c_int);
 dlsym_resolver!(REAL_WCSCMP, real_wcscmp, b"wcscmp\0", fn wcscmp(left: *const wchar_t, right: *const wchar_t) -> c_int);
 dlsym_resolver!(REAL_WSCPY, real_wcscpy, b"wcscpy\0", fn wcscpy(dst: *mut wchar_t, src: *const wchar_t) -> *mut wchar_t);
 dlsym_resolver!(REAL_WCSCSPN, real_wcscspn, b"wcscspn\0", fn wcscspn(value: *const wchar_t, reject: *const wchar_t) -> usize);
 dlsym_resolver!(REAL_WCSLEN, real_wcslen, b"wcslen\0", fn wcslen(value: *const wchar_t) -> c_uint);
+dlsym_resolver!(REAL_WCSNCASECMP, real_wcsncasecmp, b"wcsncasecmp\0", fn wcsncasecmp(left: *const wchar_t, right: *const wchar_t, count: usize) -> c_int);
 dlsym_resolver!(REAL_WCSNCMP, real_wcsncmp, b"wcsncmp\0", fn wcsncmp(left: *const wchar_t, right: *const wchar_t, count: c_uint) -> c_int);
 dlsym_resolver!(REAL_WCSNCPY, real_wcsncpy, b"wcsncpy\0", fn wcsncpy(dst: *mut wchar_t, src: *const wchar_t, count: usize) -> *mut wchar_t);
 dlsym_resolver!(REAL_WCSNLEN, real_wcsnlen, b"wcsnlen\0", fn wcsnlen(value: *const wchar_t, count: usize) -> usize);
@@ -252,7 +254,10 @@ dlsym_resolver!(REAL_WCSPBRK, real_wcspbrk, b"wcspbrk\0", fn wcspbrk(value: *con
 dlsym_resolver!(REAL_WCSRCHR, real_wcsrchr, b"wcsrchr\0", fn wcsrchr(value: *const wchar_t, needle: wchar_t) -> *mut wchar_t);
 dlsym_resolver!(REAL_WCSSPN, real_wcsspn, b"wcsspn\0", fn wcsspn(value: *const wchar_t, accept: *const wchar_t) -> usize);
 dlsym_resolver!(REAL_WCSSTR, real_wcsstr, b"wcsstr\0", fn wcsstr(haystack: *const wchar_t, needle: *const wchar_t) -> *mut wchar_t);
+dlsym_resolver!(REAL_WCSWIDTH, real_wcswidth, b"wcswidth\0", fn wcswidth(value: *const wchar_t, count: usize) -> c_int);
 dlsym_resolver!(REAL_WCSTOK, real_wcstok, b"wcstok\0", fn wcstok(value: *mut wchar_t, delim: *const wchar_t, saveptr: *mut *mut wchar_t) -> *mut wchar_t);
+dlsym_resolver!(REAL_WCTOB, real_wctob, b"wctob\0", fn wctob(value: wint_t) -> c_int);
+dlsym_resolver!(REAL_WCWIDTH, real_wcwidth, b"wcwidth\0", fn wcwidth(value: wchar_t) -> c_int);
 dlsym_resolver!(REAL_WMEMCMP, real_wmemcmp, b"wmemcmp\0", fn wmemcmp(left: *const wchar_t, right: *const wchar_t, count: c_uint) -> c_int);
 dlsym_resolver!(REAL_WMEMCHR, real_wmemchr, b"wmemchr\0", fn wmemchr(value: *const wchar_t, needle: c_int, count: c_uint) -> *mut wchar_t);
 dlsym_resolver!(REAL_WMEMCPY, real_wmemcpy, b"wmemcpy\0", fn wmemcpy(dst: *mut wchar_t, src: *const wchar_t, count: c_uint) -> *mut wchar_t);
@@ -1097,6 +1102,38 @@ mod tests {
         let tail = unsafe { exports::wmempcpy(copied.as_mut_ptr(), why.as_ptr(), 3) };
         assert_eq!(tail, unsafe { copied.as_mut_ptr().add(3) });
         assert_eq!(&copied[..3], &why[..3]);
+    }
+
+    #[test]
+    fn host_wide_case_and_width_helpers_roundtrip() {
+        let mixed = ['B' as wchar_t, 'a' as wchar_t, 'D' as wchar_t, 'g' as wchar_t, 'E' as wchar_t, 0];
+        let lowered = ['b' as wchar_t, 'A' as wchar_t, 'd' as wchar_t, 'G' as wchar_t, 'e' as wchar_t, 0];
+        let lowered_suffix = ['b' as wchar_t, 'A' as wchar_t, 'x' as wchar_t, 'G' as wchar_t, 'e' as wchar_t, 0];
+        let badge = ['b' as wchar_t, 'a' as wchar_t, 'd' as wchar_t, 'g' as wchar_t, 'e' as wchar_t, 0];
+
+        let wrapped_casecmp = unsafe { exports::wcscasecmp(mixed.as_ptr(), lowered.as_ptr()) };
+        let host_casecmp = unsafe { real_wcscasecmp()(mixed.as_ptr(), lowered.as_ptr()) };
+        assert_eq!(wrapped_casecmp.signum(), host_casecmp.signum());
+
+        let wrapped_ncasecmp = unsafe { exports::wcsncasecmp(mixed.as_ptr(), lowered_suffix.as_ptr(), 2) };
+        let host_ncasecmp = unsafe { real_wcsncasecmp()(mixed.as_ptr(), lowered_suffix.as_ptr(), 2) };
+        assert_eq!(wrapped_ncasecmp.signum(), host_ncasecmp.signum());
+
+        let wrapped_ncasecmp_diff = unsafe { exports::wcsncasecmp(mixed.as_ptr(), lowered_suffix.as_ptr(), 3) };
+        let host_ncasecmp_diff = unsafe { real_wcsncasecmp()(mixed.as_ptr(), lowered_suffix.as_ptr(), 3) };
+        assert_eq!(wrapped_ncasecmp_diff.signum(), host_ncasecmp_diff.signum());
+
+        let wrapped_wctob = unsafe { exports::wctob('A' as wint_t) };
+        let host_wctob_value = unsafe { real_wctob()('A' as wint_t) };
+        assert_eq!(wrapped_wctob, host_wctob_value);
+
+        let wrapped_wcwidth = unsafe { exports::wcwidth('A' as wchar_t) };
+        let host_wcwidth_value = unsafe { real_wcwidth()('A' as wchar_t) };
+        assert_eq!(wrapped_wcwidth, host_wcwidth_value);
+
+        let wrapped_wcswidth = unsafe { exports::wcswidth(badge.as_ptr(), 5) };
+        let host_wcswidth_value = unsafe { real_wcswidth()(badge.as_ptr(), 5) };
+        assert_eq!(wrapped_wcswidth, host_wcswidth_value);
     }
 
     #[test]

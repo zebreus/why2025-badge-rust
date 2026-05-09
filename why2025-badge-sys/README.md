@@ -49,7 +49,7 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - `⚠️` symbol is explicitly exported, but the current implementation is intentionally shimmed or incomplete.
 - `❌` symbol is not explicitly exported in the emulated layer, or the explicit export still ends in `unimplemented!()`.
 
-- Status counts: 663 supported, 168 partial, 0 unsupported.
+- Status counts: 664 supported, 167 partial, 0 unsupported.
 
 <details>
 <summary><code>simple_function</code> (658 symbols)</summary>
@@ -642,7 +642,7 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ✅ `device_get`
 - ✅ `get_mac_address`
 - ✅ `get_num_tasks`
-- ⚠️ `get_screen_info`: Returns placeholder screen information instead of querying the real host display backend. Still needed: feed real display size, format, and refresh-rate data from the active windowing backend.
+- ✅ `get_screen_info`
 - ✅ `mkdir_p`
 - ✅ `ota_get_invalid_version`
 - ✅ `ota_get_running_version`
@@ -713,7 +713,7 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ✅ `inet_aton`
 - ✅ `getaddrinfo`
 
-_Section totals: 518 supported, 140 partial, 0 unsupported._
+_Section totals: 519 supported, 139 partial, 0 unsupported._
 
 </details>
 

@@ -52,6 +52,10 @@ pub extern "C" fn atexit(
 #[linkage = "weak"]
 pub static _ctype_b: [::core::ffi::c_char; 0usize] = [];
 
+#[unsafe(export_name = "_ctype_")]
+#[linkage = "weak"]
+pub static CTYPE_ALIAS: [::core::ffi::c_char; 0usize] = [];
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn atoff(__nptr: *const ::core::ffi::c_char) -> f32 {

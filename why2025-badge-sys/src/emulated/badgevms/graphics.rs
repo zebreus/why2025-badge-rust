@@ -145,6 +145,7 @@ static XLIB: LazyLock<x11_dl::xlib::Xlib> =
 
 static FULLSCREEN_WIDTH: usize = 720;
 static FULLSCREEN_HEIGHT: usize = 720;
+static FULLSCREEN_REFRESH_RATE: f32 = 60.0;
 
 /// Create a new window with the given title and size.
 ///
@@ -528,6 +529,13 @@ pub extern "C" fn window_event_poll(
     return event;
 }
 
+/// Mirror the firmware's fixed badge display contract.
+///
+/// BadgeVMS only targets one hardware configuration, and the firmware's
+/// `get_screen_info` implementation returns `FRAMEBUFFER_MAX_W/H/REFRESH`
+/// together with `BADGEVMS_PIXELFORMAT_RGB565` unconditionally. The host
+/// emulator must report those same badge values rather than the host display's
+/// current mode so callers observe the same ABI-visible behavior.
 #[unsafe(no_mangle)]
 pub extern "C" fn get_screen_info(
     width: *mut ::core::ffi::c_int,
@@ -535,19 +543,18 @@ pub extern "C" fn get_screen_info(
     format: *mut pixel_format_t,
     refresh_rate: *mut f32,
 ) {
-    // TODO: Use real information
     unsafe {
         if !width.is_null() {
-            *width = FULLSCREEN_WIDTH as i32; // Width of the badge
+            *width = FULLSCREEN_WIDTH as i32;
         }
         if !height.is_null() {
-            *height = FULLSCREEN_HEIGHT as i32; // Height of the badge
+            *height = FULLSCREEN_HEIGHT as i32;
         }
         if !format.is_null() {
-            *format = pixel_format_t::BADGEVMS_PIXELFORMAT_RGB565; // Only supported color format
+            *format = pixel_format_t::BADGEVMS_PIXELFORMAT_RGB565;
         }
         if !refresh_rate.is_null() {
-            *refresh_rate = 60.0; // Example refresh rate
+            *refresh_rate = FULLSCREEN_REFRESH_RATE;
         }
     }
 }

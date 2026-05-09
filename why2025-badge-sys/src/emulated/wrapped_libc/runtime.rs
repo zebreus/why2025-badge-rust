@@ -149,10 +149,27 @@ dlsym_resolver!(REAL_INET_ATON, real_inet_aton, b"inet_aton\0", fn inet_aton(cp:
 dlsym_resolver!(REAL_INET_NTOA, real_inet_ntoa, b"inet_ntoa\0", fn inet_ntoa(addr: in_addr) -> *mut c_char);
 dlsym_resolver!(REAL_ICONV_CLOSE, real_iconv_close, b"iconv_close\0", fn iconv_close(cd: iconv_t) -> c_int);
 dlsym_resolver!(REAL_ICONV_OPEN, real_iconv_open, b"iconv_open\0", fn iconv_open(tocode: *const c_char, fromcode: *const c_char) -> iconv_t);
+dlsym_resolver!(REAL_ISALNUM, real_isalnum, b"isalnum\0", fn isalnum(value: c_int) -> c_int);
+dlsym_resolver!(REAL_ISALPHA, real_isalpha, b"isalpha\0", fn isalpha(value: c_int) -> c_int);
+dlsym_resolver!(REAL_ISBLANK, real_isblank, b"isblank\0", fn isblank(value: c_int) -> c_int);
+dlsym_resolver!(REAL_ISCNTRL, real_iscntrl, b"iscntrl\0", fn iscntrl(value: c_int) -> c_int);
 dlsym_resolver!(REAL_ISATTY, real_isatty, b"isatty\0", fn isatty(fd: c_int) -> c_int);
+dlsym_resolver!(REAL_ISDIGIT, real_isdigit, b"isdigit\0", fn isdigit(value: c_int) -> c_int);
+dlsym_resolver!(REAL_ISGRAPH, real_isgraph, b"isgraph\0", fn isgraph(value: c_int) -> c_int);
+dlsym_resolver!(REAL_ISLOWER, real_islower, b"islower\0", fn islower(value: c_int) -> c_int);
+dlsym_resolver!(REAL_ISPRINT, real_isprint, b"isprint\0", fn isprint(value: c_int) -> c_int);
+dlsym_resolver!(REAL_ISPUNCT, real_ispunct, b"ispunct\0", fn ispunct(value: c_int) -> c_int);
+dlsym_resolver!(REAL_ISSPACE, real_isspace, b"isspace\0", fn isspace(value: c_int) -> c_int);
+dlsym_resolver!(REAL_ISUPPER, real_isupper, b"isupper\0", fn isupper(value: c_int) -> c_int);
+dlsym_resolver!(REAL_ISXDIGIT, real_isxdigit, b"isxdigit\0", fn isxdigit(value: c_int) -> c_int);
+dlsym_resolver!(REAL_ISASCII, real_isascii, b"isascii\0", fn isascii(value: c_int) -> c_int);
 dlsym_resolver!(REAL_LISTEN, real_listen, b"listen\0", fn listen(sockfd: c_int, backlog: c_int) -> c_int);
 dlsym_resolver!(REAL_LOCALTIME, real_localtime, b"localtime\0", fn localtime(timer: *const time_t) -> *mut tm);
 dlsym_resolver!(REAL_LSEEK, real_lseek, b"lseek\0", fn lseek(fd: c_int, offset: off_t, whence: c_int) -> off_t);
+dlsym_resolver!(REAL_MEMCMP, real_memcmp, b"memcmp\0", fn memcmp(left: *const c_void, right: *const c_void, count: c_uint) -> c_int);
+dlsym_resolver!(REAL_MEMCPY, real_memcpy, b"memcpy\0", fn memcpy(dst: *mut c_void, src: *const c_void, count: c_uint) -> *mut c_void);
+dlsym_resolver!(REAL_MEMMOVE, real_memmove, b"memmove\0", fn memmove(dst: *mut c_void, src: *const c_void, count: c_uint) -> *mut c_void);
+dlsym_resolver!(REAL_MEMSET, real_memset, b"memset\0", fn memset(dst: *mut c_void, value: c_int, count: c_uint) -> *mut c_void);
 dlsym_resolver!(REAL_MKDIR, real_mkdir, b"mkdir\0", fn mkdir(path: *const c_char, mode: mode_t) -> c_int);
 dlsym_resolver!(REAL_OPENDIR, real_opendir, b"opendir\0", fn opendir(name: *const c_char) -> *mut DIR);
 dlsym_resolver!(REAL_PUTCHAR, real_putchar, b"putchar\0", fn putchar(value: c_int) -> c_int);
@@ -170,9 +187,16 @@ dlsym_resolver!(REAL_SETLINEBUF, real_setlinebuf, b"setlinebuf\0", fn setlinebuf
 dlsym_resolver!(REAL_SETVBUF, real_setvbuf, b"setvbuf\0", fn setvbuf(stream: *mut FILE, buf: *mut c_char, mode: c_int, size: usize) -> c_int);
 dlsym_resolver!(REAL_SOCKET, real_socket, b"socket\0", fn socket(domain: c_int, ty: c_int, protocol: c_int) -> c_int);
 dlsym_resolver!(REAL_STAT, real_stat, b"stat\0", fn stat(path: *const c_char, buf: *mut stat_t) -> c_int);
+dlsym_resolver!(REAL_STRCAT, real_strcat, b"strcat\0", fn strcat(dst: *mut c_char, src: *const c_char) -> *mut c_char);
+dlsym_resolver!(REAL_STRCHR, real_strchr, b"strchr\0", fn strchr(value: *const c_char, needle: c_int) -> *mut c_char);
+dlsym_resolver!(REAL_STRCMP, real_strcmp, b"strcmp\0", fn strcmp(left: *const c_char, right: *const c_char) -> c_int);
+dlsym_resolver!(REAL_STRCPY, real_strcpy, b"strcpy\0", fn strcpy(dst: *mut c_char, src: *const c_char) -> *mut c_char);
 dlsym_resolver!(REAL_SYSTEM, real_system, b"system\0", fn system(command: *const c_char) -> c_int);
 dlsym_resolver!(REAL_TCGETATTR, real_tcgetattr, b"tcgetattr\0", fn tcgetattr(fd: c_int, termios_p: *mut termios) -> c_int);
 dlsym_resolver!(REAL_TCSETATTR, real_tcsetattr, b"tcsetattr\0", fn tcsetattr(fd: c_int, action: c_int, termios_p: *const termios) -> c_int);
+dlsym_resolver!(REAL_TOLOWER, real_tolower, b"tolower\0", fn tolower(value: c_int) -> c_int);
+dlsym_resolver!(REAL_TOASCII, real_toascii, b"toascii\0", fn toascii(value: c_int) -> c_int);
+dlsym_resolver!(REAL_TOUPPER, real_toupper, b"toupper\0", fn toupper(value: c_int) -> c_int);
 dlsym_resolver!(REAL_UNGETC, real_ungetc, b"ungetc\0", fn ungetc(value: c_int, stream: *mut FILE) -> c_int);
 dlsym_resolver!(REAL_UNLINK, real_unlink, b"unlink\0", fn unlink(path: *const c_char) -> c_int);
 dlsym_resolver!(REAL_WRITE, real_write, b"write\0", fn write(fd: c_int, buf: *const c_void, count: usize) -> isize);
@@ -443,6 +467,125 @@ mod tests {
 
         assert_eq!(value.to_bytes(), b"pilot-value");
         assert!(getenv_interpose_calls() >= 1);
+    }
+
+    #[test]
+    fn host_ctype_and_string_memory_helpers_roundtrip() {
+        assert_ne!(unsafe { exports::isalnum('A' as c_int) }, 0);
+        assert_eq!(unsafe { exports::isalnum('@' as c_int) }, 0);
+        assert_ne!(unsafe { exports::isalpha('Z' as c_int) }, 0);
+        assert_eq!(unsafe { exports::isalpha('7' as c_int) }, 0);
+        assert_ne!(unsafe { exports::isblank('\t' as c_int) }, 0);
+        assert_eq!(unsafe { exports::isblank('x' as c_int) }, 0);
+        assert_ne!(unsafe { exports::iscntrl('\n' as c_int) }, 0);
+        assert_eq!(unsafe { exports::iscntrl('x' as c_int) }, 0);
+        assert_ne!(unsafe { exports::isdigit('7' as c_int) }, 0);
+        assert_eq!(unsafe { exports::isdigit('x' as c_int) }, 0);
+        assert_ne!(unsafe { exports::isgraph('!' as c_int) }, 0);
+        assert_eq!(unsafe { exports::isgraph(' ' as c_int) }, 0);
+        assert_ne!(unsafe { exports::islower('q' as c_int) }, 0);
+        assert_eq!(unsafe { exports::islower('Q' as c_int) }, 0);
+        assert_ne!(unsafe { exports::isprint(' ' as c_int) }, 0);
+        assert_eq!(unsafe { exports::isprint('\n' as c_int) }, 0);
+        assert_ne!(unsafe { exports::ispunct('!' as c_int) }, 0);
+        assert_eq!(unsafe { exports::ispunct('A' as c_int) }, 0);
+        assert_ne!(unsafe { exports::isspace(' ' as c_int) }, 0);
+        assert_eq!(unsafe { exports::isspace('x' as c_int) }, 0);
+        assert_ne!(unsafe { exports::isupper('Q' as c_int) }, 0);
+        assert_eq!(unsafe { exports::isupper('q' as c_int) }, 0);
+        assert_ne!(unsafe { exports::isxdigit('f' as c_int) }, 0);
+        assert_eq!(unsafe { exports::isxdigit('g' as c_int) }, 0);
+        assert_ne!(unsafe { exports::isascii('A' as c_int) }, 0);
+        assert_eq!(unsafe { exports::isascii(0x80) }, 0);
+        assert_eq!(unsafe { exports::tolower('Q' as c_int) }, 'q' as c_int);
+        assert_eq!(unsafe { exports::toascii(0xC1) }, 'A' as c_int);
+        assert_eq!(unsafe { exports::toupper('q' as c_int) }, 'Q' as c_int);
+
+        let src = *b"badge";
+        let mut dst = [0_u8; 5];
+        let copied = unsafe {
+            exports::memcpy(
+                dst.as_mut_ptr().cast::<c_void>(),
+                src.as_ptr().cast::<c_void>(),
+                src.len() as c_uint,
+            )
+        };
+        assert_eq!(copied, dst.as_mut_ptr().cast::<c_void>());
+        assert_eq!(dst, src);
+        assert_eq!(
+            unsafe {
+                exports::memcmp(
+                    dst.as_ptr().cast::<c_void>(),
+                    src.as_ptr().cast::<c_void>(),
+                    src.len() as c_uint,
+                )
+            },
+            0
+        );
+
+        let mut different = dst;
+        different[4] = b'!';
+        assert_ne!(
+            unsafe {
+                exports::memcmp(
+                    different.as_ptr().cast::<c_void>(),
+                    src.as_ptr().cast::<c_void>(),
+                    src.len() as c_uint,
+                )
+            },
+            0
+        );
+
+        let alpha = CString::new("alpha").unwrap();
+        let omega = CString::new("omega").unwrap();
+        assert_eq!(unsafe { exports::strcmp(alpha.as_ptr(), alpha.as_ptr()) }, 0);
+        assert!(unsafe { exports::strcmp(alpha.as_ptr(), omega.as_ptr()) } < 0);
+    }
+
+    #[test]
+    fn host_memory_and_string_pointer_helpers_roundtrip() {
+        let mut filled = [0_u8; 8];
+        let filled_ptr = unsafe {
+            exports::memset(
+                filled.as_mut_ptr().cast::<c_void>(),
+                'Z' as c_int,
+                4,
+            )
+        };
+        assert_eq!(filled_ptr, filled.as_mut_ptr().cast::<c_void>());
+        assert_eq!(&filled[..4], b"ZZZZ");
+
+        let mut shifted = [0_u8; 7];
+        shifted[..6].copy_from_slice(b"badge\0");
+        let moved_ptr = unsafe {
+            exports::memmove(
+                shifted.as_mut_ptr().add(1).cast::<c_void>(),
+                shifted.as_ptr().cast::<c_void>(),
+                6,
+            )
+        };
+        assert_eq!(moved_ptr, unsafe { shifted.as_mut_ptr().add(1) }.cast::<c_void>());
+        assert_eq!(&shifted, b"bbadge\0");
+
+        let prefix = CString::new("badge").unwrap();
+        let suffix = CString::new("-rust").unwrap();
+        let mut buffer = [0 as c_char; 16];
+        assert_eq!(
+            unsafe { exports::strcpy(buffer.as_mut_ptr(), prefix.as_ptr()) },
+            buffer.as_mut_ptr()
+        );
+        assert_eq!(
+            unsafe { exports::strcat(buffer.as_mut_ptr(), suffix.as_ptr()) },
+            buffer.as_mut_ptr()
+        );
+
+        let combined = unsafe { CStr::from_ptr(buffer.as_ptr()) };
+        assert_eq!(combined.to_bytes(), b"badge-rust");
+
+        let needle = unsafe { exports::strchr(buffer.as_ptr(), '-' as c_int) };
+        assert!(!needle.is_null());
+        let tail = unsafe { CStr::from_ptr(needle) };
+        assert_eq!(tail.to_bytes(), b"-rust");
     }
 
     #[test]

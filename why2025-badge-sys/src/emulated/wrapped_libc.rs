@@ -286,8 +286,73 @@ pub unsafe extern "C" fn iconv_open(tocode: *const c_char, fromcode: *const c_ch
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn isalnum(value: c_int) -> c_int {
+    call_resolved!(runtime::real_isalnum, value)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn isalpha(value: c_int) -> c_int {
+    call_resolved!(runtime::real_isalpha, value)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn isblank(value: c_int) -> c_int {
+    call_resolved!(runtime::real_isblank, value)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iscntrl(value: c_int) -> c_int {
+    call_resolved!(runtime::real_iscntrl, value)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn isdigit(value: c_int) -> c_int {
+    call_resolved!(runtime::real_isdigit, value)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn isgraph(value: c_int) -> c_int {
+    call_resolved!(runtime::real_isgraph, value)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn islower(value: c_int) -> c_int {
+    call_resolved!(runtime::real_islower, value)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn isprint(value: c_int) -> c_int {
+    call_resolved!(runtime::real_isprint, value)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn ispunct(value: c_int) -> c_int {
+    call_resolved!(runtime::real_ispunct, value)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn isatty(fd: c_int) -> c_int {
     call_resolved!(runtime::real_isatty, fd)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn isspace(value: c_int) -> c_int {
+    call_resolved!(runtime::real_isspace, value)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn isupper(value: c_int) -> c_int {
+    call_resolved!(runtime::real_isupper, value)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn isxdigit(value: c_int) -> c_int {
+    call_resolved!(runtime::real_isxdigit, value)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn isascii(value: c_int) -> c_int {
+    call_resolved!(runtime::real_isascii, value)
 }
 
 #[unsafe(no_mangle)]
@@ -298,6 +363,38 @@ pub unsafe extern "C" fn listen(sockfd: c_int, backlog: c_int) -> c_int {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn localtime(timer: *const time_t) -> *mut tm {
     call_resolved!(runtime::real_localtime, timer)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn memcmp(
+    left: *const c_void,
+    right: *const c_void,
+    count: c_uint,
+) -> c_int {
+    call_resolved!(runtime::real_memcmp, left, right, count)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn memcpy(
+    dst: *mut c_void,
+    src: *const c_void,
+    count: c_uint,
+) -> *mut c_void {
+    call_resolved!(runtime::real_memcpy, dst, src, count)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn memmove(
+    dst: *mut c_void,
+    src: *const c_void,
+    count: c_uint,
+) -> *mut c_void {
+    call_resolved!(runtime::real_memmove, dst, src, count)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn memset(dst: *mut c_void, value: c_int, count: c_uint) -> *mut c_void {
+    call_resolved!(runtime::real_memset, dst, value, count)
 }
 
 #[unsafe(no_mangle)]
@@ -443,6 +540,26 @@ pub unsafe extern "C" fn stat(path: *const c_char, buf: *mut stat_t) -> c_int {
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn strcat(dst: *mut c_char, src: *const c_char) -> *mut c_char {
+    call_resolved!(runtime::real_strcat, dst, src)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strchr(value: *const c_char, needle: c_int) -> *mut c_char {
+    call_resolved!(runtime::real_strchr, value, needle)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strcmp(left: *const c_char, right: *const c_char) -> c_int {
+    call_resolved!(runtime::real_strcmp, left, right)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strcpy(dst: *mut c_char, src: *const c_char) -> *mut c_char {
+    call_resolved!(runtime::real_strcpy, dst, src)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn system(command: *const c_char) -> c_int {
     call_resolved!(runtime::real_system, command)
 }
@@ -455,6 +572,21 @@ pub unsafe extern "C" fn tcgetattr(fd: c_int, termios_p: *mut termios) -> c_int 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn tcsetattr(fd: c_int, action: c_int, termios_p: *const termios) -> c_int {
     call_resolved!(runtime::real_tcsetattr, fd, action, termios_p)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn tolower(value: c_int) -> c_int {
+    call_resolved!(runtime::real_tolower, value)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn toascii(value: c_int) -> c_int {
+    call_resolved!(runtime::real_toascii, value)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn toupper(value: c_int) -> c_int {
+    call_resolved!(runtime::real_toupper, value)
 }
 
 #[unsafe(no_mangle)]

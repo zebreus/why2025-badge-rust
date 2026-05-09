@@ -11,8 +11,6 @@ build = "src/build_script.rs"
 
 [dependencies]
 why2025-badge-app-no-std.workspace = true
-talc.workspace = true
-spin.workspace = true
 
 [build-dependencies]
-why2025-badge-app-no-std.workspace = true
+why2025-badge-app-no-std = { path = "../../why2025-badge-app-no-std", default-features = false }

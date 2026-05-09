@@ -17,8 +17,6 @@ mousefood.workspace = true
 ratatui-core.workspace = true
 embedded-graphics-unicodefonts.workspace = true
 ratatui.workspace = true
-talc.workspace = true
-spin.workspace = true
 
 [build-dependencies]
-why2025-badge-app-no-std.workspace = true
+why2025-badge-app-no-std = { path = "../../why2025-badge-app-no-std", default-features = false }

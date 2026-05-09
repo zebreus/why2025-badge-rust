@@ -251,6 +251,7 @@ _Avoid_: scancode, character, button
 **Key Modifier**:
 The modifier-key state carried by a **Keyboard Event**.
 Modifiers defined in this repo:
+
 - Left Shift (`BADGEVMS_KMOD_LSHIFT`)
 - Right Shift (`BADGEVMS_KMOD_RSHIFT`)
 - Level 5 (`BADGEVMS_KMOD_LEVEL5`)
@@ -264,8 +265,8 @@ Modifiers defined in this repo:
 - Caps Lock (`BADGEVMS_KMOD_CAPS`)
 - Mode / AltGr (`BADGEVMS_KMOD_MODE`)
 - Scroll Lock (`BADGEVMS_KMOD_SCROLL`)
-Grouped aliases also exist for Ctrl, Shift, Alt, and GUI.
-_Avoid_: modifier mask, SDL mod
+  Grouped aliases also exist for Ctrl, Shift, Alt, and GUI.
+  _Avoid_: modifier mask, SDL mod
 
 **Foreground App**:
 An App whose **Fullscreen Window** is currently the frontmost eligible fullscreen window for foreground scheduling. The compositor may temporarily boost its **Task** priority while it remains in that state.

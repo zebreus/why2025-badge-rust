@@ -8,8 +8,6 @@ repository.workspace = true
 description = "App-facing facade for building WHY2025 badge Apps across BadgeVMS and Emulation"
 keywords = ["why2025", "badge"]
 categories = ["embedded", "no-std", "os"]
-build = "build.rs"
-links = "why2025_badge_app_no_std"
 
 [features]
 default = ["provided-runtime"]
@@ -20,4 +18,4 @@ provided-panic-handler = []
 [dependencies]
 spin = { workspace = true, optional = true }
 talc = { workspace = true, optional = true }
-why2025-badge-sys = { workspace = true, features = ["badge-app-link"] }
+why2025-badge-sys = { workspace = true }

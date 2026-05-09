@@ -16,5 +16,5 @@ For Linux host builds, `why2025-badge-sys` will export selected raw libc-shaped 
 
 - This decision is Linux/ELF-oriented and depends on dynamic-loader behavior.
 - Interposition remains selective and symbol-by-symbol; it is not a blanket libc replacement policy.
-- Some overlapping symbols still need non-dlsym strategies when the badge ABI diverges from the host ABI, such as the mediated host-regex bridge used for the `reg*` family.
+- Some overlapping symbols still need non-`dlsym` strategies when the badge ABI diverges from the host ABI, such as the mediated host-regex bridge used for the `reg*` family.
 - Allocator, termination, and variadic families still need follow-up work.

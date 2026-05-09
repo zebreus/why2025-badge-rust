@@ -4,7 +4,7 @@ This document tracks the upstream wrapped libc-shaped BadgeVMS exports and the c
 plan for representing them through raw-name exports that forward to the real libc with
 `dlsym(RTLD_NEXT)`.
 
-Decision reference: [ADR 0002](./adr/0002-use-dlsym-for-host-libc-overlap.md)
+Decision reference: [ADR 0003](../../docs/adr/0003-use-dlsym-for-host-libc-overlap.md)
 
 ## Explicit local exports that are not part of the dlsym rollout
 

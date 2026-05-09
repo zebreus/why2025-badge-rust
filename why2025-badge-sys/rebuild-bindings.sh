@@ -100,7 +100,7 @@ function symbol_kind_for_bindings() {
             echo "function"
             ;;
         _ctype_)
-            # See docs/adr/0001-ctype-export-normalization.md.
+            # See ../../docs/adr/0002-ctype-export-normalization.md.
             echo "var"
             ;;
         *)

@@ -49,57 +49,57 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - `⚠️` symbol is explicitly exported, but the current implementation is intentionally shimmed or incomplete.
 - `❌` symbol is not explicitly exported in the emulated layer, or the explicit export still ends in `unimplemented!()`.
 
-- Status counts: 344 supported, 34 partial, 453 unsupported.
+- Status counts: 578 supported, 34 partial, 219 unsupported.
 
 <details>
 <summary><code>simple_function</code> (658 symbols)</summary>
 
 - ❌ `_ctype_`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `a64l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `abs`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `asctime_r`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `atof`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `a64l`
+- ✅ `abs`
+- ✅ `asctime_r`
+- ✅ `atof`
 - ✅ `atoff`
-- ❌ `atoi`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `atol`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `atoll`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `bcmp`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `bcopy`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `bsearch`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `btowc`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `bzero`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `clock`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `atoi`
+- ✅ `atol`
+- ✅ `atoll`
+- ✅ `bcmp`
+- ✅ `bcopy`
+- ✅ `bsearch`
+- ✅ `btowc`
+- ✅ `bzero`
+- ✅ `clock`
 - ❌ `clock_gettime`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `ctime_r`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `difftime`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `ctime_r`
+- ✅ `difftime`
 - ✅ `diprintf`
-- ❌ `div`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `explicit_bzero`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `ffs`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `ffsl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `ffsll`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `div`
+- ✅ `explicit_bzero`
+- ✅ `ffs`
+- ✅ `ffsl`
+- ✅ `ffsll`
 - ✅ `fls`
 - ✅ `flsl`
 - ✅ `flsll`
-- ❌ `fnmatch`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `fnmatch`
 - ✅ `fpgetmask`
 - ✅ `fpgetround`
 - ✅ `fpgetsticky`
 - ✅ `fpsetmask`
 - ✅ `fpsetround`
 - ✅ `fpsetsticky`
-- ❌ `fwide`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `getentropy`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `getopt`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `getopt_long`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `getopt_long_only`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `fwide`
+- ✅ `getentropy`
+- ✅ `getopt`
+- ✅ `getopt_long`
+- ✅ `getopt_long_only`
 - ❌ `getsubopt`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `gettimeofday`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `gmtime_r`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `iconv`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `imaxabs`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `imaxdiv`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `index`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `iconv`
+- ✅ `imaxabs`
+- ✅ `imaxdiv`
+- ✅ `index`
 - ✅ `isalnum`
 - ✅ `isalnum_l`
 - ✅ `isalpha`
@@ -153,23 +153,23 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ✅ `isxdigit`
 - ✅ `isxdigit_l`
 - ✅ `itoa`
-- ❌ `l64a`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `labs`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `ldiv`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `link`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `llabs`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `lldiv`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `localeconv`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `l64a`
+- ✅ `labs`
+- ✅ `ldiv`
+- ✅ `link`
+- ✅ `llabs`
+- ✅ `lldiv`
+- ✅ `localeconv`
 - ❌ `localtime_r`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `longjmp`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `mblen`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `mbrlen`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `mbrtowc`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `mbsinit`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `mbsnrtowcs`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `mbsrtowcs`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `mbstowcs`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `mbtowc`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `mblen`
+- ✅ `mbrlen`
+- ✅ `mbrtowc`
+- ✅ `mbsinit`
+- ✅ `mbsnrtowcs`
+- ✅ `mbsrtowcs`
+- ✅ `mbstowcs`
+- ✅ `mbtowc`
 - ✅ `memccpy`
 - ✅ `memchr`
 - ✅ `memcmp`
@@ -180,35 +180,35 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ✅ `memrchr`
 - ✅ `memset`
 - ❌ `mktime`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `modf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `modff`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `nan`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `nanf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `nl_langinfo`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `modf`
+- ✅ `modff`
+- ✅ `nan`
+- ✅ `nanf`
+- ✅ `nl_langinfo`
 - ❌ `nl_langinfo_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `qsort`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `qsort_r`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `rand_r`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `qsort`
+- ✅ `qsort_r`
+- ✅ `rand_r`
 - ✅ `rawmemchr`
 - ✅ `regerror`
 - ✅ `regexec`
-- ❌ `rindex`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `rpmatch`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `rindex`
+- ✅ `rpmatch`
 - ❌ `select`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `setjmp`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ✅ `sig2str`
-- ❌ `sleep`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `sleep`
 - ✅ `stpcpy`
 - ✅ `stpncpy`
 - ✅ `str2sig`
-- ❌ `strcasecmp`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `strcasecmp`
 - ❌ `strcasecmp_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ✅ `strcasestr`
 - ✅ `strcat`
 - ✅ `strchr`
 - ✅ `strchrnul`
 - ✅ `strcmp`
-- ❌ `strcoll`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `strcoll`
 - ❌ `strcoll_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ✅ `strcpy`
 - ✅ `strcspn`
@@ -219,7 +219,7 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ✅ `strlcpy`
 - ✅ `strlen`
 - ✅ `strlwr`
-- ❌ `strncasecmp`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `strncasecmp`
 - ❌ `strncasecmp_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ✅ `strncat`
 - ✅ `strncmp`
@@ -233,35 +233,35 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ✅ `strsep`
 - ✅ `strspn`
 - ✅ `strstr`
-- ❌ `strtod`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `strtod`
 - ❌ `strtod_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `strtof`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `strtof`
 - ❌ `strtof_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `strtoimax`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `strtoimax`
 - ✅ `strtoimax_l`
 - ✅ `strtok_r`
-- ❌ `strtol`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `strtol`
 - ❌ `strtold`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `strtold_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `strtol_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `strtoll`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `strtoll`
 - ❌ `strtoll_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `strtoul`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `strtoul`
 - ❌ `strtoul_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `strtoull`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `strtoull`
 - ❌ `strtoull_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `strtoumax`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `strtoumax`
 - ✅ `strtoumax_l`
 - ✅ `strupr`
 - ✅ `strverscmp`
-- ❌ `strxfrm`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `strxfrm`
 - ❌ `strxfrm_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `swab`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `tdelete`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `tdestroy`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `tfind`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `time`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `times`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `swab`
+- ✅ `tdelete`
+- ✅ `tdestroy`
+- ✅ `tfind`
+- ✅ `time`
+- ✅ `times`
 - ✅ `timingsafe_bcmp`
 - ✅ `timingsafe_memcmp`
 - ✅ `toascii`
@@ -274,20 +274,20 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ❌ `towlower_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ✅ `towupper`
 - ❌ `towupper_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `tsearch`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `twalk`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `tsearch`
+- ✅ `twalk`
 - ❌ `uselocale`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `usleep`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `usleep`
 - ✅ `utoa`
-- ❌ `wcpcpy`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `wcpncpy`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `wcrtomb`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `wcpcpy`
+- ✅ `wcpncpy`
+- ✅ `wcrtomb`
 - ✅ `wcscasecmp`
 - ❌ `wcscasecmp_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ✅ `wcscat`
 - ✅ `wcschr`
 - ✅ `wcscmp`
-- ❌ `wcscoll`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `wcscoll`
 - ❌ `wcscoll_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ✅ `wcscpy`
 - ✅ `wcscspn`
@@ -302,37 +302,37 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ✅ `wcsncmp`
 - ✅ `wcsncpy`
 - ✅ `wcsnlen`
-- ❌ `wcsnrtombs`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `wcsnrtombs`
 - ✅ `wcspbrk`
 - ✅ `wcsrchr`
-- ❌ `wcsrtombs`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `wcsrtombs`
 - ✅ `wcsspn`
 - ✅ `wcsstr`
-- ❌ `wcstod`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `wcstod`
 - ❌ `wcstod_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `wcstof`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `wcstof`
 - ❌ `wcstof_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `wcstoimax`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `wcstoimax`
 - ✅ `wcstoimax_l`
 - ✅ `wcstok`
-- ❌ `wcstol`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `wcstol`
 - ❌ `wcstold`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `wcstold_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `wcstol_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `wcstoll`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `wcstoll`
 - ❌ `wcstoll_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `wcstombs`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `wcstoul`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `wcstombs`
+- ✅ `wcstoul`
 - ❌ `wcstoul_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `wcstoull`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `wcstoull`
 - ❌ `wcstoull_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `wcstoumax`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `wcstoumax`
 - ✅ `wcstoumax_l`
 - ✅ `wcswidth`
-- ❌ `wcsxfrm`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `wcsxfrm`
 - ❌ `wcsxfrm_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ✅ `wctob`
-- ❌ `wctomb`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `wctomb`
 - ❌ `wctrans`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `wctrans_l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `wctype`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
@@ -344,25 +344,25 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ✅ `wmemmove`
 - ✅ `wmempcpy`
 - ✅ `wmemset`
-- ❌ `acos`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `acosf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `acosh`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `acoshf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `acos`
+- ✅ `acosf`
+- ✅ `acosh`
+- ✅ `acoshf`
 - ❌ `acoshl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `acosl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `asin`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `asinf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `asinh`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `asinhf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `asin`
+- ✅ `asinf`
+- ✅ `asinh`
+- ✅ `asinhf`
 - ❌ `asinhl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `asinl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `atan`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `atan2`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `atan2f`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `atan`
+- ✅ `atan2`
+- ✅ `atan2f`
 - ❌ `atan2l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `atanf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `atanh`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `atanhf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `atanf`
+- ✅ `atanh`
+- ✅ `atanhf`
 - ❌ `atanhl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `atanl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `cabs`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
@@ -389,8 +389,8 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ❌ `catanhf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `catanhl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `catanl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `cbrt`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `cbrtf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `cbrt`
+- ✅ `cbrtf`
 - ❌ `cbrtl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `ccos`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `ccosf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
@@ -398,8 +398,8 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ❌ `ccoshf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `ccoshl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `ccosl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `ceil`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `ceilf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `ceil`
+- ✅ `ceilf`
 - ❌ `ceill`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `cexp`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `cexpf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
@@ -415,13 +415,13 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ❌ `conj`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `conjf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `conjl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `copysign`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `copysignf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `copysign`
+- ✅ `copysignf`
 - ❌ `copysignl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `cos`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `cosf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `cosh`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `coshf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `cos`
+- ✅ `cosf`
+- ✅ `cosh`
+- ✅ `coshf`
 - ❌ `coshl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `cosl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `cpow`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
@@ -448,30 +448,30 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ❌ `ctanhf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `ctanhl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `ctanl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `drem`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `dremf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `erf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `erfc`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `erfcf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `drem`
+- ✅ `dremf`
+- ✅ `erf`
+- ✅ `erfc`
+- ✅ `erfcf`
 - ❌ `erfcl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `erff`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `erff`
 - ❌ `erfl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `exp`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `exp`
 - ✅ `exp10`
 - ✅ `exp10f`
-- ❌ `exp2`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `exp2f`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `exp2`
+- ✅ `exp2f`
 - ❌ `exp2l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `expf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `expf`
 - ❌ `expl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `expm1`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `expm1f`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `expm1`
+- ✅ `expm1f`
 - ❌ `expm1l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `fabs`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `fabsf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `fabs`
+- ✅ `fabsf`
 - ❌ `fabsl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `fdim`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `fdimf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `fdim`
+- ✅ `fdimf`
 - ❌ `fdiml`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `feclearexcept`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `fegetenv`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
@@ -484,145 +484,145 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ❌ `fesetround`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `fetestexcept`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `feupdateenv`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `finite`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `finitef`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `finite`
+- ✅ `finitef`
 - ❌ `finitel`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `floor`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `floorf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `floor`
+- ✅ `floorf`
 - ❌ `floorl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `fma`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `fmaf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `fma`
+- ✅ `fmaf`
 - ❌ `fmal`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `fmax`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `fmaxf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `fmax`
+- ✅ `fmaxf`
 - ❌ `fmaxl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `fmin`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `fminf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `fmin`
+- ✅ `fminf`
 - ❌ `fminl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `fmod`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `fmodf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `fmod`
+- ✅ `fmodf`
 - ❌ `fmodl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `frexp`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `frexpf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `frexp`
+- ✅ `frexpf`
 - ❌ `frexpl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `gamma`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `gammaf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `gamma`
+- ✅ `gammaf`
 - ✅ `gammaf_r`
 - ✅ `gamma_r`
-- ❌ `hypot`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `hypotf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `hypot`
+- ✅ `hypotf`
 - ❌ `hypotl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `ilogb`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `ilogbf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `ilogb`
+- ✅ `ilogbf`
 - ❌ `ilogbl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ✅ `infinity`
 - ✅ `infinityf`
-- ❌ `isinf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `isinff`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `isnan`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `isnanf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `j0`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `j0f`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `j1`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `j1f`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `jn`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `jnf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `ldexp`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `ldexpf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `isinf`
+- ✅ `isinff`
+- ✅ `isnan`
+- ✅ `isnanf`
+- ✅ `j0`
+- ✅ `j0f`
+- ✅ `j1`
+- ✅ `j1f`
+- ✅ `jn`
+- ✅ `jnf`
+- ✅ `ldexp`
+- ✅ `ldexpf`
 - ❌ `ldexpl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `lgamma`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `lgammaf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `lgammaf_r`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `lgamma`
+- ✅ `lgammaf`
+- ✅ `lgammaf_r`
 - ❌ `lgammal`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `lgamma_r`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `llrint`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `llrintf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `lgamma_r`
+- ✅ `llrint`
+- ✅ `llrintf`
 - ❌ `llrintl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `llround`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `llroundf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `llround`
+- ✅ `llroundf`
 - ❌ `llroundl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `log`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `log10`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `log10f`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `log`
+- ✅ `log10`
+- ✅ `log10f`
 - ❌ `log10l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `log1p`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `log1pf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `log1p`
+- ✅ `log1pf`
 - ❌ `log1pl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `log2`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `log2f`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `log2`
+- ✅ `log2f`
 - ❌ `log2l`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `logb`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `logbf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `logb`
+- ✅ `logbf`
 - ❌ `logbl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `logf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `logf`
 - ❌ `logl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `lrint`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `lrintf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `lrint`
+- ✅ `lrintf`
 - ❌ `lrintl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `lround`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `lroundf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `lround`
+- ✅ `lroundf`
 - ❌ `lroundl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `nearbyint`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `nearbyintf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `nearbyint`
+- ✅ `nearbyintf`
 - ❌ `nearbyintl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `nextafter`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `nextafterf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `nextafter`
+- ✅ `nextafterf`
 - ❌ `nextafterl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `nexttoward`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `nexttowardf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `nexttowardl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `pow`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `pow`
 - ✅ `pow10`
 - ✅ `pow10f`
-- ❌ `powf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `powf`
 - ❌ `powl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `remainder`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `remainderf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `remainder`
+- ✅ `remainderf`
 - ❌ `remainderl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `remquo`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `remquof`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `remquo`
+- ✅ `remquof`
 - ❌ `remquol`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `rint`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `rintf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `rint`
+- ✅ `rintf`
 - ❌ `rintl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `round`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `roundf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `round`
+- ✅ `roundf`
 - ❌ `roundl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `scalbln`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `scalblnf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `scalbln`
+- ✅ `scalblnf`
 - ❌ `scalblnl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `scalbn`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `scalbnf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `scalbn`
+- ✅ `scalbnf`
 - ❌ `scalbnl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `sin`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `sincos`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `sincosf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `sinf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `sinh`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `sinhf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `sin`
+- ✅ `sincos`
+- ✅ `sincosf`
+- ✅ `sinf`
+- ✅ `sinh`
+- ✅ `sinhf`
 - ❌ `sinhl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `sinl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `sqrt`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `sqrtf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `sqrt`
+- ✅ `sqrtf`
 - ❌ `sqrtl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `tan`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `tanf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `tanh`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `tanhf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `tan`
+- ✅ `tanf`
+- ✅ `tanh`
+- ✅ `tanhf`
 - ❌ `tanhl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ❌ `tanl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `tgamma`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `tgammaf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `tgamma`
+- ✅ `tgammaf`
 - ❌ `tgammal`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `trunc`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `truncf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `trunc`
+- ✅ `truncf`
 - ❌ `truncl`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `y0`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `y0f`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `y1`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `y1f`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `yn`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `ynf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `y0`
+- ✅ `y0f`
+- ✅ `y1`
+- ✅ `y1f`
+- ✅ `yn`
+- ✅ `ynf`
 - ✅ `application_create`
 - ✅ `application_create_file`
 - ✅ `application_create_file_string`
@@ -713,7 +713,7 @@ This section mirrors the vendored firmware ABI manifest in `firmware/badgevms/sy
 - ✅ `inet_aton`
 - ✅ `getaddrinfo`
 
-_Section totals: 221 supported, 8 partial, 429 unsupported._
+_Section totals: 449 supported, 8 partial, 201 unsupported._
 
 </details>
 
@@ -801,7 +801,7 @@ _Section totals: 1 supported, 0 partial, 0 unsupported._
 - ❌ `asprintf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ✅ `atexit`
 - ✅ `bind`
-- ❌ `calloc`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `calloc`
 - ✅ `clearerr`
 - ✅ `clearerr_unlocked`
 - ✅ `close`
@@ -825,7 +825,7 @@ _Section totals: 1 supported, 0 partial, 0 unsupported._
 - ✅ `fputc`
 - ✅ `fputs`
 - ✅ `fread`
-- ❌ `free`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `free`
 - ✅ `freopen`
 - ❌ `fscanf`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
 - ✅ `fseek`
@@ -835,7 +835,7 @@ _Section totals: 1 supported, 0 partial, 0 unsupported._
 - ✅ `ftello`
 - ❌ `funopen`: The symbol exists in the host shim but currently ends in unimplemented!() instead of constructing a cookie-backed FILE*. Still needed: implement the callback-backed stdio bridge that matches the firmware callback semantics.
 - ✅ `fwrite`
-- ❌ `gcvt`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `gcvt`
 - ✅ `gcvtf`
 - ❌ `gcvtl`: The symbol exists in the host shim but currently ends in unimplemented!() instead of long-double formatting. Still needed: implement the firmware-compatible long-double formatter in libc_fallback.rs.
 - ✅ `getc`
@@ -853,7 +853,7 @@ _Section totals: 1 supported, 0 partial, 0 unsupported._
 - ✅ `listen`
 - ✅ `localtime`
 - ✅ `lseek`
-- ❌ `malloc`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `malloc`
 - ✅ `mkdir`
 - ✅ `open`
 - ✅ `opendir`
@@ -864,8 +864,8 @@ _Section totals: 1 supported, 0 partial, 0 unsupported._
 - ✅ `random`
 - ✅ `read`
 - ✅ `readdir`
-- ❌ `realloc`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
-- ❌ `reallocarray`: This symbol is not explicitly exported by the emulated layer today; previous Linux host behavior relied only on the process's system libc/libm resolving it implicitly, which does not count as supported emulation. Still needed: add a crate-owned wrapper in wrapped_libc.rs or a local fallback export in libc_fallback.rs/badgevms before treating it as supported.
+- ✅ `realloc`
+- ✅ `reallocarray`
 - ✅ `regcomp`
 - ✅ `regfree`
 - ✅ `remove`
@@ -905,7 +905,7 @@ _Section totals: 1 supported, 0 partial, 0 unsupported._
 - ✅ `wcsdup`
 - ✅ `write`
 
-_Section totals: 88 supported, 0 partial, 24 unsupported._
+_Section totals: 94 supported, 0 partial, 18 unsupported._
 
 </details>
 

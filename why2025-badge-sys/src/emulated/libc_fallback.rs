@@ -103,11 +103,24 @@ unsafe extern "C" {
     fn fetestexcept(excepts: ::core::ffi::c_int) -> ::core::ffi::c_int;
     fn feclearexcept(excepts: ::core::ffi::c_int) -> ::core::ffi::c_int;
     fn feraiseexcept(excepts: ::core::ffi::c_int) -> ::core::ffi::c_int;
+    #[link_name = "__cxa_atexit"]
+    fn host_cxa_atexit(
+        func: ::core::option::Option<unsafe extern "C" fn(*mut ::core::ffi::c_void)>,
+        arg: *mut ::core::ffi::c_void,
+        dso_handle: *mut ::core::ffi::c_void,
+    ) -> ::core::ffi::c_int;
     #[allow(clashing_extern_declarations)]
     #[link_name = "vsnprintf"]
     fn host_vsnprintf(
         buf: *mut ::core::ffi::c_char,
         size: size_t,
+        fmt: *const ::core::ffi::c_char,
+        ap: VaList<'_, '_>,
+    ) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vdprintf"]
+    fn host_vdprintf(
+        fd: ::core::ffi::c_int,
         fmt: *const ::core::ffi::c_char,
         ap: VaList<'_, '_>,
     ) -> ::core::ffi::c_int;
@@ -367,10 +380,56 @@ fn c_string_or_placeholder<'a>(ptr: *const c_char, placeholder: &'a str) -> Cow<
     }
 }
 
+fn compare_f64_nan_high(a: f64, b: f64) -> ::core::ffi::c_int {
+    match a.partial_cmp(&b) {
+        Some(core::cmp::Ordering::Less) => -1,
+        Some(core::cmp::Ordering::Equal) => 0,
+        Some(core::cmp::Ordering::Greater) => 1,
+        None => 1,
+    }
+}
+
+fn compare_f64_nan_low(a: f64, b: f64) -> ::core::ffi::c_int {
+    match a.partial_cmp(&b) {
+        Some(core::cmp::Ordering::Less) => -1,
+        Some(core::cmp::Ordering::Equal) => 0,
+        Some(core::cmp::Ordering::Greater) => 1,
+        None => -1,
+    }
+}
+
+unsafe extern "C" fn atexit_trampoline(ctx: *mut ::core::ffi::c_void) {
+    let callback =
+        unsafe { core::mem::transmute::<*mut ::core::ffi::c_void, unsafe extern "C" fn()>(ctx) };
+    unsafe { callback() };
+}
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __errno() -> *mut ::core::ffi::c_int {
     HOST_ERRNO.0.get()
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn atexit(
+    __func: ::core::option::Option<unsafe extern "C" fn()>,
+) -> ::core::ffi::c_int {
+    let Some(callback) = __func else {
+        set_host_errno(libc::EINVAL);
+        return -1;
+    };
+
+    clear_errno();
+    let status = unsafe {
+        host_cxa_atexit(
+            Some(atexit_trampoline),
+            callback as *const () as *mut ::core::ffi::c_void,
+            ptr::null_mut(),
+        )
+    };
+    sync_host_errno_from_system();
+    status
 }
 
 #[unsafe(no_mangle)]
@@ -453,6 +512,90 @@ pub extern "C" fn __assert_func(
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
+pub extern "C" fn __adddf3(a: f64, b: f64) -> f64 {
+    a + b
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __subdf3(a: f64, b: f64) -> f64 {
+    a - b
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __muldf3(a: f64, b: f64) -> f64 {
+    a * b
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __divdf3(a: f64, b: f64) -> f64 {
+    a / b
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __eqdf2(a: f64, b: f64) -> ::core::ffi::c_int {
+    compare_f64_nan_high(a, b)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __gedf2(a: f64, b: f64) -> ::core::ffi::c_int {
+    compare_f64_nan_low(a, b)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __gtdf2(a: f64, b: f64) -> ::core::ffi::c_int {
+    compare_f64_nan_low(a, b)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __ledf2(a: f64, b: f64) -> ::core::ffi::c_int {
+    compare_f64_nan_high(a, b)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __ltdf2(a: f64, b: f64) -> ::core::ffi::c_int {
+    compare_f64_nan_high(a, b)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __fixdfsi(a: f64) -> i32 {
+    a as i32
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __fixdfdi(a: f64) -> i64 {
+    a as i64
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __fixunsdfsi(a: f64) -> u32 {
+    a as u32
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __floatdisf(a: i64) -> f32 {
+    a as f32
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __floatsidf(a: i32) -> f64 {
+    a as f64
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
 pub extern "C" fn __floatundidf(a: u64) -> f64 {
     a as f64
 }
@@ -461,6 +604,12 @@ pub extern "C" fn __floatundidf(a: u64) -> f64 {
 #[linkage = "weak"]
 pub extern "C" fn __floatundisf(a: u64) -> f32 {
     a as f32
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __floatunsidf(a: u32) -> f64 {
+    a as f64
 }
 
 #[unsafe(no_mangle)]
@@ -477,12 +626,37 @@ pub extern "C" fn __issignalingf(f: f32) -> ::core::ffi::c_int {
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __nedf2(a: f64, b: f64) -> ::core::ffi::c_int {
-    match a.partial_cmp(&b) {
-        Some(core::cmp::Ordering::Less) => -1,
-        Some(core::cmp::Ordering::Equal) => 0,
-        Some(core::cmp::Ordering::Greater) => 1,
-        None => 1,
-    }
+    compare_f64_nan_high(a, b)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __divdi3(a: i64, b: i64) -> i64 {
+    a / b
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __udivdi3(a: u64, b: u64) -> u64 {
+    a / b
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __umoddi3(a: u64, b: u64) -> u64 {
+    a % b
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __clzsi2(a: u32) -> ::core::ffi::c_int {
+    a.leading_zeros() as ::core::ffi::c_int
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn __popcountsi2(a: u32) -> ::core::ffi::c_int {
+    a.count_ones() as ::core::ffi::c_int
 }
 
 #[unsafe(no_mangle)]
@@ -1217,13 +1391,14 @@ pub extern "C" fn pow10f(arg1: f32) -> f32 {
     exp10f(arg1)
 }
 
-unsafe extern "C" {
-    #[link_name = "dprintf"]
-    pub unsafe fn diprintf(
-        a: ::core::ffi::c_int,
-        b: *const ::core::ffi::c_char,
-        ...
-    ) -> ::core::ffi::c_int;
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn diprintf(
+    a: ::core::ffi::c_int,
+    b: *const ::core::ffi::c_char,
+    args: ...
+) -> ::core::ffi::c_int {
+    unsafe { args.with_copy(|mut copy| host_vdprintf(a, b, copy.as_va_list())) }
 }
 
 #[unsafe(no_mangle)]
@@ -1487,6 +1662,51 @@ mod tests {
     }
 
     #[test]
+    fn compiler_rt_arithmetic_and_conversion_helpers_match_host_ops() {
+        assert_eq!(__adddf3(1.25, 2.5), 3.75);
+        assert_eq!(__subdf3(5.5, 2.0), 3.5);
+        assert_eq!(__muldf3(1.5, 4.0), 6.0);
+        assert_eq!(__divdf3(9.0, 4.0), 2.25);
+
+        assert_eq!(__floatsidf(-42), -42.0);
+        assert_eq!(__floatdisf(-123_456_789), -123_456_789_f32);
+        assert_eq!(__floatunsidf(u32::MAX), u32::MAX as f64);
+        assert_eq!(__fixdfsi(42.9), 42);
+        assert_eq!(__fixdfdi(-42.9), -42);
+        assert_eq!(__fixunsdfsi(42.9), 42);
+    }
+
+    #[test]
+    fn compiler_rt_comparison_helpers_follow_expected_ordering() {
+        assert_eq!(__eqdf2(2.0, 2.0), 0);
+        assert_ne!(__eqdf2(1.0, 2.0), 0);
+
+        assert!(__ledf2(1.0, 2.0) < 0);
+        assert_eq!(__ledf2(2.0, 2.0), 0);
+        assert!(__ledf2(f64::NAN, 2.0) > 0);
+
+        assert!(__ltdf2(1.0, 2.0) < 0);
+        assert!(__ltdf2(f64::NAN, 2.0) > 0);
+
+        assert!(__gtdf2(2.0, 1.0) > 0);
+        assert!(__gtdf2(f64::NAN, 2.0) < 0);
+
+        assert!(__gedf2(2.0, 1.0) > 0);
+        assert_eq!(__gedf2(2.0, 2.0), 0);
+        assert!(__gedf2(f64::NAN, 2.0) < 0);
+    }
+
+    #[test]
+    fn compiler_rt_integer_helpers_match_host_ops() {
+        assert_eq!(__divdi3(81, -9), -9);
+        assert_eq!(__udivdi3(81, 9), 9);
+        assert_eq!(__umoddi3(82, 9), 1);
+        assert_eq!(__clzsi2(0), 32);
+        assert_eq!(__clzsi2(1), 31);
+        assert_eq!(__popcountsi2(0b1011_0001), 4);
+    }
+
+    #[test]
     fn nedf2_uses_compiler_rt_ordering() {
         assert_eq!(__nedf2(1.0, 2.0), -1);
         assert_eq!(__nedf2(2.0, 2.0), 0);
@@ -1708,6 +1928,24 @@ mod tests {
             unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_bytes(),
             b"12.5"
         );
+    }
+
+    #[test]
+    fn diprintf_formats_to_file_descriptor() {
+        let mut fds = [0; 2];
+        assert_eq!(unsafe { libc::pipe(fds.as_mut_ptr()) }, 0);
+
+        let written = unsafe { diprintf(fds[1], c"%s %d".as_ptr(), c"hi".as_ptr(), 42) };
+        assert_eq!(written, 5);
+
+        assert_eq!(unsafe { libc::close(fds[1]) }, 0);
+
+        let mut buffer = [0_u8; 32];
+        let read = unsafe { libc::read(fds[0], buffer.as_mut_ptr().cast(), buffer.len()) };
+        assert_eq!(read, 5);
+        assert_eq!(&buffer[..read as usize], b"hi 42");
+
+        assert_eq!(unsafe { libc::close(fds[0]) }, 0);
     }
 
     #[test]

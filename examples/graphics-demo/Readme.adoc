@@ -2,6 +2,6 @@
 
 Minimal example for using rust on the WHY2025 badge
 
-This example builds as-is in this workspace. The badge-specific linker args now come through `why2025-badge-app-no-std` plus the tiny `src/build_script.rs` wrapper around `why2025_badge_app_no_std::configure_build`, so consumer apps no longer need a direct dependency on `why2025-badge-build` or a checked-in `retain.txt`.
+This example builds as-is in this workspace. The badge-specific linker args come through `why2025-badge-app-no-std` plus a tiny root `build.rs` that calls `why2025_badge_build::configure`, so consumer apps only need the dedicated build helper and no checked-in `retain.txt`.
 
-If you want to start a project, use [rust_starter](https://github.com/zebreus/why2025-rust-starter) instead, as that is standalone. See `Cargo.toml` and `src/build_script.rs` here for the integration shape used by the workspace examples.
+If you want to start a project, use [rust_starter](https://github.com/zebreus/why2025-rust-starter) instead, as that is standalone. See `Cargo.toml` and `build.rs` here for the integration shape used by the workspace examples.

@@ -35,7 +35,7 @@ Cargo only lets the final binary emit `rustc-link-arg-bins`, so the application 
 
 ```rust
 fn main() {
-    why2025_badge_build::configure("src/build_script.rs");
+    why2025_badge_build::configure("build.rs");
 }
 ```
 

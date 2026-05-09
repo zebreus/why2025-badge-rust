@@ -7,7 +7,6 @@ license.workspace = true
 repository.workspace = true
 keywords = ["why2025", "badge"]
 categories = ["embedded", "no-std", "os"]
-build = "src/build_script.rs"
 
 [dependencies]
 why2025-badge-app-no-std.workspace = true
@@ -19,4 +18,4 @@ embedded-graphics-unicodefonts.workspace = true
 ratatui.workspace = true
 
 [build-dependencies]
-why2025-badge-app-no-std = { path = "../../why2025-badge-app-no-std", default-features = false }
+why2025-badge-build.workspace = true

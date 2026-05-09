@@ -2,6 +2,12 @@ use std::env;
 
 const BADGE_TARGET: &str = "riscv32imafc-unknown-none-elf";
 
+fn badge_link_metadata(var: &str) -> Option<String> {
+    env::var(format!("DEP_WHY2025_BADGE_APP_NO_STD_{var}")).ok().or_else(|| {
+        env::var(format!("DEP_WHY2025_BADGE_SYS_{var}")).ok()
+    })
+}
+
 pub fn configure(build_script_path: &str) {
     println!("cargo::rerun-if-changed={build_script_path}");
 
@@ -9,13 +15,12 @@ pub fn configure(build_script_path: &str) {
         return;
     }
 
-    let retain_symbols_file = match env::var("DEP_WHY2025_BADGE_SYS_RETAIN_SYMBOLS_FILE") {
-        Ok(path) => path,
-        Err(_) => return,
+    let retain_symbols_file = match badge_link_metadata("RETAIN_SYMBOLS_FILE") {
+        Some(path) => path,
+        None => return,
     };
 
-    let entry_symbol =
-        env::var("DEP_WHY2025_BADGE_SYS_ENTRY_SYMBOL").unwrap_or_else(|_| "main".to_owned());
+    let entry_symbol = badge_link_metadata("ENTRY_SYMBOL").unwrap_or_else(|| "main".to_owned());
 
     println!("cargo::rustc-link-arg-bins=--shared");
     println!("cargo::rustc-link-arg-bins=--retain-symbols-file={retain_symbols_file}");

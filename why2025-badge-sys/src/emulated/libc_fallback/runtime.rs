@@ -19,6 +19,7 @@ static HOST_ERRNO: HostErrnoCell = HostErrnoCell(UnsafeCell::new(0));
 
 std::thread_local! {
     static HOST_FP_MASK: Cell<fp_except> = const { Cell::new(0) };
+    static HOST_LOCALE: Cell<locale_t> = const { Cell::new(-1) };
 }
 
 const FP_RN_CONST: fp_rnd = 0;
@@ -46,6 +47,25 @@ const HOST_FE_TONEAREST: ::core::ffi::c_int = 0;
 const HOST_FE_DOWNWARD: ::core::ffi::c_int = 0x400;
 const HOST_FE_UPWARD: ::core::ffi::c_int = 0x800;
 const HOST_FE_TOWARDZERO: ::core::ffi::c_int = 0xc00;
+
+const BADGE_FE_INVALID: ::core::ffi::c_int = 0x10;
+const BADGE_FE_DIVBYZERO: ::core::ffi::c_int = 0x08;
+const BADGE_FE_OVERFLOW: ::core::ffi::c_int = 0x04;
+const BADGE_FE_UNDERFLOW: ::core::ffi::c_int = 0x02;
+const BADGE_FE_INEXACT: ::core::ffi::c_int = 0x01;
+const BADGE_FE_ALL_EXCEPT: ::core::ffi::c_int = BADGE_FE_INVALID
+    | BADGE_FE_DIVBYZERO
+    | BADGE_FE_OVERFLOW
+    | BADGE_FE_UNDERFLOW
+    | BADGE_FE_INEXACT;
+
+const BADGE_FE_TONEAREST: ::core::ffi::c_int = 0;
+const BADGE_FE_TOWARDZERO: ::core::ffi::c_int = 0x01;
+const BADGE_FE_DOWNWARD: ::core::ffi::c_int = 0x02;
+const BADGE_FE_UPWARD: ::core::ffi::c_int = 0x03;
+const BADGE_FE_TONEAREST_MM: ::core::ffi::c_int = 0x04;
+const BADGE_FE_RMODE_MASK: usize = 0x7;
+const BADGE_FENV_ROUND_SHIFT: usize = 8;
 
 const SIGNAL_NAMES: &[(::core::ffi::c_int, &[u8])] = &[
     (1, b"HUP"),
@@ -110,6 +130,102 @@ unsafe extern "C" {
         fmt: *const ::core::ffi::c_char,
         ap: VaList<'_, '_>,
     ) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vprintf"]
+    fn host_vprintf(fmt: *const ::core::ffi::c_char, ap: VaList<'_, '_>) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vprintf"]
+    fn host_vprintf_raw(
+        fmt: *const ::core::ffi::c_char,
+        ap: __builtin_va_list,
+    ) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vfprintf"]
+    fn host_vfprintf(
+        stream: *mut FILE,
+        fmt: *const ::core::ffi::c_char,
+        ap: VaList<'_, '_>,
+    ) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vfprintf"]
+    fn host_vfprintf_raw(
+        stream: *mut FILE,
+        fmt: *const ::core::ffi::c_char,
+        ap: __builtin_va_list,
+    ) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vsprintf"]
+    fn host_vsprintf(
+        buf: *mut ::core::ffi::c_char,
+        fmt: *const ::core::ffi::c_char,
+        ap: VaList<'_, '_>,
+    ) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vsprintf"]
+    fn host_vsprintf_raw(
+        buf: *mut ::core::ffi::c_char,
+        fmt: *const ::core::ffi::c_char,
+        ap: __builtin_va_list,
+    ) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vsnprintf"]
+    fn host_vsnprintf_raw(
+        buf: *mut ::core::ffi::c_char,
+        size: size_t,
+        fmt: *const ::core::ffi::c_char,
+        ap: __builtin_va_list,
+    ) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vasprintf"]
+    fn host_vasprintf(
+        strp: *mut *mut ::core::ffi::c_char,
+        fmt: *const ::core::ffi::c_char,
+        ap: VaList<'_, '_>,
+    ) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vasprintf"]
+    fn host_vasprintf_raw(
+        strp: *mut *mut ::core::ffi::c_char,
+        fmt: *const ::core::ffi::c_char,
+        ap: __gnuc_va_list,
+    ) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vscanf"]
+    fn host_vscanf(fmt: *const ::core::ffi::c_char, ap: VaList<'_, '_>) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vscanf"]
+    fn host_vscanf_raw(
+        fmt: *const ::core::ffi::c_char,
+        ap: __builtin_va_list,
+    ) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vfscanf"]
+    fn host_vfscanf(
+        stream: *mut FILE,
+        fmt: *const ::core::ffi::c_char,
+        ap: VaList<'_, '_>,
+    ) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vfscanf"]
+    fn host_vfscanf_raw(
+        stream: *mut FILE,
+        fmt: *const ::core::ffi::c_char,
+        ap: __builtin_va_list,
+    ) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vsscanf"]
+    fn host_vsscanf(
+        buf: *const ::core::ffi::c_char,
+        fmt: *const ::core::ffi::c_char,
+        ap: VaList<'_, '_>,
+    ) -> ::core::ffi::c_int;
+    #[allow(clashing_extern_declarations)]
+    #[link_name = "vsscanf"]
+    fn host_vsscanf_raw(
+        buf: *const ::core::ffi::c_char,
+        fmt: *const ::core::ffi::c_char,
+        ap: __builtin_va_list,
+    ) -> ::core::ffi::c_int;
     fn sprintf(
         buf: *mut ::core::ffi::c_char,
         fmt: *const ::core::ffi::c_char,
@@ -153,6 +269,15 @@ fn sync_host_errno_from_system() {
 #[cfg(not(target_os = "linux"))]
 fn sync_host_errno_from_system() {
     set_host_errno(0);
+}
+
+pub(crate) fn abort_unemulatable_symbol(symbol: &str, reason: &str) -> ! {
+    let mut stderr = io::stderr().lock();
+    let _ = writeln!(
+        stderr,
+        "{symbol} is only partially emulated on the host: {reason}"
+    );
+    std::process::abort()
 }
 
 fn clear_errno() {
@@ -204,6 +329,30 @@ unsafe fn write_c_string_bytes(dst: *mut ::core::ffi::c_char, bytes: &[u8]) {
     unsafe {
         *dst.add(bytes.len()) = 0;
     }
+}
+
+unsafe fn wide_strlen(ptr_: *const wchar_t) -> usize {
+    if ptr_.is_null() {
+        return 0;
+    }
+
+    let mut len = 0;
+    while unsafe { *ptr_.add(len) } != 0 {
+        len += 1;
+    }
+    len
+}
+
+unsafe fn wide_strnlen(ptr_: *const wchar_t, max_len: usize) -> usize {
+    if ptr_.is_null() {
+        return 0;
+    }
+
+    let mut len = 0;
+    while len < max_len && unsafe { *ptr_.add(len) } != 0 {
+        len += 1;
+    }
+    len
 }
 
 fn normalize_signal_name<'a>(bytes: &'a [u8]) -> &'a [u8] {
@@ -285,6 +434,26 @@ fn host_excepts_to_badge(mask: ::core::ffi::c_int) -> fp_except {
     result
 }
 
+fn host_excepts_to_badge_fe(mask: ::core::ffi::c_int) -> ::core::ffi::c_int {
+    let mut result = 0;
+    if mask & HOST_FE_INVALID != 0 {
+        result |= BADGE_FE_INVALID;
+    }
+    if mask & HOST_FE_DIVBYZERO != 0 {
+        result |= BADGE_FE_DIVBYZERO;
+    }
+    if mask & HOST_FE_OVERFLOW != 0 {
+        result |= BADGE_FE_OVERFLOW;
+    }
+    if mask & HOST_FE_UNDERFLOW != 0 {
+        result |= BADGE_FE_UNDERFLOW;
+    }
+    if mask & HOST_FE_INEXACT != 0 {
+        result |= BADGE_FE_INEXACT;
+    }
+    result
+}
+
 fn badge_excepts_to_host(mask: fp_except) -> ::core::ffi::c_int {
     let mut result = 0;
     if mask & FP_X_INV_CONST != 0 {
@@ -303,6 +472,62 @@ fn badge_excepts_to_host(mask: fp_except) -> ::core::ffi::c_int {
         result |= HOST_FE_INEXACT;
     }
     result
+}
+
+fn badge_fe_excepts_to_host(mask: ::core::ffi::c_int) -> ::core::ffi::c_int {
+    let mut result = 0;
+    if mask & BADGE_FE_INVALID != 0 {
+        result |= HOST_FE_INVALID;
+    }
+    if mask & BADGE_FE_DIVBYZERO != 0 {
+        result |= HOST_FE_DIVBYZERO;
+    }
+    if mask & BADGE_FE_OVERFLOW != 0 {
+        result |= HOST_FE_OVERFLOW;
+    }
+    if mask & BADGE_FE_UNDERFLOW != 0 {
+        result |= HOST_FE_UNDERFLOW;
+    }
+    if mask & BADGE_FE_INEXACT != 0 {
+        result |= HOST_FE_INEXACT;
+    }
+    result
+}
+
+fn host_round_mode_to_badge_fe(mode: ::core::ffi::c_int) -> ::core::ffi::c_int {
+    match mode {
+        HOST_FE_TONEAREST => BADGE_FE_TONEAREST,
+        HOST_FE_DOWNWARD => BADGE_FE_DOWNWARD,
+        HOST_FE_UPWARD => BADGE_FE_UPWARD,
+        HOST_FE_TOWARDZERO => BADGE_FE_TOWARDZERO,
+        _ => BADGE_FE_TONEAREST,
+    }
+}
+
+fn badge_fe_round_to_host(mode: ::core::ffi::c_int) -> Option<::core::ffi::c_int> {
+    match mode {
+        BADGE_FE_TONEAREST | BADGE_FE_TONEAREST_MM => Some(HOST_FE_TONEAREST),
+        BADGE_FE_DOWNWARD => Some(HOST_FE_DOWNWARD),
+        BADGE_FE_UPWARD => Some(HOST_FE_UPWARD),
+        BADGE_FE_TOWARDZERO => Some(HOST_FE_TOWARDZERO),
+        _ => None,
+    }
+}
+
+fn encode_badge_fenv(flags: ::core::ffi::c_int, round: ::core::ffi::c_int) -> fenv_t {
+    (flags as usize) | (((round as usize) & BADGE_FE_RMODE_MASK) << BADGE_FENV_ROUND_SHIFT)
+}
+
+fn decode_badge_fenv(env: fenv_t) -> (::core::ffi::c_int, ::core::ffi::c_int) {
+    let flags = (env as ::core::ffi::c_int) & BADGE_FE_ALL_EXCEPT;
+    let round = ((env >> BADGE_FENV_ROUND_SHIFT) & BADGE_FE_RMODE_MASK) as ::core::ffi::c_int;
+    (flags, round)
+}
+
+fn current_badge_fenv() -> fenv_t {
+    let flags = host_excepts_to_badge_fe(unsafe { fetestexcept(HOST_FE_ALL_EXCEPT) });
+    let round = host_round_mode_to_badge_fe(unsafe { fegetround() });
+    encode_badge_fenv(flags, round)
 }
 
 fn store_fp_mask(mask: fp_except) {
@@ -814,6 +1039,134 @@ pub(super) fn fpsetsticky(arg1: fp_except) -> fp_except {
     previous
 }
 
+pub(super) fn feclearexcept_emulated(excepts: ::core::ffi::c_int) -> ::core::ffi::c_int {
+    unsafe { feclearexcept(badge_fe_excepts_to_host(excepts & BADGE_FE_ALL_EXCEPT)) }
+}
+
+pub(super) fn fegetexceptflag_emulated(
+    flagp: *mut fexcept_t,
+    excepts: ::core::ffi::c_int,
+) -> ::core::ffi::c_int {
+    if flagp.is_null() {
+        set_host_errno(libc::EINVAL);
+        return -1;
+    }
+
+    let masked = excepts & BADGE_FE_ALL_EXCEPT;
+    let flags = host_excepts_to_badge_fe(unsafe { fetestexcept(HOST_FE_ALL_EXCEPT) }) & masked;
+    unsafe {
+        *flagp = flags as fexcept_t;
+    }
+    0
+}
+
+pub(super) fn fesetexceptflag_emulated(
+    flagp: *const fexcept_t,
+    excepts: ::core::ffi::c_int,
+) -> ::core::ffi::c_int {
+    if flagp.is_null() {
+        set_host_errno(libc::EINVAL);
+        return -1;
+    }
+
+    let masked = excepts & BADGE_FE_ALL_EXCEPT;
+    let new_flags = badge_fe_excepts_to_host((unsafe { *flagp } as ::core::ffi::c_int) & masked);
+    let host_mask = badge_fe_excepts_to_host(masked);
+
+    unsafe {
+        feclearexcept(host_mask);
+        if new_flags != 0 {
+            feraiseexcept(new_flags);
+        }
+    }
+
+    0
+}
+
+pub(super) fn feraiseexcept_emulated(excepts: ::core::ffi::c_int) -> ::core::ffi::c_int {
+    unsafe { feraiseexcept(badge_fe_excepts_to_host(excepts & BADGE_FE_ALL_EXCEPT)) }
+}
+
+pub(super) fn fetestexcept_emulated(excepts: ::core::ffi::c_int) -> ::core::ffi::c_int {
+    let masked = excepts & BADGE_FE_ALL_EXCEPT;
+    let host_mask = badge_fe_excepts_to_host(masked);
+    let active = unsafe { fetestexcept(host_mask) };
+    host_excepts_to_badge_fe(active) & masked
+}
+
+pub(super) fn fegetround_emulated() -> ::core::ffi::c_int {
+    host_round_mode_to_badge_fe(unsafe { fegetround() })
+}
+
+pub(super) fn fesetround_emulated(rounding_mode: ::core::ffi::c_int) -> ::core::ffi::c_int {
+    let Some(host_mode) = badge_fe_round_to_host(rounding_mode) else {
+        return 1;
+    };
+    unsafe { fesetround(host_mode) }
+}
+
+pub(super) fn fegetenv_emulated(envp: *mut fenv_t) -> ::core::ffi::c_int {
+    if envp.is_null() {
+        set_host_errno(libc::EINVAL);
+        return -1;
+    }
+
+    unsafe {
+        *envp = current_badge_fenv();
+    }
+    0
+}
+
+pub(super) fn feholdexcept_emulated(envp: *mut fenv_t) -> ::core::ffi::c_int {
+    let status = fegetenv_emulated(envp);
+    if status != 0 {
+        return status;
+    }
+
+    unsafe {
+        feclearexcept(HOST_FE_ALL_EXCEPT);
+    }
+    0
+}
+
+pub(super) fn fesetenv_emulated(envp: *const fenv_t) -> ::core::ffi::c_int {
+    if envp.is_null() {
+        set_host_errno(libc::EINVAL);
+        return -1;
+    }
+
+    let (flags, round) = decode_badge_fenv(unsafe { *envp });
+    let Some(host_round) = badge_fe_round_to_host(round) else {
+        return 1;
+    };
+
+    unsafe {
+        fesetround(host_round);
+        feclearexcept(HOST_FE_ALL_EXCEPT);
+        let host_flags = badge_fe_excepts_to_host(flags);
+        if host_flags != 0 {
+            feraiseexcept(host_flags);
+        }
+    }
+
+    0
+}
+
+pub(super) fn feupdateenv_emulated(envp: *const fenv_t) -> ::core::ffi::c_int {
+    let saved = unsafe { fetestexcept(HOST_FE_ALL_EXCEPT) };
+    let status = fesetenv_emulated(envp);
+    if status != 0 {
+        return status;
+    }
+
+    unsafe {
+        if saved != 0 {
+            feraiseexcept(saved);
+        }
+    }
+    0
+}
+
 pub(super) fn isalnum_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_int {
     let _ = l;
     unsafe { crate::isalnum(c) }
@@ -1233,6 +1586,16 @@ pub(super) fn toascii_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::c_in
     c & 0x7f
 }
 
+pub(super) fn uselocale(arg1: locale_t) -> locale_t {
+    HOST_LOCALE.with(|current| {
+        let previous = current.get();
+        if arg1 != 0 {
+            current.set(arg1);
+        }
+        previous
+    })
+}
+
 /// Convert an `unsigned int` to text using a caller-provided radix and output buffer.
 ///
 /// # Upstream status
@@ -1287,6 +1650,58 @@ pub(super) fn wcstoimax_l(
     let result = unsafe { wcstoll(arg1, _restrict, arg2) } as intmax_t;
     sync_host_errno_from_system();
     result
+}
+
+pub(super) fn wcslcpy(dst: *mut wchar_t, src: *const wchar_t, size: usize) -> usize {
+    if src.is_null() || (dst.is_null() && size != 0) {
+        set_host_errno(libc::EINVAL);
+        return 0;
+    }
+
+    let src_len = unsafe { wide_strlen(src) };
+
+    if size != 0 {
+        let copy_len = core::cmp::min(src_len, size - 1);
+        for index in 0..copy_len {
+            unsafe {
+                *dst.add(index) = *src.add(index);
+            }
+        }
+        unsafe {
+            *dst.add(copy_len) = 0;
+        }
+    }
+
+    src_len
+}
+
+pub(super) fn wcslcat(dst: *mut wchar_t, src: *const wchar_t, size: usize) -> usize {
+    if src.is_null() || (dst.is_null() && size != 0) {
+        set_host_errno(libc::EINVAL);
+        return 0;
+    }
+
+    let src_len = unsafe { wide_strlen(src) };
+    if size == 0 {
+        return src_len;
+    }
+
+    let dst_len = unsafe { wide_strnlen(dst, size) };
+    if dst_len == size {
+        return size + src_len;
+    }
+
+    let copy_len = core::cmp::min(src_len, size - dst_len - 1);
+    for index in 0..copy_len {
+        unsafe {
+            *dst.add(dst_len + index) = *src.add(index);
+        }
+    }
+    unsafe {
+        *dst.add(dst_len + copy_len) = 0;
+    }
+
+    dst_len + src_len
 }
 
 /// Parse a wide string into `uintmax_t` with an explicit locale argument.
@@ -1449,6 +1864,167 @@ pub(super) unsafe fn diprintf_with_args(
     unsafe { args.with_copy(|mut copy| host_vdprintf(a, b, copy.as_va_list())) }
 }
 
+pub(super) unsafe fn printf_with_args(
+    fmt: *const ::core::ffi::c_char,
+    args: VaList<'_, '_>,
+) -> ::core::ffi::c_int {
+    let result = unsafe { args.with_copy(|mut copy| host_vprintf(fmt, copy.as_va_list())) };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn fprintf_with_args(
+    stream: *mut FILE,
+    fmt: *const ::core::ffi::c_char,
+    args: VaList<'_, '_>,
+) -> ::core::ffi::c_int {
+    let result =
+        unsafe { args.with_copy(|mut copy| host_vfprintf(stream, fmt, copy.as_va_list())) };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn sprintf_with_args(
+    buf: *mut ::core::ffi::c_char,
+    fmt: *const ::core::ffi::c_char,
+    args: VaList<'_, '_>,
+) -> ::core::ffi::c_int {
+    let result = unsafe { args.with_copy(|mut copy| host_vsprintf(buf, fmt, copy.as_va_list())) };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn snprintf_with_args(
+    buf: *mut ::core::ffi::c_char,
+    size: ::core::ffi::c_uint,
+    fmt: *const ::core::ffi::c_char,
+    args: VaList<'_, '_>,
+) -> ::core::ffi::c_int {
+    let result = unsafe {
+        args.with_copy(|mut copy| host_vsnprintf(buf, size as size_t, fmt, copy.as_va_list()))
+    };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn asprintf_with_args(
+    strp: *mut *mut ::core::ffi::c_char,
+    fmt: *const ::core::ffi::c_char,
+    args: VaList<'_, '_>,
+) -> ::core::ffi::c_int {
+    let result = unsafe { args.with_copy(|mut copy| host_vasprintf(strp, fmt, copy.as_va_list())) };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn scanf_with_args(
+    fmt: *const ::core::ffi::c_char,
+    args: VaList<'_, '_>,
+) -> ::core::ffi::c_int {
+    let result = unsafe { args.with_copy(|mut copy| host_vscanf(fmt, copy.as_va_list())) };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn fscanf_with_args(
+    stream: *mut FILE,
+    fmt: *const ::core::ffi::c_char,
+    args: VaList<'_, '_>,
+) -> ::core::ffi::c_int {
+    let result = unsafe { args.with_copy(|mut copy| host_vfscanf(stream, fmt, copy.as_va_list())) };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn sscanf_with_args(
+    buf: *const ::core::ffi::c_char,
+    fmt: *const ::core::ffi::c_char,
+    args: VaList<'_, '_>,
+) -> ::core::ffi::c_int {
+    let result = unsafe { args.with_copy(|mut copy| host_vsscanf(buf, fmt, copy.as_va_list())) };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn vprintf(
+    fmt: *const ::core::ffi::c_char,
+    ap: __builtin_va_list,
+) -> ::core::ffi::c_int {
+    let result = unsafe { host_vprintf_raw(fmt, ap) };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn vfprintf(
+    stream: *mut FILE,
+    fmt: *const ::core::ffi::c_char,
+    ap: __builtin_va_list,
+) -> ::core::ffi::c_int {
+    let result = unsafe { host_vfprintf_raw(stream, fmt, ap) };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn vsprintf(
+    buf: *mut ::core::ffi::c_char,
+    fmt: *const ::core::ffi::c_char,
+    ap: __builtin_va_list,
+) -> ::core::ffi::c_int {
+    let result = unsafe { host_vsprintf_raw(buf, fmt, ap) };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn vsnprintf(
+    buf: *mut ::core::ffi::c_char,
+    size: ::core::ffi::c_uint,
+    fmt: *const ::core::ffi::c_char,
+    ap: __builtin_va_list,
+) -> ::core::ffi::c_int {
+    let result = unsafe { host_vsnprintf_raw(buf, size as size_t, fmt, ap) };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn vasprintf(
+    strp: *mut *mut ::core::ffi::c_char,
+    fmt: *const ::core::ffi::c_char,
+    ap: __gnuc_va_list,
+) -> ::core::ffi::c_int {
+    let result = unsafe { host_vasprintf_raw(strp, fmt, ap) };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn vscanf(
+    fmt: *const ::core::ffi::c_char,
+    ap: __builtin_va_list,
+) -> ::core::ffi::c_int {
+    let result = unsafe { host_vscanf_raw(fmt, ap) };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn vfscanf(
+    stream: *mut FILE,
+    fmt: *const ::core::ffi::c_char,
+    ap: __builtin_va_list,
+) -> ::core::ffi::c_int {
+    let result = unsafe { host_vfscanf_raw(stream, fmt, ap) };
+    sync_host_errno_from_system();
+    result
+}
+
+pub(super) unsafe fn vsscanf(
+    buf: *const ::core::ffi::c_char,
+    fmt: *const ::core::ffi::c_char,
+    ap: __builtin_va_list,
+) -> ::core::ffi::c_int {
+    let result = unsafe { host_vsscanf_raw(buf, fmt, ap) };
+    sync_host_errno_from_system();
+    result
+}
+
 /// Format into a possibly reallocated C string buffer and report the written length.
 ///
 /// # Exact upstream behavior
@@ -1601,11 +2177,15 @@ pub(super) fn gcvtf(
 /// - it always returns the incoming `buf`
 /// - there is no length argument, no null check, and no protection against buffer overflow
 pub(super) fn gcvtl(
-    _arg1: u128,
-    _arg2: ::core::ffi::c_int,
-    _arg3: *mut ::core::ffi::c_char,
+    arg1: u128,
+    arg2: ::core::ffi::c_int,
+    arg3: *mut ::core::ffi::c_char,
 ) -> *mut ::core::ffi::c_char {
-    unimplemented!("If you need this function please open an issue or PR to implement it");
+    let _ = (arg1, arg2, arg3);
+    abort_unemulatable_symbol(
+        "gcvtl",
+        "badge long double formatting uses a guest ABI that is not host-compatible today",
+    )
 }
 
 /// Construct a buffered `FILE *` around caller-supplied cookie callbacks.
@@ -1653,33 +2233,37 @@ pub(super) fn gcvtl(
 ///   pointer-callback path; on `x86_64`, `arm`, and `riscv`, the implementation also enables the
 ///   fast `BUFIO_ABI_MATCHES` path
 pub(super) fn funopen(
-    _cookie: *const ::core::ffi::c_void,
-    _readfn: ::core::option::Option<
+    cookie: *const ::core::ffi::c_void,
+    readfn: ::core::option::Option<
         unsafe extern "C" fn(
             cookie: *mut ::core::ffi::c_void,
             buf: *mut ::core::ffi::c_void,
             n: size_t,
         ) -> _ssize_t,
     >,
-    _writefn: ::core::option::Option<
+    writefn: ::core::option::Option<
         unsafe extern "C" fn(
             cookie: *mut ::core::ffi::c_void,
             buf: *const ::core::ffi::c_void,
             n: size_t,
         ) -> _ssize_t,
     >,
-    _seekfn: ::core::option::Option<
+    seekfn: ::core::option::Option<
         unsafe extern "C" fn(
             cookie: *mut ::core::ffi::c_void,
             off: __off_t,
             whence: ::core::ffi::c_int,
         ) -> __off_t,
     >,
-    _closefn: ::core::option::Option<
+    closefn: ::core::option::Option<
         unsafe extern "C" fn(cookie: *mut ::core::ffi::c_void) -> ::core::ffi::c_int,
     >,
 ) -> *mut FILE {
-    unimplemented!("If you need this function please open an issue or PR to implement it");
+    let _ = (cookie, readfn, writefn, seekfn, closefn);
+    abort_unemulatable_symbol(
+        "funopen",
+        "cookie-backed FILE allocation and callback dispatch semantics are not implemented in the host emulator yet",
+    )
 }
 
 #[cfg(test)]
@@ -1828,20 +2412,48 @@ mod tests {
     #[test]
     fn locale_ctype_wrappers_ignore_locale_and_match_plain_helpers() {
         for locale in [0, 77] {
-            assert_eq!(isalnum_l('A' as c_char as i32, locale), unsafe { crate::isalnum('A' as c_char as i32) });
-            assert_eq!(isalpha_l('Q' as c_char as i32, locale), unsafe { crate::isalpha('Q' as c_char as i32) });
-            assert_eq!(isblank_l(' ' as c_char as i32, locale), unsafe { crate::isblank(' ' as c_char as i32) });
-            assert_eq!(iscntrl_l('\n' as c_char as i32, locale), unsafe { crate::iscntrl('\n' as c_char as i32) });
-            assert_eq!(isdigit_l('7' as c_char as i32, locale), unsafe { crate::isdigit('7' as c_char as i32) });
-            assert_eq!(isgraph_l('!' as c_char as i32, locale), unsafe { crate::isgraph('!' as c_char as i32) });
-            assert_eq!(islower_l('q' as c_char as i32, locale), unsafe { crate::islower('q' as c_char as i32) });
-            assert_eq!(isprint_l(' ' as c_char as i32, locale), unsafe { crate::isprint(' ' as c_char as i32) });
-            assert_eq!(ispunct_l('!' as c_char as i32, locale), unsafe { crate::ispunct('!' as c_char as i32) });
-            assert_eq!(isspace_l('\t' as c_char as i32, locale), unsafe { crate::isspace('\t' as c_char as i32) });
-            assert_eq!(isupper_l('Q' as c_char as i32, locale), unsafe { crate::isupper('Q' as c_char as i32) });
-            assert_eq!(isxdigit_l('f' as c_char as i32, locale), unsafe { crate::isxdigit('f' as c_char as i32) });
-            assert_eq!(tolower_l('Q' as c_char as i32, locale), unsafe { crate::tolower('Q' as c_char as i32) });
-            assert_eq!(toupper_l('q' as c_char as i32, locale), unsafe { crate::toupper('q' as c_char as i32) });
+            assert_eq!(isalnum_l('A' as c_char as i32, locale), unsafe {
+                crate::isalnum('A' as c_char as i32)
+            });
+            assert_eq!(isalpha_l('Q' as c_char as i32, locale), unsafe {
+                crate::isalpha('Q' as c_char as i32)
+            });
+            assert_eq!(isblank_l(' ' as c_char as i32, locale), unsafe {
+                crate::isblank(' ' as c_char as i32)
+            });
+            assert_eq!(iscntrl_l('\n' as c_char as i32, locale), unsafe {
+                crate::iscntrl('\n' as c_char as i32)
+            });
+            assert_eq!(isdigit_l('7' as c_char as i32, locale), unsafe {
+                crate::isdigit('7' as c_char as i32)
+            });
+            assert_eq!(isgraph_l('!' as c_char as i32, locale), unsafe {
+                crate::isgraph('!' as c_char as i32)
+            });
+            assert_eq!(islower_l('q' as c_char as i32, locale), unsafe {
+                crate::islower('q' as c_char as i32)
+            });
+            assert_eq!(isprint_l(' ' as c_char as i32, locale), unsafe {
+                crate::isprint(' ' as c_char as i32)
+            });
+            assert_eq!(ispunct_l('!' as c_char as i32, locale), unsafe {
+                crate::ispunct('!' as c_char as i32)
+            });
+            assert_eq!(isspace_l('\t' as c_char as i32, locale), unsafe {
+                crate::isspace('\t' as c_char as i32)
+            });
+            assert_eq!(isupper_l('Q' as c_char as i32, locale), unsafe {
+                crate::isupper('Q' as c_char as i32)
+            });
+            assert_eq!(isxdigit_l('f' as c_char as i32, locale), unsafe {
+                crate::isxdigit('f' as c_char as i32)
+            });
+            assert_eq!(tolower_l('Q' as c_char as i32, locale), unsafe {
+                crate::tolower('Q' as c_char as i32)
+            });
+            assert_eq!(toupper_l('q' as c_char as i32, locale), unsafe {
+                crate::toupper('q' as c_char as i32)
+            });
             assert_eq!(isascii_l(0x41, locale), unsafe { crate::isascii(0x41) });
         }
     }

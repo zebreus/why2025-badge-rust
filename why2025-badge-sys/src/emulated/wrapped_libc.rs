@@ -1,8 +1,8 @@
 use crate::{
-    __compar_fn_t, _ssize_t, DIR, FILE, VISIT, addrinfo, clock_t, div_t, fpos_t, iconv_t,
-    imaxdiv_t, in_addr, intmax_t, lconv, ldiv_t, lldiv_t, mbstate_t, mode_t, nl_item, off_t,
-    option, pid_t, regex_t, sockaddr, socklen_t, stat as stat_t, termios, time_t, tm, tms,
-    uintmax_t, useconds_t, wchar_t, wint_t,
+    __compar_fn_t, _ssize_t, DIR, FILE, VISIT, addrinfo, clock_t, clockid_t, div_t, fd_set, fpos_t,
+    iconv_t, imaxdiv_t, in_addr, intmax_t, lconv, ldiv_t, lldiv_t, locale_t, mbstate_t, mode_t,
+    nl_item, off_t, option, pid_t, regex_t, sockaddr, socklen_t, stat as stat_t, termios, time_t,
+    timespec, timeval, tm, tms, uintmax_t, useconds_t, wchar_t, wctrans_t, wctype_t, wint_t,
 };
 use core::ffi::{c_char, c_int, c_long, c_longlong, c_uint, c_ulong, c_ulonglong, c_void};
 
@@ -10,11 +10,98 @@ mod runtime;
 
 use runtime::call_resolved;
 
+const BADGE_FD_SET_WORDS: usize = 2;
+
+fn badge_tm_to_host(value: &tm) -> libc::tm {
+    let mut host: libc::tm = unsafe { core::mem::zeroed() };
+    host.tm_sec = value.tm_sec;
+    host.tm_min = value.tm_min;
+    host.tm_hour = value.tm_hour;
+    host.tm_mday = value.tm_mday;
+    host.tm_mon = value.tm_mon;
+    host.tm_year = value.tm_year;
+    host.tm_wday = value.tm_wday;
+    host.tm_yday = value.tm_yday;
+    host.tm_isdst = value.tm_isdst;
+    host
+}
+
+fn copy_host_tm_into_badge(dst: &mut tm, src: &libc::tm) {
+    dst.tm_sec = src.tm_sec;
+    dst.tm_min = src.tm_min;
+    dst.tm_hour = src.tm_hour;
+    dst.tm_mday = src.tm_mday;
+    dst.tm_mon = src.tm_mon;
+    dst.tm_year = src.tm_year;
+    dst.tm_wday = src.tm_wday;
+    dst.tm_yday = src.tm_yday;
+    dst.tm_isdst = src.tm_isdst;
+}
+
+fn host_timespec_to_badge(value: &libc::timespec) -> timespec {
+    timespec {
+        tv_sec: value.tv_sec as time_t,
+        tv_nsec: value.tv_nsec as c_long,
+        __bindgen_padding_0: [0; 4],
+    }
+}
+
+fn badge_timeval_to_host(value: &timeval) -> libc::timeval {
+    libc::timeval {
+        tv_sec: value.tv_sec as libc::time_t,
+        tv_usec: value.tv_usec as libc::suseconds_t,
+    }
+}
+
+fn host_timeval_to_badge(value: &libc::timeval) -> timeval {
+    timeval {
+        tv_sec: value.tv_sec as time_t,
+        tv_usec: value.tv_usec as _,
+        __bindgen_padding_0: [0; 4],
+    }
+}
+
+unsafe fn badge_fd_set_to_host(value: &fd_set) -> libc::fd_set {
+    let mut host: libc::fd_set = unsafe { core::mem::zeroed() };
+    let host_words = (&mut host as *mut libc::fd_set).cast::<libc::c_ulong>();
+
+    for (index, word) in value.__fds_bits.iter().copied().enumerate() {
+        unsafe { *host_words.add(index) = word as libc::c_ulong };
+    }
+
+    host
+}
+
+unsafe fn host_fd_set_to_badge(value: &libc::fd_set) -> fd_set {
+    let mut badge = fd_set {
+        __fds_bits: [0; BADGE_FD_SET_WORDS],
+    };
+    let host_words = (value as *const libc::fd_set).cast::<libc::c_ulong>();
+
+    for (index, slot) in badge.__fds_bits.iter_mut().enumerate() {
+        *slot = unsafe { *host_words.add(index) } as c_ulong;
+    }
+
+    badge
+}
+
 macro_rules! forward_resolved_fn {
     ($(fn $name:ident($($arg:ident : $arg_ty:ty),* $(,)?) -> $ret:ty = $resolver:path;)+) => {
         $(
             #[unsafe(no_mangle)]
             pub unsafe extern "C" fn $name($($arg: $arg_ty),*) -> $ret {
+                call_resolved!($resolver $(, $arg)*)
+            }
+        )+
+    };
+}
+
+macro_rules! forward_ignore_locale_resolved_fn {
+    ($(fn $name:ident($($arg:ident : $arg_ty:ty),* ; $locale:ident : locale_t) -> $ret:ty = $resolver:path;)+) => {
+        $(
+            #[unsafe(no_mangle)]
+            pub unsafe extern "C" fn $name($($arg: $arg_ty,)* $locale: locale_t) -> $ret {
+                let _ = $locale;
                 call_resolved!($resolver $(, $arg)*)
             }
         )+
@@ -256,6 +343,47 @@ forward_resolved_fn! {
     fn y1f(value: f32) -> f32 = runtime::real_y1f;
     fn yn(order: c_int, value: f64) -> f64 = runtime::real_yn;
     fn ynf(order: c_int, value: f32) -> f32 = runtime::real_ynf;
+}
+
+forward_ignore_locale_resolved_fn! {
+    fn iswalnum_l(value: wint_t; locale: locale_t) -> c_int = runtime::real_iswalnum;
+    fn iswalpha_l(value: wint_t; locale: locale_t) -> c_int = runtime::real_iswalpha;
+    fn iswblank_l(value: wint_t; locale: locale_t) -> c_int = runtime::real_iswblank;
+    fn iswcntrl_l(value: wint_t; locale: locale_t) -> c_int = runtime::real_iswcntrl;
+    fn iswctype_l(value: wint_t, desc: wctype_t; locale: locale_t) -> c_int = runtime::real_iswctype;
+    fn iswdigit_l(value: wint_t; locale: locale_t) -> c_int = runtime::real_iswdigit;
+    fn iswgraph_l(value: wint_t; locale: locale_t) -> c_int = runtime::real_iswgraph;
+    fn iswlower_l(value: wint_t; locale: locale_t) -> c_int = runtime::real_iswlower;
+    fn iswprint_l(value: wint_t; locale: locale_t) -> c_int = runtime::real_iswprint;
+    fn iswpunct_l(value: wint_t; locale: locale_t) -> c_int = runtime::real_iswpunct;
+    fn iswspace_l(value: wint_t; locale: locale_t) -> c_int = runtime::real_iswspace;
+    fn iswupper_l(value: wint_t; locale: locale_t) -> c_int = runtime::real_iswupper;
+    fn iswxdigit_l(value: wint_t; locale: locale_t) -> c_int = runtime::real_iswxdigit;
+    fn nl_langinfo_l(item: nl_item; locale: locale_t) -> *mut c_char = runtime::real_nl_langinfo;
+    fn strcasecmp_l(left: *const c_char, right: *const c_char; locale: locale_t) -> c_int = runtime::real_strcasecmp;
+    fn strcoll_l(left: *const c_char, right: *const c_char; locale: locale_t) -> c_int = runtime::real_strcoll;
+    fn strncasecmp_l(left: *const c_char, right: *const c_char, count: c_uint; locale: locale_t) -> c_int = runtime::real_strncasecmp;
+    fn strtod_l(value: *const c_char, end_ptr: *mut *mut c_char; locale: locale_t) -> f64 = runtime::real_strtod;
+    fn strtof_l(value: *const c_char, end_ptr: *mut *mut c_char; locale: locale_t) -> f32 = runtime::real_strtof;
+    fn strtol_l(value: *const c_char, end_ptr: *mut *mut c_char, base: c_int; locale: locale_t) -> c_long = runtime::real_strtol;
+    fn strtoll_l(value: *const c_char, end_ptr: *mut *mut c_char, base: c_int; locale: locale_t) -> c_longlong = runtime::real_strtoll;
+    fn strtoul_l(value: *const c_char, end_ptr: *mut *mut c_char, base: c_int; locale: locale_t) -> c_ulong = runtime::real_strtoul;
+    fn strtoull_l(value: *const c_char, end_ptr: *mut *mut c_char, base: c_int; locale: locale_t) -> c_ulonglong = runtime::real_strtoull;
+    fn strxfrm_l(dst: *mut c_char, src: *const c_char, size: c_uint; locale: locale_t) -> c_uint = runtime::real_strxfrm;
+    fn towlower_l(value: wint_t; locale: locale_t) -> wint_t = runtime::real_towlower;
+    fn towupper_l(value: wint_t; locale: locale_t) -> wint_t = runtime::real_towupper;
+    fn wcscasecmp_l(left: *const wchar_t, right: *const wchar_t; locale: locale_t) -> c_int = runtime::real_wcscasecmp;
+    fn wcscoll_l(left: *const wchar_t, right: *const wchar_t; locale: locale_t) -> c_int = runtime::real_wcscoll;
+    fn wcsncasecmp_l(left: *const wchar_t, right: *const wchar_t, count: usize; locale: locale_t) -> c_int = runtime::real_wcsncasecmp;
+    fn wcstod_l(value: *const wchar_t, end_ptr: *mut *mut wchar_t; locale: locale_t) -> f64 = runtime::real_wcstod;
+    fn wcstof_l(value: *const wchar_t, end_ptr: *mut *mut wchar_t; locale: locale_t) -> f32 = runtime::real_wcstof;
+    fn wcstol_l(value: *const wchar_t, end_ptr: *mut *mut wchar_t, base: c_int; locale: locale_t) -> c_long = runtime::real_wcstol;
+    fn wcstoll_l(value: *const wchar_t, end_ptr: *mut *mut wchar_t, base: c_int; locale: locale_t) -> c_longlong = runtime::real_wcstoll;
+    fn wcstoul_l(value: *const wchar_t, end_ptr: *mut *mut wchar_t, base: c_int; locale: locale_t) -> c_ulong = runtime::real_wcstoul;
+    fn wcstoull_l(value: *const wchar_t, end_ptr: *mut *mut wchar_t, base: c_int; locale: locale_t) -> c_ulonglong = runtime::real_wcstoull;
+    fn wcsxfrm_l(dst: *mut wchar_t, src: *const wchar_t, size: usize; locale: locale_t) -> usize = runtime::real_wcsxfrm;
+    fn wctrans_l(name: *const c_char; locale: locale_t) -> wctrans_t = runtime::real_wctrans;
+    fn wctype_l(name: *const c_char; locale: locale_t) -> wctype_t = runtime::real_wctype;
 }
 
 #[unsafe(no_mangle)]
@@ -530,6 +658,15 @@ pub unsafe extern "C" fn getenv(name: *const c_char) -> *mut c_char {
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn getsubopt(
+    optionp: *mut *mut c_char,
+    tokens: *const *mut c_char,
+    valuep: *mut *mut c_char,
+) -> c_int {
+    call_resolved!(runtime::real_getsubopt, optionp, tokens, valuep)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn getline(
     lineptr: *mut *mut c_char,
     n: *mut usize,
@@ -549,11 +686,47 @@ pub unsafe extern "C" fn gets(buf: *mut c_char) -> *mut c_char {
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn gettimeofday(value: *mut timeval, tz: *mut c_void) -> c_int {
+    if value.is_null() {
+        return call_resolved!(runtime::real_gettimeofday, core::ptr::null_mut(), tz);
+    }
+
+    let mut host_value = libc::timeval {
+        tv_sec: 0,
+        tv_usec: 0,
+    };
+    let result = call_resolved!(runtime::real_gettimeofday, &mut host_value, tz);
+
+    if result == 0 {
+        unsafe { *value = host_timeval_to_badge(&host_value) };
+    }
+
+    result
+}
+
+#[unsafe(no_mangle)]
 /// Differences from upstream BadgeVMS:
 /// - Upstream `why_gmtime` calls `gmtime_r` into a task-local `tm`.
 /// - Host forwarding keeps libc `gmtime()` storage semantics instead of BadgeVMS's per-task struct.
 pub unsafe extern "C" fn gmtime(timer: *const time_t) -> *mut tm {
     call_resolved!(runtime::real_gmtime, timer)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn gmtime_r(timer: *const time_t, result: *mut tm) -> *mut tm {
+    if result.is_null() {
+        return core::ptr::null_mut();
+    }
+
+    let mut host_result = unsafe { core::mem::zeroed::<libc::tm>() };
+    let resolved = call_resolved!(runtime::real_gmtime_r, timer, &mut host_result);
+
+    if resolved.is_null() {
+        core::ptr::null_mut()
+    } else {
+        unsafe { copy_host_tm_into_badge(&mut *result, &host_result) };
+        result
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -660,6 +833,147 @@ pub unsafe extern "C" fn localtime(timer: *const time_t) -> *mut tm {
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn localtime_r(timer: *const time_t, result: *mut tm) -> *mut tm {
+    if result.is_null() {
+        return core::ptr::null_mut();
+    }
+
+    let mut host_result = unsafe { core::mem::zeroed::<libc::tm>() };
+    let resolved = call_resolved!(runtime::real_localtime_r, timer, &mut host_result);
+
+    if resolved.is_null() {
+        core::ptr::null_mut()
+    } else {
+        unsafe { copy_host_tm_into_badge(&mut *result, &host_result) };
+        result
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn mktime(timeptr: *mut tm) -> time_t {
+    if timeptr.is_null() {
+        return call_resolved!(runtime::real_mktime, core::ptr::null_mut());
+    }
+
+    let mut host_tm = badge_tm_to_host(unsafe { &*timeptr });
+    let result = call_resolved!(runtime::real_mktime, &mut host_tm);
+    unsafe { copy_host_tm_into_badge(&mut *timeptr, &host_tm) };
+    result
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn clock_gettime(clock_id: clockid_t, tp: *mut timespec) -> c_int {
+    if tp.is_null() {
+        return call_resolved!(runtime::real_clock_gettime, clock_id, core::ptr::null_mut());
+    }
+
+    let mut host_tp = libc::timespec {
+        tv_sec: 0,
+        tv_nsec: 0,
+    };
+    let result = call_resolved!(runtime::real_clock_gettime, clock_id, &mut host_tp);
+
+    if result == 0 {
+        unsafe { *tp = host_timespec_to_badge(&host_tp) };
+    }
+
+    result
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strftime(
+    value: *mut c_char,
+    maxsize: usize,
+    fmt: *const c_char,
+    tblock: *const tm,
+) -> usize {
+    if tblock.is_null() {
+        return call_resolved!(
+            runtime::real_strftime,
+            value,
+            maxsize,
+            fmt,
+            core::ptr::null()
+        );
+    }
+
+    let host_tm = badge_tm_to_host(unsafe { &*tblock });
+    call_resolved!(runtime::real_strftime, value, maxsize, fmt, &host_tm)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strftime_l(
+    value: *mut c_char,
+    maxsize: usize,
+    fmt: *const c_char,
+    tblock: *const tm,
+    locale: locale_t,
+) -> usize {
+    let _ = locale;
+    unsafe { strftime(value, maxsize, fmt, tblock) }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strptime(
+    input: *const c_char,
+    fmt: *const c_char,
+    result: *mut tm,
+) -> *mut c_char {
+    if result.is_null() {
+        return call_resolved!(runtime::real_strptime, input, fmt, core::ptr::null_mut());
+    }
+
+    let mut host_tm = badge_tm_to_host(unsafe { &*result });
+    let parsed = call_resolved!(runtime::real_strptime, input, fmt, &mut host_tm);
+    unsafe { copy_host_tm_into_badge(&mut *result, &host_tm) };
+    parsed
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn strptime_l(
+    input: *const c_char,
+    fmt: *const c_char,
+    result: *mut tm,
+    locale: locale_t,
+) -> *mut c_char {
+    let _ = locale;
+    unsafe { strptime(input, fmt, result) }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn wcsftime(
+    value: *mut wchar_t,
+    maxsize: usize,
+    fmt: *const wchar_t,
+    tblock: *const tm,
+) -> usize {
+    if tblock.is_null() {
+        return call_resolved!(
+            runtime::real_wcsftime,
+            value,
+            maxsize,
+            fmt,
+            core::ptr::null()
+        );
+    }
+
+    let host_tm = badge_tm_to_host(unsafe { &*tblock });
+    call_resolved!(runtime::real_wcsftime, value, maxsize, fmt, &host_tm)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn wcsftime_l(
+    value: *mut wchar_t,
+    maxsize: usize,
+    fmt: *const wchar_t,
+    tblock: *const tm,
+    locale: locale_t,
+) -> usize {
+    let _ = locale;
+    unsafe { wcsftime(value, maxsize, fmt, tblock) }
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn memccpy(
     dst: *mut c_void,
     src: *const c_void,
@@ -675,11 +989,7 @@ pub unsafe extern "C" fn memchr(value: *const c_void, needle: c_int, count: c_ui
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn memcmp(
-    left: *const c_void,
-    right: *const c_void,
-    count: c_uint,
-) -> c_int {
+pub unsafe extern "C" fn memcmp(left: *const c_void, right: *const c_void, count: c_uint) -> c_int {
     call_resolved!(runtime::real_memcmp, left, right, count)
 }
 
@@ -699,7 +1009,13 @@ pub unsafe extern "C" fn memmem(
     needle: *const c_void,
     needle_len: usize,
 ) -> *mut c_void {
-    call_resolved!(runtime::real_memmem, haystack, haystack_len, needle, needle_len)
+    call_resolved!(
+        runtime::real_memmem,
+        haystack,
+        haystack_len,
+        needle,
+        needle_len
+    )
 }
 
 #[unsafe(no_mangle)]
@@ -884,6 +1200,70 @@ pub unsafe extern "C" fn setvbuf(
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn select(
+    n: c_int,
+    readfds: *mut fd_set,
+    writefds: *mut fd_set,
+    exceptfds: *mut fd_set,
+    timeout: *mut timeval,
+) -> c_int {
+    let mut host_readfds = if readfds.is_null() {
+        None
+    } else {
+        Some(unsafe { badge_fd_set_to_host(&*readfds) })
+    };
+    let mut host_writefds = if writefds.is_null() {
+        None
+    } else {
+        Some(unsafe { badge_fd_set_to_host(&*writefds) })
+    };
+    let mut host_exceptfds = if exceptfds.is_null() {
+        None
+    } else {
+        Some(unsafe { badge_fd_set_to_host(&*exceptfds) })
+    };
+    let mut host_timeout = if timeout.is_null() {
+        None
+    } else {
+        Some(badge_timeval_to_host(unsafe { &*timeout }))
+    };
+
+    let result = call_resolved!(
+        runtime::real_select,
+        n,
+        host_readfds
+            .as_mut()
+            .map_or(core::ptr::null_mut(), |value| value as *mut libc::fd_set),
+        host_writefds
+            .as_mut()
+            .map_or(core::ptr::null_mut(), |value| value as *mut libc::fd_set),
+        host_exceptfds
+            .as_mut()
+            .map_or(core::ptr::null_mut(), |value| value as *mut libc::fd_set),
+        host_timeout
+            .as_mut()
+            .map_or(core::ptr::null_mut(), |value| value as *mut libc::timeval),
+    );
+
+    if result >= 0 {
+        if let Some(host_value) = host_readfds.as_ref() {
+            unsafe { *readfds = host_fd_set_to_badge(host_value) };
+        }
+        if let Some(host_value) = host_writefds.as_ref() {
+            unsafe { *writefds = host_fd_set_to_badge(host_value) };
+        }
+        if let Some(host_value) = host_exceptfds.as_ref() {
+            unsafe { *exceptfds = host_fd_set_to_badge(host_value) };
+        }
+        if let Some(host_value) = host_timeout.as_ref() {
+            unsafe { *timeout = host_timeval_to_badge(host_value) };
+        }
+    }
+
+    result
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn socket(domain: c_int, ty: c_int, protocol: c_int) -> c_int {
     call_resolved!(runtime::real_socket, domain, ty, protocol)
 }
@@ -915,7 +1295,11 @@ pub unsafe extern "C" fn stpcpy(dst: *mut c_char, src: *const c_char) -> *mut c_
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn stpncpy(dst: *mut c_char, src: *const c_char, count: c_uint) -> *mut c_char {
+pub unsafe extern "C" fn stpncpy(
+    dst: *mut c_char,
+    src: *const c_char,
+    count: c_uint,
+) -> *mut c_char {
     call_resolved!(runtime::real_stpncpy, dst, src, count)
 }
 
@@ -1000,17 +1384,29 @@ pub unsafe extern "C" fn strlcpy(dst: *mut c_char, src: *const c_char, size: c_u
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn strncat(dst: *mut c_char, src: *const c_char, count: c_uint) -> *mut c_char {
+pub unsafe extern "C" fn strncat(
+    dst: *mut c_char,
+    src: *const c_char,
+    count: c_uint,
+) -> *mut c_char {
     call_resolved!(runtime::real_strncat, dst, src, count)
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn strncmp(left: *const c_char, right: *const c_char, count: c_uint) -> c_int {
+pub unsafe extern "C" fn strncmp(
+    left: *const c_char,
+    right: *const c_char,
+    count: c_uint,
+) -> c_int {
     call_resolved!(runtime::real_strncmp, left, right, count)
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn strncpy(dst: *mut c_char, src: *const c_char, count: c_uint) -> *mut c_char {
+pub unsafe extern "C" fn strncpy(
+    dst: *mut c_char,
+    src: *const c_char,
+    count: c_uint,
+) -> *mut c_char {
     call_resolved!(runtime::real_strncpy, dst, src, count)
 }
 
@@ -1153,7 +1549,11 @@ pub unsafe extern "C" fn wcslen(value: *const wchar_t) -> c_uint {
 /// Differences from upstream BadgeVMS:
 /// - The vendored firmware tree has no project-local `why_wcsncasecmp`; badge behavior comes straight from the badge libc wide-char implementation.
 /// - Host forwarding therefore depends on host-libc availability and host locale handling rather than a badge-specific shim.
-pub unsafe extern "C" fn wcsncasecmp(left: *const wchar_t, right: *const wchar_t, count: usize) -> c_int {
+pub unsafe extern "C" fn wcsncasecmp(
+    left: *const wchar_t,
+    right: *const wchar_t,
+    count: usize,
+) -> c_int {
     call_resolved!(runtime::real_wcsncasecmp, left, right, count)
 }
 
@@ -1161,7 +1561,11 @@ pub unsafe extern "C" fn wcsncasecmp(left: *const wchar_t, right: *const wchar_t
 /// Differences from upstream BadgeVMS:
 /// - The vendored firmware tree has no project-local `why_wcsncmp`; badge behavior comes straight from the badge libc wide-char implementation.
 /// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
-pub unsafe extern "C" fn wcsncmp(left: *const wchar_t, right: *const wchar_t, count: c_uint) -> c_int {
+pub unsafe extern "C" fn wcsncmp(
+    left: *const wchar_t,
+    right: *const wchar_t,
+    count: c_uint,
+) -> c_int {
     call_resolved!(runtime::real_wcsncmp, left, right, count)
 }
 
@@ -1169,7 +1573,11 @@ pub unsafe extern "C" fn wcsncmp(left: *const wchar_t, right: *const wchar_t, co
 /// Differences from upstream BadgeVMS:
 /// - The vendored firmware tree has no project-local `why_wcsncpy`; badge behavior comes straight from the badge libc wide-char implementation.
 /// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
-pub unsafe extern "C" fn wcsncpy(dst: *mut wchar_t, src: *const wchar_t, count: usize) -> *mut wchar_t {
+pub unsafe extern "C" fn wcsncpy(
+    dst: *mut wchar_t,
+    src: *const wchar_t,
+    count: usize,
+) -> *mut wchar_t {
     call_resolved!(runtime::real_wcsncpy, dst, src, count)
 }
 
@@ -1185,7 +1593,11 @@ pub unsafe extern "C" fn wcsnlen(value: *const wchar_t, count: usize) -> usize {
 /// Differences from upstream BadgeVMS:
 /// - The vendored firmware tree has no project-local `why_wcsncat`; badge behavior comes straight from the badge libc wide-char implementation.
 /// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
-pub unsafe extern "C" fn wcsncat(dst: *mut wchar_t, src: *const wchar_t, count: usize) -> *mut wchar_t {
+pub unsafe extern "C" fn wcsncat(
+    dst: *mut wchar_t,
+    src: *const wchar_t,
+    count: usize,
+) -> *mut wchar_t {
     call_resolved!(runtime::real_wcsncat, dst, src, count)
 }
 
@@ -1245,7 +1657,11 @@ pub unsafe extern "C" fn wcstok(
 /// Differences from upstream BadgeVMS:
 /// - The vendored firmware tree has no project-local `why_wmemcmp`; badge behavior comes straight from the badge libc wide-char implementation.
 /// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
-pub unsafe extern "C" fn wmemcmp(left: *const wchar_t, right: *const wchar_t, count: c_uint) -> c_int {
+pub unsafe extern "C" fn wmemcmp(
+    left: *const wchar_t,
+    right: *const wchar_t,
+    count: c_uint,
+) -> c_int {
     call_resolved!(runtime::real_wmemcmp, left, right, count)
 }
 
@@ -1253,7 +1669,11 @@ pub unsafe extern "C" fn wmemcmp(left: *const wchar_t, right: *const wchar_t, co
 /// Differences from upstream BadgeVMS:
 /// - The vendored firmware tree has no project-local `why_wmemchr`; badge behavior comes straight from the badge libc wide-char implementation.
 /// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
-pub unsafe extern "C" fn wmemchr(value: *const wchar_t, needle: c_int, count: c_uint) -> *mut wchar_t {
+pub unsafe extern "C" fn wmemchr(
+    value: *const wchar_t,
+    needle: c_int,
+    count: c_uint,
+) -> *mut wchar_t {
     call_resolved!(runtime::real_wmemchr, value, needle, count)
 }
 
@@ -1261,7 +1681,11 @@ pub unsafe extern "C" fn wmemchr(value: *const wchar_t, needle: c_int, count: c_
 /// Differences from upstream BadgeVMS:
 /// - The vendored firmware tree has no project-local `why_wmemcpy`; badge behavior comes straight from the badge libc wide-char implementation.
 /// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
-pub unsafe extern "C" fn wmemcpy(dst: *mut wchar_t, src: *const wchar_t, count: c_uint) -> *mut wchar_t {
+pub unsafe extern "C" fn wmemcpy(
+    dst: *mut wchar_t,
+    src: *const wchar_t,
+    count: c_uint,
+) -> *mut wchar_t {
     call_resolved!(runtime::real_wmemcpy, dst, src, count)
 }
 
@@ -1269,7 +1693,11 @@ pub unsafe extern "C" fn wmemcpy(dst: *mut wchar_t, src: *const wchar_t, count: 
 /// Differences from upstream BadgeVMS:
 /// - The vendored firmware tree has no project-local `why_wmemmove`; badge behavior comes straight from the badge libc wide-char implementation.
 /// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
-pub unsafe extern "C" fn wmemmove(dst: *mut wchar_t, src: *const wchar_t, count: c_uint) -> *mut wchar_t {
+pub unsafe extern "C" fn wmemmove(
+    dst: *mut wchar_t,
+    src: *const wchar_t,
+    count: c_uint,
+) -> *mut wchar_t {
     call_resolved!(runtime::real_wmemmove, dst, src, count)
 }
 
@@ -1277,7 +1705,11 @@ pub unsafe extern "C" fn wmemmove(dst: *mut wchar_t, src: *const wchar_t, count:
 /// Differences from upstream BadgeVMS:
 /// - The vendored firmware tree has no project-local `why_wmempcpy`; badge behavior comes straight from the badge libc's wide-memory extension.
 /// - Host forwarding matches host libc availability for that extension instead of a badge-specific shim.
-pub unsafe extern "C" fn wmempcpy(dst: *mut wchar_t, src: *const wchar_t, count: usize) -> *mut wchar_t {
+pub unsafe extern "C" fn wmempcpy(
+    dst: *mut wchar_t,
+    src: *const wchar_t,
+    count: usize,
+) -> *mut wchar_t {
     call_resolved!(runtime::real_wmempcpy, dst, src, count)
 }
 
@@ -1335,6 +1767,14 @@ pub unsafe extern "C" fn iswblank(value: wint_t) -> c_int {
 /// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
 pub unsafe extern "C" fn iswcntrl(value: wint_t) -> c_int {
     call_resolved!(runtime::real_iswcntrl, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_iswctype`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn iswctype(value: wint_t, desc: wctype_t) -> c_int {
+    call_resolved!(runtime::real_iswctype, value, desc)
 }
 
 #[unsafe(no_mangle)]
@@ -1415,6 +1855,22 @@ pub unsafe extern "C" fn towlower(value: wint_t) -> wint_t {
 /// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
 pub unsafe extern "C" fn towupper(value: wint_t) -> wint_t {
     call_resolved!(runtime::real_towupper, value)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_wctrans`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn wctrans(name: *const c_char) -> wctrans_t {
+    call_resolved!(runtime::real_wctrans, name)
+}
+
+#[unsafe(no_mangle)]
+/// Differences from upstream BadgeVMS:
+/// - The vendored firmware tree has no project-local `why_wctype`; badge behavior comes straight from the badge libc wide-char implementation.
+/// - Host forwarding therefore depends on host-libc availability rather than a badge-specific shim.
+pub unsafe extern "C" fn wctype(name: *const c_char) -> wctype_t {
+    call_resolved!(runtime::real_wctype, name)
 }
 
 #[unsafe(no_mangle)]

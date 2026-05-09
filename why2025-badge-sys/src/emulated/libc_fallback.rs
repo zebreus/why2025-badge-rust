@@ -18,6 +18,19 @@ mod runtime;
 
 type size_t = usize;
 
+macro_rules! weak_abort_emulation_exports {
+    ($(fn $name:ident($($arg:ident : $arg_ty:ty),* $(,)?) -> $ret:ty => $reason:literal;)+) => {
+        $(
+            #[unsafe(no_mangle)]
+            #[linkage = "weak"]
+            pub extern "C" fn $name($($arg : $arg_ty),*) -> $ret {
+                let _ = ($($arg),*);
+                runtime::abort_unemulatable_symbol(stringify!($name), $reason)
+            }
+        )+
+    };
+}
+
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
 pub extern "C" fn __errno() -> *mut ::core::ffi::c_int {
@@ -362,6 +375,78 @@ pub extern "C" fn fpgetsticky() -> fp_except {
 /// would have to come from external libc rather than from vendored project code.
 pub extern "C" fn fpsetsticky(arg1: fp_except) -> fp_except {
     runtime::fpsetsticky(arg1)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn feclearexcept(excepts: ::core::ffi::c_int) -> ::core::ffi::c_int {
+    runtime::feclearexcept_emulated(excepts)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn fegetexceptflag(
+    flagp: *mut fexcept_t,
+    excepts: ::core::ffi::c_int,
+) -> ::core::ffi::c_int {
+    runtime::fegetexceptflag_emulated(flagp, excepts)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn fesetexceptflag(
+    flagp: *const fexcept_t,
+    excepts: ::core::ffi::c_int,
+) -> ::core::ffi::c_int {
+    runtime::fesetexceptflag_emulated(flagp, excepts)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn feraiseexcept(excepts: ::core::ffi::c_int) -> ::core::ffi::c_int {
+    runtime::feraiseexcept_emulated(excepts)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn fetestexcept(excepts: ::core::ffi::c_int) -> ::core::ffi::c_int {
+    runtime::fetestexcept_emulated(excepts)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn fegetround() -> ::core::ffi::c_int {
+    runtime::fegetround_emulated()
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn fesetround(rounding_mode: ::core::ffi::c_int) -> ::core::ffi::c_int {
+    runtime::fesetround_emulated(rounding_mode)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn fegetenv(envp: *mut fenv_t) -> ::core::ffi::c_int {
+    runtime::fegetenv_emulated(envp)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn feholdexcept(envp: *mut fenv_t) -> ::core::ffi::c_int {
+    runtime::feholdexcept_emulated(envp)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn fesetenv(envp: *const fenv_t) -> ::core::ffi::c_int {
+    runtime::fesetenv_emulated(envp)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub extern "C" fn feupdateenv(envp: *const fenv_t) -> ::core::ffi::c_int {
+    runtime::feupdateenv_emulated(envp)
 }
 
 #[unsafe(no_mangle)]
@@ -778,6 +863,24 @@ pub extern "C" fn toascii_l(c: ::core::ffi::c_int, l: locale_t) -> ::core::ffi::
 
 #[unsafe(no_mangle)]
 #[linkage = "weak"]
+/// Switch or query the current thread-local locale handle.
+///
+/// # Upstream status
+///
+/// The checked-in firmware tree declares `uselocale(locale_t)` in
+/// `firmware/components/why_stdio/include/locale.h`, and the same headers define `locale_t` as
+/// `int` plus `LC_GLOBAL_LOCALE` as `-1`. No project-local implementation was found under
+/// `firmware/`.
+///
+/// This fallback therefore keeps only the POSIX query/update shape: it tracks a thread-local
+/// integer locale handle and returns the previous value. It does not attempt to emulate host
+/// locale objects or make other `_l` functions consult that stored value.
+pub extern "C" fn uselocale(arg1: locale_t) -> locale_t {
+    runtime::uselocale(arg1)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
 /// Convert an `unsigned int` to text using a caller-provided radix and output buffer.
 ///
 /// # Upstream status
@@ -848,6 +951,37 @@ pub extern "C" fn wcstoumax_l(
     arg3: locale_t,
 ) -> uintmax_t {
     runtime::wcstoumax_l(arg1, _restrict, arg2, arg3)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Copy a NUL-terminated wide string into a bounded destination buffer.
+///
+/// # Upstream status
+///
+/// The checked-in firmware tree declares `wcslcpy()` in
+/// `firmware/components/why_stdio/include/wchar.h`, and bundled SDL compatibility headers forward
+/// `SDL_wcslcpy()` to it when the symbol exists. No project-local implementation was found.
+///
+/// This fallback provides the usual BSD-style contract: copy at most `size - 1` wide characters,
+/// always NUL-terminate when `size > 0`, and return the full source length.
+pub extern "C" fn wcslcpy(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: usize) -> usize {
+    runtime::wcslcpy(arg1, arg2, arg3)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+/// Append a NUL-terminated wide string to a bounded destination buffer.
+///
+/// # Upstream status
+///
+/// The checked-in firmware tree declares `wcslcat()` in the same `wchar.h` surface used by SDL's
+/// compatibility wrappers, but no project-local implementation was found under `firmware/`.
+///
+/// This fallback follows the usual BSD-style contract: append as much of `src` as fits while
+/// preserving a trailing NUL when space permits, and return the length it tried to create.
+pub extern "C" fn wcslcat(arg1: *mut wchar_t, arg2: *const wchar_t, arg3: usize) -> usize {
+    runtime::wcslcat(arg1, arg2, arg3)
 }
 
 #[unsafe(no_mangle)]
@@ -990,6 +1124,164 @@ pub extern "C" fn exp10f(arg1: f32) -> f32 {
 /// an independent libm entry point, or merely a stale export declaration.
 pub extern "C" fn pow10f(arg1: f32) -> f32 {
     runtime::pow10f(arg1)
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn printf(
+    __fmt: *const ::core::ffi::c_char,
+    mut args: ...
+) -> ::core::ffi::c_int {
+    unsafe { runtime::printf_with_args(__fmt, args.as_va_list()) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn fprintf(
+    __stream: *mut FILE,
+    __fmt: *const ::core::ffi::c_char,
+    mut args: ...
+) -> ::core::ffi::c_int {
+    unsafe { runtime::fprintf_with_args(__stream, __fmt, args.as_va_list()) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn vprintf(
+    __fmt: *const ::core::ffi::c_char,
+    __ap: __builtin_va_list,
+) -> ::core::ffi::c_int {
+    unsafe { runtime::vprintf(__fmt, __ap) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn vfprintf(
+    __stream: *mut FILE,
+    __fmt: *const ::core::ffi::c_char,
+    __ap: __builtin_va_list,
+) -> ::core::ffi::c_int {
+    unsafe { runtime::vfprintf(__stream, __fmt, __ap) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn sprintf(
+    __s: *mut ::core::ffi::c_char,
+    __fmt: *const ::core::ffi::c_char,
+    mut args: ...
+) -> ::core::ffi::c_int {
+    unsafe { runtime::sprintf_with_args(__s, __fmt, args.as_va_list()) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn snprintf(
+    __s: *mut ::core::ffi::c_char,
+    __n: ::core::ffi::c_uint,
+    __fmt: *const ::core::ffi::c_char,
+    mut args: ...
+) -> ::core::ffi::c_int {
+    unsafe { runtime::snprintf_with_args(__s, __n, __fmt, args.as_va_list()) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn vsprintf(
+    __s: *mut ::core::ffi::c_char,
+    __fmt: *const ::core::ffi::c_char,
+    ap: __builtin_va_list,
+) -> ::core::ffi::c_int {
+    unsafe { runtime::vsprintf(__s, __fmt, ap) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn vsnprintf(
+    __s: *mut ::core::ffi::c_char,
+    __n: ::core::ffi::c_uint,
+    __fmt: *const ::core::ffi::c_char,
+    ap: __builtin_va_list,
+) -> ::core::ffi::c_int {
+    unsafe { runtime::vsnprintf(__s, __n, __fmt, ap) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn asprintf(
+    strp: *mut *mut ::core::ffi::c_char,
+    fmt: *const ::core::ffi::c_char,
+    mut args: ...
+) -> ::core::ffi::c_int {
+    unsafe { runtime::asprintf_with_args(strp, fmt, args.as_va_list()) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn vasprintf(
+    strp: *mut *mut ::core::ffi::c_char,
+    fmt: *const ::core::ffi::c_char,
+    ap: __gnuc_va_list,
+) -> ::core::ffi::c_int {
+    unsafe { runtime::vasprintf(strp, fmt, ap) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn scanf(
+    __fmt: *const ::core::ffi::c_char,
+    mut args: ...
+) -> ::core::ffi::c_int {
+    unsafe { runtime::scanf_with_args(__fmt, args.as_va_list()) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn fscanf(
+    __stream: *mut FILE,
+    __fmt: *const ::core::ffi::c_char,
+    mut args: ...
+) -> ::core::ffi::c_int {
+    unsafe { runtime::fscanf_with_args(__stream, __fmt, args.as_va_list()) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn vscanf(
+    __fmt: *const ::core::ffi::c_char,
+    __ap: __builtin_va_list,
+) -> ::core::ffi::c_int {
+    unsafe { runtime::vscanf(__fmt, __ap) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn vfscanf(
+    __stream: *mut FILE,
+    __fmt: *const ::core::ffi::c_char,
+    __ap: __builtin_va_list,
+) -> ::core::ffi::c_int {
+    unsafe { runtime::vfscanf(__stream, __fmt, __ap) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn sscanf(
+    __buf: *const ::core::ffi::c_char,
+    __fmt: *const ::core::ffi::c_char,
+    mut args: ...
+) -> ::core::ffi::c_int {
+    unsafe { runtime::sscanf_with_args(__buf, __fmt, args.as_va_list()) }
+}
+
+#[unsafe(no_mangle)]
+#[linkage = "weak"]
+pub unsafe extern "C" fn vsscanf(
+    __buf: *const ::core::ffi::c_char,
+    __fmt: *const ::core::ffi::c_char,
+    ap: __builtin_va_list,
+) -> ::core::ffi::c_int {
+    unsafe { runtime::vsscanf(__buf, __fmt, ap) }
 }
 
 #[unsafe(no_mangle)]
@@ -1177,4 +1469,157 @@ pub extern "C" fn funopen(
     >,
 ) -> *mut FILE {
     runtime::funopen(_cookie, _readfn, _writefn, _seekfn, _closefn)
+}
+
+// These symbols are part of the firmware ABI, but their guest ABI or control-flow semantics are
+// not safely host-forwardable today. Exporting explicit aborting stubs makes the failure mode
+// deterministic and removes the last unsupported symbol tail from the host shim surface.
+weak_abort_emulation_exports! {
+    fn setjmp(__jmpb: *mut ::core::ffi::c_longlong) -> ::core::ffi::c_int => "guest jump-buffer layout and non-local control flow are not compatible with the host process";
+    fn longjmp(__jmpb: *mut ::core::ffi::c_longlong, __retval: ::core::ffi::c_int) -> ! => "guest jump-buffer layout and non-local control flow are not compatible with the host process";
+}
+
+weak_abort_emulation_exports! {
+    fn strtold(__n: *const ::core::ffi::c_char, __end_ptr: *mut *mut ::core::ffi::c_char) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn strtold_l(arg1: *const ::core::ffi::c_char, arg2: *mut *mut ::core::ffi::c_char, arg3: locale_t) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn wcstold(arg1: *const wchar_t, arg2: *mut *mut wchar_t) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn wcstold_l(arg1: *const wchar_t, arg2: *mut *mut wchar_t, arg3: locale_t) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn finitel(arg1: u128) -> ::core::ffi::c_int => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn hypotl(arg1: u128, arg2: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn sqrtl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn frexpl(arg1: u128, arg2: *mut ::core::ffi::c_int) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn scalbnl(arg1: u128, arg2: ::core::ffi::c_int) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn scalblnl(arg1: u128, arg2: ::core::ffi::c_long) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn rintl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn lrintl(arg1: u128) -> ::core::ffi::c_long => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn llrintl(arg1: u128) -> ::core::ffi::c_longlong => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn ilogbl(arg1: u128) -> ::core::ffi::c_int => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn logbl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn ldexpl(arg1: u128, arg2: ::core::ffi::c_int) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn nearbyintl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn ceill(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn fmaxl(arg1: u128, arg2: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn fminl(arg1: u128, arg2: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn roundl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn lroundl(arg1: u128) -> ::core::ffi::c_long => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn llroundl(arg1: u128) -> ::core::ffi::c_longlong => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn truncl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn floorl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn fabsl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn copysignl(arg1: u128, arg2: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn atanl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn cosl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn sinl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn tanl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn tanhl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn log1pl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn expm1l(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+}
+
+weak_abort_emulation_exports! {
+    fn acosl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn asinl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn atan2l(arg1: u128, arg2: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn coshl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn sinhl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn expl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn logl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn log10l(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn powl(arg1: u128, arg2: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn fmodl(arg1: u128, arg2: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn asinhl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn cbrtl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn nextafterl(arg1: u128, arg2: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn nexttoward(arg1: f64, arg2: u128) -> f64 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn nexttowardf(arg1: f32, arg2: u128) -> f32 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn nexttowardl(arg1: u128, arg2: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn log2l(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn exp2l(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn tgammal(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn remquol(arg1: u128, arg2: u128, arg3: *mut ::core::ffi::c_int) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn fdiml(arg1: u128, arg2: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn fmal(arg1: u128, arg2: u128, arg3: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn acoshl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn atanhl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn remainderl(arg1: u128, arg2: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn lgammal(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn erfl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+    fn erfcl(arg1: u128) -> u128 => "badge long double uses a guest ABI that is not safely host-forwardable today";
+}
+
+weak_abort_emulation_exports! {
+    fn cacos(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn cacosf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn casin(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn casinf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn catan(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn catanf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn ccos(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn ccosf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn csin(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn csinf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn ctan(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn ctanf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn cacosh(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn cacoshf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn casinh(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn casinhf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn catanh(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn catanhf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn ccosh(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn ccoshf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn csinh(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn csinhf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn ctanh(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn ctanhf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+}
+
+weak_abort_emulation_exports! {
+    fn cexp(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn cexpf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn clog(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn clogf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn cabs(arg1: __BindgenComplex<f64>) -> f64 => "badge complex math ABI is not safely host-forwardable today";
+    fn cabsf(arg1: __BindgenComplex<f32>) -> f32 => "badge complex math ABI is not safely host-forwardable today";
+    fn cpow(arg1: __BindgenComplex<f64>, arg2: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn cpowf(arg1: __BindgenComplex<f32>, arg2: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn csqrt(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn csqrtf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn carg(arg1: __BindgenComplex<f64>) -> f64 => "badge complex math ABI is not safely host-forwardable today";
+    fn cargf(arg1: __BindgenComplex<f32>) -> f32 => "badge complex math ABI is not safely host-forwardable today";
+    fn cimag(arg1: __BindgenComplex<f64>) -> f64 => "badge complex math ABI is not safely host-forwardable today";
+    fn cimagf(arg1: __BindgenComplex<f32>) -> f32 => "badge complex math ABI is not safely host-forwardable today";
+    fn conj(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn conjf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn cproj(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn cprojf(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+    fn creal(arg1: __BindgenComplex<f64>) -> f64 => "badge complex math ABI is not safely host-forwardable today";
+    fn crealf(arg1: __BindgenComplex<f32>) -> f32 => "badge complex math ABI is not safely host-forwardable today";
+    fn clog10(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn clog10f(arg1: __BindgenComplex<f32>) -> __BindgenComplex<f32> => "badge complex math ABI is not safely host-forwardable today";
+}
+
+weak_abort_emulation_exports! {
+    fn csqrtl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn cabsl(arg1: __BindgenComplex<f64>) -> u128 => "badge complex math ABI is not safely host-forwardable today";
+    fn cprojl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn creall(arg1: __BindgenComplex<f64>) -> u128 => "badge complex math ABI is not safely host-forwardable today";
+    fn conjl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn cimagl(arg1: __BindgenComplex<f64>) -> u128 => "badge complex math ABI is not safely host-forwardable today";
+    fn cargl(arg1: __BindgenComplex<f64>) -> u128 => "badge complex math ABI is not safely host-forwardable today";
+    fn casinl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn cacosl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn catanl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn ccosl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn csinl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn ctanl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn cacoshl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn casinhl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn catanhl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn ccoshl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn csinhl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn ctanhl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn cexpl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn clogl(arg1: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
+    fn cpowl(arg1: __BindgenComplex<f64>, arg2: __BindgenComplex<f64>) -> __BindgenComplex<f64> => "badge complex math ABI is not safely host-forwardable today";
 }

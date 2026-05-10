@@ -1,0 +1,3 @@
+= std process demo
+
+Exercises the narrow `std::process::Command` subset. On BadgeVMS the default child path is `APP:std-process-demo`; pass an explicit BadgeVMS executable path if needed.

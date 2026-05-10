@@ -1,6 +1,9 @@
 [target.riscv32imafc-unknown-none-elf]
 rustflags = ["-Crelocation-model=pic"]
 
+[target.riscv32imafc-unknown-badgevms]
+rustflags = ["-Crelocation-model=pic"]
+
 [alias]
 badge-check = [
 	"check",
@@ -23,3 +26,6 @@ badge-run = [
 emu-check = ["check", "--target", "x86_64-unknown-linux-gnu"]
 emu-build = ["build", "--target", "x86_64-unknown-linux-gnu"]
 emu-run = ["run", "--target", "x86_64-unknown-linux-gnu"]
+badgevms-std-check = ["check", "--target", "riscv32imafc-unknown-badgevms", "-Zbuild-std=core,alloc,std,panic_abort,compiler_builtins"]
+badgevms-std-build = ["build", "--target", "riscv32imafc-unknown-badgevms", "-Zbuild-std=core,alloc,std,panic_abort,compiler_builtins"]
+badgevms-std-run = ["run", "--target", "riscv32imafc-unknown-badgevms", "-Zbuild-std=core,alloc,std,panic_abort,compiler_builtins"]

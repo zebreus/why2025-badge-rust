@@ -61,7 +61,16 @@
 
           buildInputs = [
             rustToolchain
+            pkgs.rustup
             pkgs.rust-analyzer-nightly
+            # For building or inspecting a patched BadgeVMS std toolchain
+            pkgs.git
+            pkgs.cmake
+            pkgs.gnumake
+            pkgs.ninja
+            pkgs.python3
+            pkgs.binutils
+            pkgs.llvmPackages.bintools
             # For building the badge sys crate
             pkgs.rust-bindgen
             pkgs.yq

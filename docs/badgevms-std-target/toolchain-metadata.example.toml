@@ -1,0 +1,9 @@
+# Example metadata for a local BadgeVMS std toolchain build.
+# Copy to toolchain-metadata.toml in the same directory or set matching environment variables.
+
+toolchain_name = "badgevms-std"
+target = "riscv32imafc-unknown-badgevms"
+rust_repo = "/path/to/patched/rust"
+rust_revision = "pin-me"
+firmware_abi_revision = "a548d825a3295432d374939607feb552eb505210"
+repository_revision = "pin-me"

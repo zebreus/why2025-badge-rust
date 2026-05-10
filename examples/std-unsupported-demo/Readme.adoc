@@ -1,0 +1,3 @@
+= std unsupported demo
+
+Demonstrates APIs that must fail explicitly on BadgeVMS v1, including cwd, UDP, and process stdio redirection.

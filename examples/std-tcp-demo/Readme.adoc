@@ -1,0 +1,9 @@
+= std TCP demo
+
+Exercises the v1 TCP path. Run with a fixture address:
+
+----
+std-tcp-demo example.org:80
+----
+
+UDP and Unix-domain sockets are intentionally out of scope for v1.

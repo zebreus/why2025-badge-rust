@@ -1,0 +1,32 @@
+{
+  "llvm-target": "riscv32",
+  "arch": "riscv32",
+  "target-endian": "little",
+  "target-pointer-width": "32",
+  "target-c-int-width": "32",
+  "os": "badgevms",
+  "vendor": "unknown",
+  "env": "",
+  "families": ["unix"],
+  "linker-flavor": "gnu-cc",
+  "linker": "riscv32-esp-elf-gcc",
+  "executables": true,
+  "dynamic-linking": true,
+  "panic-strategy": "abort",
+  "relocation-model": "pic",
+  "code-model": "medium",
+  "features": "+m,+a,+f,+c",
+  "llvm-abiname": "ilp32f",
+  "max-atomic-width": 32,
+  "atomic-cas": true,
+  "disable-redzone": true,
+  "pre-link-args": {
+    "gnu-cc": [
+      "-Wl,--shared",
+      "-Wl,--entry=main",
+      "-Wl,--gc-sections",
+      "-Wl,--strip-debug",
+      "-Wl,--discard-locals"
+    ]
+  }
+}

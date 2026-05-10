@@ -1,0 +1,9 @@
+= std hello world
+
+Minimal Rust `std` App for the BadgeVMS std target.
+
+Build with a linked BadgeVMS std toolchain:
+
+----
+cargo +badgevms-std badgevms-std-build --manifest-path examples/std-hello-world/Cargo.toml
+----

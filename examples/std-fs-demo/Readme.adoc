@@ -1,0 +1,3 @@
+= std fs demo
+
+Exercises `std::fs::File`, `read`, `write`, and `metadata` against a BadgeVMS path. The default on-device path is `FLASH0:[RUST_STD]HELLO.TXT`.

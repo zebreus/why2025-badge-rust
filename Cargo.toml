@@ -1,5 +1,13 @@
 [workspace]
 resolver = "3"
+exclude = [
+    "examples/std-fs-demo",
+    "examples/std-hello-world",
+    "examples/std-process-demo",
+    "examples/std-tcp-demo",
+    "examples/std-threaded-app",
+    "examples/std-unsupported-demo",
+]
 members = [
     "examples/hello-world",
     "examples/graphics-demo",

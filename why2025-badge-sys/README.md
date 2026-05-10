@@ -31,6 +31,8 @@ The symbols definitely need more documentation. If you want to add some, please 
 
 Badge binaries still need final linker args for `--shared`, `--entry=main`, and export pruning. Enable the `badge-app-link` feature on `why2025-badge-sys` to have this crate generate badge-link metadata, including a retain-symbols file in `OUT_DIR`, without requiring a checked-in `retain.txt`.
 
+This section describes the current no_std BadgeVMS App workflow. The incubating BadgeVMS std target is toolchain-owned instead: std Apps use `riscv32imafc-unknown-badgevms`, and the patched Rust toolchain owns `std` plus final BadgeVMS linking. The raw bindings and Emulation in this crate are ABI references for that work, but `std` must not depend on `why2025-badge-sys` as a crate.
+
 Cargo only lets the final binary emit `rustc-link-arg-bins`, so the application still needs a tiny build script. Use `why2025-badge-build` there and forward the build script path you want Cargo to watch:
 
 ```rust

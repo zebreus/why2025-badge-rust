@@ -1,0 +1,31 @@
+name: BadgeVMS std conformance
+
+on:
+  workflow_dispatch:
+    inputs:
+      artifact-url:
+        description: "URL or path for prebuilt BadgeVMS std App artifacts"
+        required: false
+      hardware-runner-label:
+        description: "Self-hosted runner label connected to BadgeVMS hardware"
+        required: false
+        default: "badgevms-hardware"
+
+jobs:
+  conformance-plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print conformance inventory
+        run: cat tests/badgevms-std/conformance.toml
+
+  hardware-placeholder:
+    if: ${{ inputs.artifact-url != '' }}
+    runs-on: [self-hosted, badgevms-hardware]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run hardware conformance
+        run: |
+          echo "Hardware runner integration is intentionally project-specific."
+          echo "Requested runner label: ${{ inputs.hardware-runner-label }}"
+          echo "Expected record protocol: docs/badgevms-std-target/conformance-protocol.md"

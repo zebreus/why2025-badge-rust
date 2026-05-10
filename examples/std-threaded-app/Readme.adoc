@@ -1,0 +1,3 @@
+= std threaded app
+
+Exercises the v1 `std::thread`, TLS destructor, `park_timeout`, `unpark`, `Mutex`, and `Condvar` contract.

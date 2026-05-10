@@ -1,0 +1,39 @@
+name: repository checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  host-and-nostd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-src,rustfmt
+          targets: riscv32imafc-unknown-none-elf
+      - name: Install host dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libxcursor-dev libxkbcommon-dev libgl1-mesa-dev libwayland-dev zlib1g-dev
+      - name: Format
+        run: cargo fmt --check
+      - name: Host build using Emulation
+        run: cargo emu-check --workspace
+      - name: no_std BadgeVMS build
+        run: >-
+          cargo badge-check
+          -p why2025-badge-sys
+          -p why2025-badge-app-no-std
+          -p why2025-badge-embedded-graphics
+          -p hello-world
+          -p graphics-demo
+          -p mousefood-demo
+          -p ratatui-demo
+      - name: std example host checks
+        run: |
+          set -euo pipefail
+          for manifest in examples/std-*/Cargo.toml; do
+            cargo check --manifest-path "$manifest"
+          done
+      - name: Repository-side BadgeVMS std smoke
+        run: ./tools/badgevms-std/ci-smoke.sh

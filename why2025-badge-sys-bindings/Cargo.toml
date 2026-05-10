@@ -1,13 +1,21 @@
 [package]
 name = "why2025-badge-sys-bindings"
-version.workspace = true
-edition.workspace = true
-authors.workspace = true
-license.workspace = true
+version = "0.2.0"
+edition = "2024"
+authors = ["Zebreus"]
+license = "AGPL-3.0"
 description = "Raw generated bindings for the WHY2025 badge firmware ABI"
-repository.workspace = true
+repository = "https://github.com/zebreus/why2025-badge-rust"
 keywords = ["why2025", "badge"]
 categories = ["embedded", "no-std", "os", "graphics"]
 
 [lib]
 path = "src/lib.rs"
+
+[dependencies.core]
+path = "../why2025-badge-rust-toolchain/library/rustc-std-workspace-core"
+optional = true
+package = "rustc-std-workspace-core"
+
+[features]
+rustc-dep-of-std = ["dep:core"]

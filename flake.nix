@@ -55,6 +55,7 @@
               libxkbcommon
               wayland
               libz
+              stdenv.cc.cc.lib
               xorg.libX11
               xorg.libXcursor
             ];
@@ -68,6 +69,8 @@
             pkgs.cmake
             pkgs.gnumake
             pkgs.ninja
+            pkgs.pkg-config
+            pkgs.openssl
             pkgs.python3
             pkgs.binutils
             pkgs.llvmPackages.bintools

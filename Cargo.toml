@@ -7,6 +7,7 @@ exclude = [
     "examples/std-tcp-demo",
     "examples/std-threaded-app",
     "examples/std-unsupported-demo",
+    "why2025-badge-rust-toolchain",
 ]
 members = [
     "examples/hello-world",

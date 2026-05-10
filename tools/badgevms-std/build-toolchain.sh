@@ -7,22 +7,22 @@ need_cmd python3
 need_cmd rustc
 
 repo=$(rust_repo)
-[[ -d "$repo/.git" ]] || fail "resolved Rust checkout is not a git checkout: $repo"
+[[ -d "$repo/.git" || -f "$repo/.git" ]] || fail "resolved Rust checkout is not a git checkout: $repo"
 [[ -x "$repo/x.py" ]] || fail "resolved Rust checkout has no executable x.py: $repo"
 
 cd "$repo"
 
-if git config -f .gitmodules --get-regexp '^submodule\.library/libc\.' >/dev/null 2>&1; then
-    git submodule update --init --recursive library/libc
-fi
-
-[[ -f library/libc/Cargo.toml ]] || fail "resolved Rust checkout is missing library/libc; run: git submodule update --init --recursive library/libc"
-
-if ! grep -R "badgevms" compiler/rustc_target/src/spec library/std/src 2>/dev/null | head -n1 >/dev/null; then
+if ! grep -R -q "badgevms" compiler/rustc_target/src/spec library/std/src library/backtrace/src 2>/dev/null; then
     fail "patched Rust checkout does not appear to contain BadgeVMS target/std backend changes"
 fi
 
-cat > config.badgevms.toml <<'CONFIG'
+[[ -f "$PROJECT_ROOT/why2025-badge-sys-bindings/Cargo.toml" ]] || \
+    fail "missing canonical raw BadgeVMS ABI crate: why2025-badge-sys-bindings"
+
+config="$repo/build/badgevms/config.toml"
+mkdir -p "$(dirname "$config")"
+
+cat > "$config" <<'CONFIG'
 profile = "compiler"
 change-id = "ignore"
 
@@ -38,9 +38,14 @@ tools = ["cargo", "rustfmt"]
 [rust]
 debug = false
 incremental = false
+# Build and ship the self-contained LLD wrapper used by the BadgeVMS target spec
+# (`linker = "rust-lld"`). Bootstrap still skips host-linker override for this
+# target so the target-owned linker flavor and arguments are preserved.
+lld = true
 
 [target.riscv32imafc-unknown-badgevms]
 # The patched target owns link flags. Keep this section available for SDK paths only.
+
 CONFIG
 
 # Stage0 does not know the new built-in BadgeVMS target yet, so bootstrap's
@@ -48,9 +53,10 @@ CONFIG
 # patched checkout.
 export BOOTSTRAP_SKIP_TARGET_SANITY=1
 
-python3 ./x.py build --config config.badgevms.toml compiler/rustc --stage 2
-python3 ./x.py build --config config.badgevms.toml library/std --stage 2 --target "$(rustc -vV | sed -n 's/^host: //p')"
-python3 ./x.py build --config config.badgevms.toml cargo
+python3 ./x.py build --config "$config" compiler/rustc --stage 2
+python3 ./x.py build --config "$config" library/std --stage 2 --target "$(rustc -vV | sed -n 's/^host: //p')"
+python3 ./x.py build --config "$config" library/std --stage 2 --target "$BADGEVMS_STD_TARGET"
+python3 ./x.py build --config "$config" cargo
 
 stage2=$(stage2_dir_for_repo "$repo")
 [[ -x "$stage2/bin/rustc" ]] || fail "stage2 rustc was not produced at $stage2/bin/rustc"

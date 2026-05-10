@@ -8,8 +8,8 @@
   "vendor": "unknown",
   "env": "",
   "families": ["unix"],
-  "linker-flavor": "gnu-cc",
-  "linker": "riscv32-esp-elf-gcc",
+  "linker-flavor": "gnu-lld",
+  "linker": "rust-lld",
   "executables": true,
   "dynamic-linking": true,
   "panic-strategy": "abort",
@@ -21,12 +21,11 @@
   "atomic-cas": true,
   "disable-redzone": true,
   "pre-link-args": {
-    "gnu-cc": [
-      "-Wl,--shared",
-      "-Wl,--entry=main",
-      "-Wl,--gc-sections",
-      "-Wl,--strip-debug",
-      "-Wl,--discard-locals"
+    "gnu-lld": [
+      "--shared",
+      "--entry=main",
+      "--gc-sections",
+      "--discard-locals"
     ]
   }
 }

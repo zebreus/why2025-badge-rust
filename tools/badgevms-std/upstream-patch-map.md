@@ -8,10 +8,12 @@ Add a built-in target for `riscv32imafc-unknown-badgevms` with:
 
 - `target_os = "badgevms"`;
 - `target_family = "unix"`;
+- no non-empty `target_env` value (`newlib` is intentionally absent; rustc still prints
+	`target_env=""` for an unspecified environment);
 - 32-bit RISC-V IMACF, little endian, `ilp32f` ABI;
 - abort panic;
 - PIC output;
-- BadgeVMS linker driver.
+- `rust-lld` linker driver.
 
 The JSON file in this directory is a review aid only. The final target must be a built-in Rust target because `std` needs target-specific backend code and link orchestration.
 
@@ -23,18 +25,29 @@ The built-in target must force the executable export list to `main`. The current
 
 ## Standard library backend
 
-Add the BadgeVMS `std` backend modules in the Rust fork. The current fork may reuse targeted Unix
-PAL branches where the firmware ABI is fd/socket/process-shaped; move to a dedicated
-`sys/pal/badgevms` tree if those branches stop being shallow.
+Add BadgeVMS `std` backend selectors in the Rust fork. BadgeVMS keeps
+`target_family = "unix"` for ecosystem cfg compatibility, but `std` must route it before generic
+Unix/POSIX branches whenever those branches require libc, pthreads, POSIX filesystem/process
+semantics, or Unix backtrace support.
+
+The current backend uses dedicated BadgeVMS pieces for allocator, stdio, errno/error mapping, exit,
+environment constants, raw OS aliases, and file-descriptor ownership. Unsupported process, fs, net,
+time, pipe, random, thread, and path operations intentionally use existing unsupported PAL modules
+until the firmware ABI grows those semantics.
 
 The repository/toolchain raw-ABI boundary for that backend is recorded in
 [ADR 0004](../../docs/adr/0004-canonical-badgevms-abi-layering.md).
 
-## Temporary libc migration
+## Raw ABI dependency
 
-Any remaining BadgeVMS-specific `libc` support in the Rust fork is migration scaffolding only while
-the std port is moved fully onto `why2025-badge-sys-bindings`. It is not the long-term BadgeVMS
-platform description and should be removed rather than expanded.
+`library/std` depends directly on `why2025-badge-sys-bindings` for `target_os = "badgevms"`. The
+raw bindings crate exposes a `rustc-dep-of-std` feature that renames `rustc-std-workspace-core` to
+`core`, matching upstream std-dependency conventions. Do not reintroduce a BadgeVMS-specific libc
+crate or a custom `library/libc` fork.
+
+`library/unwind`, `library/panic_unwind`, `library/std_detect`, and the vendored `backtrace` crate
+must exclude BadgeVMS from libc-backed paths. BadgeVMS backtraces currently resolve to the no-op
+backend.
 
 ## Test selection
 

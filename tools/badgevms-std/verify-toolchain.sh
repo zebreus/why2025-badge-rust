@@ -15,6 +15,9 @@ printf '%s\n' "$cfg" | grep -qx 'target_os="badgevms"' || fail "target cfg missi
 printf '%s\n' "$cfg" | grep -qx 'target_family="unix"' || fail "target cfg missing target_family=\"unix\""
 printf '%s\n' "$cfg" | grep -qx 'target_arch="riscv32"' || fail "target cfg missing target_arch=\"riscv32\""
 printf '%s\n' "$cfg" | grep -qx 'target_pointer_width="32"' || fail "target cfg missing 32-bit pointer width"
+if printf '%s\n' "$cfg" | grep -Eq '^target_env=".+"$'; then
+	fail "BadgeVMS target must not set a non-empty target_env; expected no newlib/libc environment cfg"
+fi
 
 printf 'BadgeVMS std target cfg looks correct for %s.\n' "$BADGEVMS_STD_TARGET"
 print_target_cfg_summary "$toolchain"

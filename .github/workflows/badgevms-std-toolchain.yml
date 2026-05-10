@@ -1,6 +1,9 @@
 name: BadgeVMS std toolchain
 
 on:
+  push:
+    tags:
+      - "badgevms-std-v*"
   workflow_dispatch:
     inputs:
       toolchain-name:
@@ -12,9 +15,16 @@ on:
         required: false
         default: "ci"
 
+permissions:
+  contents: read
+
 jobs:
   package-toolchain:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      BADGEVMS_TOOLCHAIN_NAME: ${{ inputs['toolchain-name'] || 'badgevms-std' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
@@ -26,26 +36,70 @@ jobs:
         run: |
           git config --global url."https://github.com/".insteadOf git@github.com:
           git submodule update --init why2025-badge-rust-toolchain
+      - name: Determine package version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF_TYPE:-}" == "tag" && "${GITHUB_REF_NAME:-}" == badgevms-std-v* ]]; then
+            version="${GITHUB_REF_NAME#badgevms-std-v}"
+          else
+            input_version="${{ inputs['package-version'] }}"
+            if [[ -z "$input_version" ]]; then
+              input_version=ci
+            fi
+            version="$input_version-${GITHUB_SHA}"
+          fi
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
       - name: Build Rust dist artifacts
-        env:
-          BADGEVMS_TOOLCHAIN_NAME: ${{ inputs.toolchain-name }}
         run: ./tools/badgevms-std/dist-toolchain.sh
       - name: Package toolchain archive
         env:
-          BADGEVMS_TOOLCHAIN_VERSION: ${{ inputs.package-version }}-${{ github.sha }}
+          BADGEVMS_TOOLCHAIN_VERSION: ${{ steps.version.outputs.version }}
         run: ./tools/badgevms-std/package-toolchain.sh why2025-badge-rust-toolchain/build/dist dist/badgevms-std
       - name: Test packaged install
-        env:
-          BADGEVMS_TOOLCHAIN_NAME: ${{ inputs.toolchain-name }}
         run: |
           archive=$(find dist/badgevms-std -name 'badgevms-std-*.tar.gz' -print -quit)
           ./tools/badgevms-std/install-toolchain.sh --archive "$archive" --name "$BADGEVMS_TOOLCHAIN_NAME" --force
           ./tools/badgevms-std/verify-toolchain.sh "$BADGEVMS_TOOLCHAIN_NAME"
           ./tools/badgevms-std/run-smoke.sh "$BADGEVMS_TOOLCHAIN_NAME" examples/std-hello-world/Cargo.toml
           BADGEVMS_BUILD_STD=1 ./tools/badgevms-std/run-smoke.sh "$BADGEVMS_TOOLCHAIN_NAME" examples/std-hello-world/Cargo.toml
+      - name: Test standalone consumer build
+        run: |
+          tmp=$(mktemp -d)
+          trap 'rm -rf "$tmp"' EXIT
+          rustup run "$BADGEVMS_TOOLCHAIN_NAME" cargo new --bin "$tmp/badgevms-outside-smoke"
+          cd "$tmp/badgevms-outside-smoke"
+          env -u RUSTC rustup run "$BADGEVMS_TOOLCHAIN_NAME" cargo build --target riscv32imafc-unknown-badgevms
+          "$GITHUB_WORKSPACE/tools/badgevms-std/inspect-elf.sh" \
+            "target/riscv32imafc-unknown-badgevms/debug/badgevms-outside-smoke"
+      - name: Prepare release aliases
+        if: startsWith(github.ref, 'refs/tags/badgevms-std-v')
+        run: |
+          host=$(rustc -vV | sed -n 's/^host: //p')
+          archive=$(find dist/badgevms-std -name "badgevms-std-${{ steps.version.outputs.version }}-$host.tar.gz" -print -quit)
+          metadata="${archive%.tar.gz}.json"
+          cp "$archive" "dist/badgevms-std/badgevms-std-$host.tar.gz"
+          (cd dist/badgevms-std && sha256sum "badgevms-std-$host.tar.gz" > "badgevms-std-$host.tar.gz.sha256")
+          cp "$metadata" "dist/badgevms-std/badgevms-std-$host.json"
       - uses: actions/upload-artifact@v4
         with:
           name: badgevms-std-toolchain
           path: |
             dist/badgevms-std/*
             tools/badgevms-std/install-toolchain.sh
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/badgevms-std-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/badgevms-std/*
+            tools/badgevms-std/install-toolchain.sh
+          body: |
+            BadgeVMS Rust std toolchain ${{ steps.version.outputs.version }}.
+
+            Install with:
+
+            ```sh
+            curl -fLO https://github.com/${{ github.repository }}/releases/latest/download/install-toolchain.sh
+            bash install-toolchain.sh --version latest
+            rustup run badgevms-std cargo build --target riscv32imafc-unknown-badgevms
+            ```

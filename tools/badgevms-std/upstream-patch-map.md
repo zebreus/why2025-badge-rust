@@ -56,7 +56,8 @@ backend.
 
 Release archives should include prebuilt `rust-std` for `riscv32imafc-unknown-badgevms`, so normal
 users can build with `cargo +badgevms-std build --target riscv32imafc-unknown-badgevms` without
-`-Zbuild-std`. The local `stage2`/`rustup toolchain link` workflow is a developer shortcut only.
+`-Zbuild-std`. The supported packaging tree intentionally does not include stage2 link helpers;
+release artifacts come from Rust dist component archives only.
 
 When `rust-src` is packaged for maintainers, the canonical `why2025-badge-sys-bindings` crate must
 be included in the installed source tree with a manifest whose `rustc-std-workspace-core` path points

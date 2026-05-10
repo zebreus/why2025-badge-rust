@@ -7,11 +7,9 @@ the supported entrypoint.
 
 ## Scripts
 
-- `build-toolchain.sh` — build the bundled patched Rust checkout.
 - `dist-toolchain.sh` — build Rust dist artifacts for release packaging.
 - `package-toolchain.sh` — assemble a relocatable rustup-linkable toolchain archive from Rust dist artifacts.
 - `install-toolchain.sh` — install a packaged archive and register it with rustup.
-- `dev-link-stage2.sh` — developer-only shortcut for linking a mutable stage2 tree.
 - `verify-toolchain.sh` — verify target cfg for `riscv32imafc-unknown-badgevms`, including no
 	non-empty `target_env` such as `newlib`.
 - `run-smoke.sh` — build a std example and inspect the ELF artifact.
@@ -25,12 +23,21 @@ Set `BADGEVMS_TOOLCHAIN_NAME` to the local rustup name when needed.
 
 ## Install a packaged toolchain
 
-The release path is a relocatable sysroot archive plus a small rustup registration script:
+The release path is a relocatable sysroot archive plus a small rustup registration script. From a
+published release, a normal user should be able to install and build without checking out this
+repository:
+
+```sh
+curl -fLO https://github.com/zebreus/why2025-badge-rust/releases/latest/download/install-toolchain.sh
+bash install-toolchain.sh --version latest
+rustup run badgevms-std cargo build --target riscv32imafc-unknown-badgevms \
+	--manifest-path Cargo.toml
+```
+
+For a local archive, use:
 
 ```sh
 tools/badgevms-std/install-toolchain.sh --archive dist/badgevms-std/<archive>.tar.gz
-rustup run badgevms-std cargo build --target riscv32imafc-unknown-badgevms \
-	--manifest-path examples/std-hello-world/Cargo.toml
 ```
 
 Archives include prebuilt BadgeVMS `std`, so normal users should not need `-Zbuild-std`. Use
@@ -52,9 +59,16 @@ tools/badgevms-std/run-smoke.sh badgevms-std examples/std-hello-world/Cargo.toml
 BADGEVMS_BUILD_STD=1 tools/badgevms-std/run-smoke.sh badgevms-std examples/std-hello-world/Cargo.toml
 ```
 
-## Developer stage2 shortcut
+Release packaging requires a clean superproject, Rust toolchain submodule, and nested submodules.
+For local experiments only, set `BADGEVMS_ALLOW_DIRTY=1` or pass `--allow-dirty` to
+`dist-toolchain.sh`/`package-toolchain.sh`; dirty archives must not be published.
 
-`build-toolchain.sh` and `dev-link-stage2.sh` remain local iteration shortcuts for compiler work.
-They are not release packaging inputs and may patch a mutable stage2 tree for local `build-std`
-testing. Packaged releases must use `dist-toolchain.sh`, `package-toolchain.sh`, and
-`install-toolchain.sh` so the installed toolchain is independent of the source checkout.
+## Troubleshooting
+
+- If `install-toolchain.sh --version latest` fails, check that the GitHub Release contains the
+	`badgevms-std-<host>.tar.gz` alias and matching `.sha256` file for your host.
+- If a build accidentally uses the ambient `rustc`, invoke Cargo through `rustup run badgevms-std`
+	or set `RUSTC` to `$(rustup which --toolchain badgevms-std rustc)`.
+- If `BADGEVMS_BUILD_STD=1` fails, inspect the packaged `rust-src` tree and verify
+	`lib/rustlib/src/why2025-badge-sys-bindings/Cargo.toml` points at
+	`../rust/library/rustc-std-workspace-core`.

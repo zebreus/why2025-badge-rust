@@ -4,7 +4,7 @@ source "$(dirname "$0")/common.sh"
 
 usage() {
     cat <<'USAGE'
-usage: package-toolchain.sh [dist-dir] [out-dir] [version]
+usage: package-toolchain.sh [--allow-dirty] [dist-dir] [out-dir] [version]
 
 Assembles a relocatable, rustup-linkable BadgeVMS toolchain archive from Rust dist artifacts.
 The input directory must be produced by dist-toolchain.sh / x.py dist and contain rustc, host
@@ -12,18 +12,44 @@ rust-std, BadgeVMS rust-std, cargo, rustfmt, and rust-src component tarballs.
 USAGE
 }
 
-if [[ ${1:-} == "-h" || ${1:-} == "--help" ]]; then
-    usage
-    exit 0
-fi
+positionals=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --allow-dirty)
+            export BADGEVMS_ALLOW_DIRTY=1
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --)
+            shift
+            while [[ $# -gt 0 ]]; do
+                positionals+=("$1")
+                shift
+            done
+            ;;
+        --*)
+            fail "unknown argument: $1"
+            ;;
+        *)
+            positionals+=("$1")
+            shift
+            ;;
+    esac
+done
 
+need_cmd git
+need_cmd python3
 need_cmd tar
 need_cmd sha256sum
 
 repo=$(rust_repo)
-dist_dir=${1:-$repo/build/dist}
-out_dir=${2:-$PROJECT_ROOT/dist/badgevms-std}
-version=${3:-${BADGEVMS_TOOLCHAIN_VERSION:-}}
+ensure_clean_release_tree
+dist_dir=${positionals[0]:-$repo/build/dist}
+out_dir=${positionals[1]:-$PROJECT_ROOT/dist/badgevms-std}
+version=${positionals[2]:-${BADGEVMS_TOOLCHAIN_VERSION:-}}
 host=${BADGEVMS_TOOLCHAIN_HOST:-$(host_triple_from_rustc rustc)}
 
 [[ -d "$dist_dir" ]] || fail "dist directory does not exist: $dist_dir"
@@ -70,6 +96,44 @@ install_component() {
     install_script="$top/install.sh"
     [[ -x "$install_script" ]] || fail "dist artifact has no executable install.sh: $artifact"
     "$install_script" --prefix="$prefix" --disable-ldconfig >/dev/null
+}
+
+json_quote() {
+    python3 -c 'import json, sys; print(json.dumps(sys.argv[1]))' "$1"
+}
+
+audit_runtime_dependencies() {
+    [[ $(uname -s) == Linux ]] || return 0
+
+    if ! command -v ldd >/dev/null 2>&1; then
+        printf 'warning: ldd not found; skipping runtime dependency audit\n' >&2
+        return 0
+    fi
+
+    local report="$image/badgevms-runtime-deps.txt"
+    : > "$report"
+
+    local tool bin deps bad_nix
+    for tool in rustc cargo-real rustfmt; do
+        bin="$image/bin/$tool"
+        [[ -x "$bin" ]] || continue
+
+        deps=$(LD_LIBRARY_PATH="$image/lib:$image/lib/rustlib/$host/lib:${LD_LIBRARY_PATH:-}" ldd "$bin" 2>&1 || true)
+        {
+            printf '## %s\n' "$tool"
+            printf '%s\n\n' "$deps"
+        } >> "$report"
+
+        if printf '%s\n' "$deps" | grep -Eiq 'lib(ssl|crypto)\.so|openssl'; then
+            fail "packaged $tool has a dynamic OpenSSL dependency"
+        fi
+
+        bad_nix=$(printf '%s\n' "$deps" | grep '/nix/store/' | grep -Eiv 'glibc|gcc|libz' || true)
+        if [[ -n "$bad_nix" ]]; then
+            printf 'unexpected Nix runtime dependencies for %s:\n%s\n' "$tool" "$bad_nix" >&2
+            fail "packaged $tool depends on non-allowlisted Nix store libraries"
+        fi
+    done
 }
 
 rustc_artifact=$(find_artifact rustc "$host")
@@ -122,21 +186,64 @@ grep -q '../rust/library/rustc-std-workspace-core' \
 "$image/bin/cargo" -V >/dev/null
 "$image/bin/rustfmt" -V >/dev/null
 
+cfg=$("$image/bin/rustc" --target "$BADGEVMS_STD_TARGET" --print cfg | sort)
+printf '%s\n' "$cfg" | grep -qx 'target_os="badgevms"' || fail 'packaged rustc target cfg missing target_os="badgevms"'
+printf '%s\n' "$cfg" | grep -qx 'target_family="unix"' || fail 'packaged rustc target cfg missing target_family="unix"'
+if printf '%s\n' "$cfg" | grep -Eq '^target_env=".+"$'; then
+    fail 'packaged BadgeVMS target must not set a non-empty target_env'
+fi
+
+audit_runtime_dependencies
+
 if [[ -z "$version" ]]; then
     rust_version=$("$image/bin/rustc" -V | awk '{ print $2 }')
-    git_rev=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || printf 'nogit')
+    git_rev=$(git_short_rev "$PROJECT_ROOT")
     version="$rust_version-$git_rev"
-    if ! git -C "$PROJECT_ROOT" diff --quiet --ignore-submodules=none 2>/dev/null; then
+    if release_tree_is_dirty; then
         version="$version-dirty"
     fi
 fi
+
+source_dirty=false
+if release_tree_is_dirty; then
+    source_dirty=true
+fi
+
+source_repo=$(git_origin_url "$PROJECT_ROOT")
+source_rev=$(git_full_rev "$PROJECT_ROOT")
+rust_repo_url=$(git_origin_url "$repo")
+rust_rev=$(git_full_rev "$repo")
+built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+rustc_release=$("$image/bin/rustc" -V | awk '{ print $2 }')
 
 cat > "$image/badgevms-toolchain.env" <<EOF
 BADGEVMS_TOOLCHAIN_VERSION=$version
 BADGEVMS_TOOLCHAIN_HOST=$host
 BADGEVMS_STD_TARGET=$BADGEVMS_STD_TARGET
-BADGEVMS_SOURCE_REPO=$(git -C "$PROJECT_ROOT" config --get remote.origin.url 2>/dev/null || true)
-BADGEVMS_SOURCE_REV=$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || true)
+BADGEVMS_SOURCE_REPO=$source_repo
+BADGEVMS_SOURCE_REV=$source_rev
+BADGEVMS_RUST_REPO=$rust_repo_url
+BADGEVMS_RUST_REV=$rust_rev
+BADGEVMS_BUILT_AT=$built_at
+EOF
+
+cat > "$image/badgevms-toolchain.json" <<EOF
+{
+    "version": $(json_quote "$version"),
+    "host": $(json_quote "$host"),
+    "target": $(json_quote "$BADGEVMS_STD_TARGET"),
+    "built_at": $(json_quote "$built_at"),
+    "rustc_release": $(json_quote "$rustc_release"),
+    "source": {
+        "repo": $(json_quote "$source_repo"),
+        "rev": $(json_quote "$source_rev"),
+        "dirty": $source_dirty
+    },
+    "rust_toolchain": {
+        "repo": $(json_quote "$rust_repo_url"),
+        "rev": $(json_quote "$rust_rev")
+    }
+}
 EOF
 
 while IFS= read -r link; do
@@ -154,7 +261,10 @@ done < <(find "$image" -type l)
 if find "$image" \( -name .git -o -name .gitmodules \) -print -quit | grep -q .; then
     fail "archive would contain git metadata"
 fi
-checkout_refs=$(grep -RIl --exclude='badgevms-toolchain.env' \
+if grep -RIl 'why2025-badge-rust-libc' "$image" | grep -q .; then
+    fail "archive would contain the removed why2025-badge-rust-libc crate"
+fi
+checkout_refs=$(grep -RIl --exclude='badgevms-toolchain.env' --exclude='badgevms-toolchain.json' \
     "$PROJECT_ROOT\|why2025-badge-rust-toolchain/build" "$image" || true)
 if [[ -n "$checkout_refs" ]]; then
     printf 'source checkout or stage2 references found in assembled image:\n%s\n' \
@@ -169,8 +279,11 @@ package_root="$tmp/$package"
 mv "$image" "$package_root"
 
 archive="$out_dir/$package.tar.gz"
+metadata="$out_dir/$package.json"
+cp "$package_root/badgevms-toolchain.json" "$metadata"
 tar -C "$tmp" -czf "$archive" "$package"
-sha256sum "$archive" > "$archive.sha256"
+(cd "$out_dir" && sha256sum "$(basename "$archive")" > "$(basename "$archive").sha256")
 
 printf 'packaged BadgeVMS toolchain: %s\n' "$archive"
 printf 'checksum: %s.sha256\n' "$archive"
+printf 'metadata: %s\n' "$metadata"

@@ -2,6 +2,7 @@
 set -euo pipefail
 
 BADGEVMS_STD_TARGET=${BADGEVMS_STD_TARGET:-riscv32imafc-unknown-badgevms}
+BADGEVMS_RELEASE_REPO=${BADGEVMS_RELEASE_REPO:-zebreus/why2025-badge-rust}
 
 fail() {
     printf 'error: %s\n' "$*" >&2
@@ -32,6 +33,7 @@ Options:
   --archive PATH       Install from a local badgevms-std archive.
   --url URL            Download archive from an explicit URL.
   --version VERSION    Release version. Used to form the default download URL.
+                      Use "latest" for the latest GitHub Release asset.
   --host TRIPLE        Host triple. Defaults to rustc -vV or uname mapping.
   --name NAME          rustup toolchain name. Default: badgevms-std.
   --install-dir DIR    Extraction root. Default: $XDG_DATA_HOME/badgevms-rust/toolchains.
@@ -49,6 +51,34 @@ archive=${BADGEVMS_TOOLCHAIN_ARCHIVE:-}
 url=${BADGEVMS_TOOLCHAIN_URL:-}
 force=0
 print_json=0
+
+download_file() {
+    local source=$1
+    local dest=$2
+
+    if command -v curl >/dev/null 2>&1; then
+        curl -fL "$source" -o "$dest"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -O "$dest" "$source"
+    else
+        fail "missing downloader: install curl or wget, or pass --archive"
+    fi
+}
+
+release_url_for() {
+    local requested_version=$1
+    local requested_host=$2
+
+    if [[ "$requested_version" == "latest" ]]; then
+        printf 'https://github.com/%s/releases/latest/download/badgevms-std-%s.tar.gz\n' \
+            "$BADGEVMS_RELEASE_REPO" "$requested_host"
+        return
+    fi
+
+    local clean_version=${requested_version#badgevms-std-v}
+    printf 'https://github.com/%s/releases/download/badgevms-std-v%s/badgevms-std-%s-%s.tar.gz\n' \
+        "$BADGEVMS_RELEASE_REPO" "$clean_version" "$clean_version" "$requested_host"
+}
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -77,27 +107,13 @@ trap 'rm -rf "$tmp"' EXIT
 
 if [[ -z "$archive" ]]; then
     if [[ -z "$url" ]]; then
-        if [[ "$version" == "latest" ]]; then
-            url="https://github.com/zebreus/why2025-badge-rust/releases/latest/download/badgevms-std-$host.tar.gz"
-        else
-            url="https://github.com/zebreus/why2025-badge-rust/releases/download/badgevms-std-v$version/badgevms-std-$version-$host.tar.gz"
-        fi
+        url=$(release_url_for "$version" "$host")
     fi
 
     archive="$tmp/$(basename "$url")"
-    if command -v curl >/dev/null 2>&1; then
-        curl -fL "$url" -o "$archive"
-        if curl -fL "$url.sha256" -o "$archive.sha256"; then
-            (cd "$(dirname "$archive")" && sha256sum -c "$(basename "$archive").sha256")
-        fi
-    elif command -v wget >/dev/null 2>&1; then
-        wget -O "$archive" "$url"
-        if wget -O "$archive.sha256" "$url.sha256"; then
-            (cd "$(dirname "$archive")" && sha256sum -c "$(basename "$archive").sha256")
-        fi
-    else
-        fail "missing downloader: install curl or wget, or pass --archive"
-    fi
+    download_file "$url" "$archive"
+    download_file "$url.sha256" "$archive.sha256"
+    (cd "$(dirname "$archive")" && sha256sum -c "$(basename "$archive").sha256")
 else
     [[ -f "$archive" ]] || fail "archive does not exist: $archive"
     archive="$(cd "$(dirname "$archive")" && pwd)/$(basename "$archive")"
@@ -139,4 +155,6 @@ if [[ "$print_json" -eq 1 ]]; then
         "$name" "$dest" "$host" "$BADGEVMS_STD_TARGET"
 else
     printf 'installed BadgeVMS Rust toolchain %s at %s\n' "$name" "$dest"
+    printf 'next steps:\n'
+    printf '  rustup run %s cargo build --target %s\n' "$name" "$BADGEVMS_STD_TARGET"
 fi

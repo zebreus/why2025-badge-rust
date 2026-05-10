@@ -17,7 +17,12 @@ Initialize the bundled Rust checkout submodule:
 
 ```sh
 git submodule update --init why2025-badge-rust-toolchain
+git -C why2025-badge-rust-toolchain submodule update --init library/libc
 ```
+
+The nested `library/libc` update is required because the Rust checkout carries
+the BadgeVMS `libc` support as its own submodule. The build script also performs
+that nested update automatically.
 
 The tooling uses that submodule automatically. To use a different patched Rust checkout, set the location explicitly:
 

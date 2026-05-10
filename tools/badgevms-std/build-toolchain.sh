@@ -17,6 +17,12 @@ if [[ -n "${BADGEVMS_RUST_REV:-}" ]]; then
     git checkout "$BADGEVMS_RUST_REV"
 fi
 
+if git config -f .gitmodules --get-regexp '^submodule\.library/libc\.' >/dev/null 2>&1; then
+    git submodule update --init --recursive library/libc
+fi
+
+[[ -f library/libc/Cargo.toml ]] || fail "Rust checkout is missing library/libc; run: git submodule update --init --recursive library/libc"
+
 if ! grep -R "badgevms" compiler/rustc_target/src/spec library/std/src 2>/dev/null | head -n1 >/dev/null; then
     fail "patched Rust checkout does not appear to contain BadgeVMS target/std backend changes"
 fi

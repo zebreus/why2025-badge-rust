@@ -5,10 +5,7 @@ mod tests {
         use crate::*;
 
         unsafe {
-            assert_ne!(
-                core::ptr::addr_of!(_ctype_b) as *const (),
-                core::ptr::null()
-            );
+            assert_ne!(core::ptr::addr_of!(_ctype_b) as *const (), core::ptr::null());
             assert_ne!(a64l as *const (), core::ptr::null());
             assert_ne!(abs as *const (), core::ptr::null());
             assert_ne!(asctime_r as *const (), core::ptr::null());
@@ -579,10 +576,7 @@ mod tests {
             assert_ne!(ynf as *const (), core::ptr::null());
             assert_ne!(application_create as *const (), core::ptr::null());
             assert_ne!(application_create_file as *const (), core::ptr::null());
-            assert_ne!(
-                application_create_file_string as *const (),
-                core::ptr::null()
-            );
+            assert_ne!(application_create_file_string as *const (), core::ptr::null());
             assert_ne!(application_destroy as *const (), core::ptr::null());
             assert_ne!(application_free as *const (), core::ptr::null());
             assert_ne!(application_get as *const (), core::ptr::null());
@@ -630,21 +624,12 @@ mod tests {
             assert_ne!(wifi_scan_free_station as *const (), core::ptr::null());
             assert_ne!(wifi_scan_get_num_results as *const (), core::ptr::null());
             assert_ne!(wifi_scan_get_result as *const (), core::ptr::null());
-            assert_ne!(
-                wifi_set_connection_parameters as *const (),
-                core::ptr::null()
-            );
+            assert_ne!(wifi_set_connection_parameters as *const (), core::ptr::null());
             assert_ne!(wifi_station_get_bssid as *const (), core::ptr::null());
             assert_ne!(wifi_station_get_mode as *const (), core::ptr::null());
-            assert_ne!(
-                wifi_station_get_primary_channel as *const (),
-                core::ptr::null()
-            );
+            assert_ne!(wifi_station_get_primary_channel as *const (), core::ptr::null());
             assert_ne!(wifi_station_get_rssi as *const (), core::ptr::null());
-            assert_ne!(
-                wifi_station_get_secondary_channel as *const (),
-                core::ptr::null()
-            );
+            assert_ne!(wifi_station_get_secondary_channel as *const (), core::ptr::null());
             assert_ne!(wifi_station_get_ssid as *const (), core::ptr::null());
             assert_ne!(wifi_station_wps as *const (), core::ptr::null());
             assert_ne!(window_create as *const (), core::ptr::null());
@@ -653,10 +638,7 @@ mod tests {
             assert_ne!(window_flags_get as *const (), core::ptr::null());
             assert_ne!(window_flags_set as *const (), core::ptr::null());
             assert_ne!(window_framebuffer_create as *const (), core::ptr::null());
-            assert_ne!(
-                window_framebuffer_format_get as *const (),
-                core::ptr::null()
-            );
+            assert_ne!(window_framebuffer_format_get as *const (), core::ptr::null());
             assert_ne!(window_framebuffer_get as *const (), core::ptr::null());
             assert_ne!(window_framebuffer_size_get as *const (), core::ptr::null());
             assert_ne!(window_framebuffer_size_set as *const (), core::ptr::null());
@@ -853,6 +835,7 @@ mod tests {
             assert_ne!(core::ptr::addr_of!(stdout) as *const (), core::ptr::null());
             assert_ne!(core::ptr::addr_of!(stderr) as *const (), core::ptr::null());
             assert_ne!(core::ptr::addr_of!(environ) as *const (), core::ptr::null());
+
         }
     }
 }

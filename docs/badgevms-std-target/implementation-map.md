@@ -43,8 +43,8 @@ library/std/src/sys/pal/badgevms/
 This repository owns:
 
 - PRD and ADRs.
-- Raw ABI reference via [why2025-badge-sys/src/bindings.rs](../../why2025-badge-sys/src/bindings.rs).
-- Firmware source snapshot under [why2025-badge-sys/firmware](../../why2025-badge-sys/firmware).
+- Raw ABI reference via [why2025-badge-sys-bindings/src/bindings.rs](../../why2025-badge-sys-bindings/src/bindings.rs).
+- Firmware source snapshot under [why2025-badge-sys-bindings/firmware](../../why2025-badge-sys-bindings/firmware).
 - Host build using Emulation.
 - no_std BadgeVMS App workflow.
 - Toolchain build/link scripts.
@@ -56,16 +56,21 @@ This repository owns:
 
 The std backend ABI should be derived from:
 
-- [why2025-badge-sys/firmware/badgevms/symbols.yml](../../why2025-badge-sys/firmware/badgevms/symbols.yml)
-- [why2025-badge-sys/firmware/badgevms/include](../../why2025-badge-sys/firmware/badgevms/include)
-- [why2025-badge-sys/headers](../../why2025-badge-sys/headers)
-- [why2025-badge-sys/rebuild-bindings.sh](../../why2025-badge-sys/rebuild-bindings.sh)
+- [why2025-badge-sys-bindings/firmware/badgevms/symbols.yml](../../why2025-badge-sys-bindings/firmware/badgevms/symbols.yml)
+- [why2025-badge-sys-bindings/firmware/badgevms/include](../../why2025-badge-sys-bindings/firmware/badgevms/include)
+- [why2025-badge-sys-bindings/extra-headers](../../why2025-badge-sys-bindings/extra-headers)
+- [why2025-badge-sys-bindings/rebuild-bindings.sh](../../why2025-badge-sys-bindings/rebuild-bindings.sh)
+
+The prepared `headers/` tree under `why2025-badge-sys-bindings` is generated staging data for
+bindgen, not source-of-truth input.
 
 The `libc` crate patches for BadgeVMS live in the separate
 [`why2025-badge-rust-libc`](https://github.com/zebreus/why2025-badge-rust-libc)
 fork and are consumed by the Rust fork through its `library/libc` submodule.
 
-Do not make `std` import `why2025-badge-sys` as a Rust dependency. That would make the target depend on this application-support workspace and would violate the toolchain-owned design.
+Do not make `std` import the `why2025-badge-sys` wrapper crate as a Rust dependency. That would
+make the target depend on this application-support workspace and would violate the toolchain-owned
+design.
 
 ## Linker reference
 

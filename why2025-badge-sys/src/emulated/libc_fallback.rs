@@ -4,7 +4,7 @@
 //! If you want to use these functions, please implement them and submit a PR.
 //!
 //! The rustdoc on the remaining unimplemented stubs describes the checked-in upstream firmware tree
-//! that this crate vendors under `why2025-badge-sys/firmware/` at commit
+//! that this workspace now vendors under `why2025-badge-sys-bindings/firmware/` at commit
 //! `a548d825a3295432d374939607feb552eb505210` (`Update espressif/eppp_link`).
 //!
 //! A few symbols are backed by small `why_stdio` implementations in that tree, some are only

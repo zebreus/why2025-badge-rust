@@ -13,7 +13,13 @@ The development shell in [flake.nix](../../flake.nix) includes common host-side 
 
 ## Build and link a local toolchain
 
-Set the Rust checkout location explicitly:
+Initialize the bundled Rust checkout submodule:
+
+```sh
+git submodule update --init why2025-badge-rust-toolchain
+```
+
+The tooling uses that submodule automatically. To use a different patched Rust checkout, set the location explicitly:
 
 ```sh
 export BADGEVMS_RUST_REPO=/path/to/patched/rust

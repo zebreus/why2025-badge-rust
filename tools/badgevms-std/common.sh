@@ -44,14 +44,20 @@ rust_repo() {
         fi
     fi
 
-    fail 'set BADGEVMS_RUST_REPO or create docs/badgevms-std-target/toolchain-metadata.toml'
+    local submodule="$PROJECT_ROOT/why2025-badge-rust-toolchain"
+    if [[ -d "$submodule/.git" || -f "$submodule/.git" ]]; then
+        printf '%s\n' "$submodule"
+        return
+    fi
+
+    fail 'set BADGEVMS_RUST_REPO, initialize why2025-badge-rust-toolchain, or create docs/badgevms-std-target/toolchain-metadata.toml'
 }
 
 stage2_dir_for_repo() {
     local repo=$1
     local host
     host=$(rustc -vV | sed -n 's/^host: //p')
-    printf '%s/build/%s/stage2' "$repo" "$host"
+    printf '%s/build/%s/stage2\n' "$repo" "$host"
 }
 
 print_target_cfg_summary() {

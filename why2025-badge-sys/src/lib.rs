@@ -1,10 +1,8 @@
-//! Thin wrapper over the canonical raw bindings for the WHY2025 badge.
+//! Low-level BadgeVMS bindings plus host-side Emulation helpers.
 //!
 //! ## Example
 //!
-//! The raw ABI lives in `why2025-badge-sys-bindings` and is the direct dependency boundary for the
-//! BadgeVMS std port. This crate re-exports that surface and adds wrapper-only behavior such as
-//! Host builds using Emulation and no_std badge-app-link support.
+//! This crate also provides no_std badge-app-link metadata behind the `badge-app-link` feature.
 //!
 //! The symbols definitely need more documentation. If you want to add some, please add it to the
 //! C code in the firmware repository so the regenerated raw bindings can pick it up.

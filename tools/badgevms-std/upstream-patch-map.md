@@ -23,11 +23,12 @@ The built-in target must force the executable export list to `main`. The current
 
 ## Standard library backend
 
-Add the BadgeVMS `std` backend modules described in [docs/badgevms-std-target/implementation-map.md](../../docs/badgevms-std-target/implementation-map.md). The current fork may reuse targeted Unix PAL branches where the firmware ABI is fd/socket/process-shaped; move to a dedicated `sys/pal/badgevms` tree if those branches stop being shallow.
+Add the BadgeVMS `std` backend modules in the Rust fork. The current fork may reuse targeted Unix
+PAL branches where the firmware ABI is fd/socket/process-shaped; move to a dedicated
+`sys/pal/badgevms` tree if those branches stop being shallow.
 
-The BadgeVMS ABI entrypoint for that backend should be the canonical raw bindings crate in this
-superproject, `why2025-badge-sys-bindings`. Keep Rust-specific semantic adaptation in the std PAL
-instead of pushing std policy into the shared wrapper crate.
+The repository/toolchain raw-ABI boundary for that backend is recorded in
+[ADR 0004](../../docs/adr/0004-canonical-badgevms-abi-layering.md).
 
 ## Temporary libc migration
 

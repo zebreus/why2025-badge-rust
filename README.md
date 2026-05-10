@@ -9,17 +9,13 @@ This repository now documents three separate workflows:
 - **no_std BadgeVMS Apps** use `riscv32imafc-unknown-none-elf`, `why2025-badge-app-no-std`, and the App-owned link helper described below.
 - **Host builds using Emulation** use the host target and the `emu-*` cargo aliases for fast iteration against host-side BadgeVMS behavior.
 - **BadgeVMS std Apps** use the incubating `riscv32imafc-unknown-badgevms` target from the patched
-  Rust toolchain bundled with this superproject. The toolchain owns `std`, panic/allocator
-  integration, and final App linking; std Apps do not use `why2025-badge-build` for link flags.
+  Rust toolchain bundled with this superproject.
 
 See [docs/adr/0004-canonical-badgevms-abi-layering.md](docs/adr/0004-canonical-badgevms-abi-layering.md)
-for the authoritative architecture decision, [docs/prd/badgevms-std-target.md](docs/prd/badgevms-std-target.md)
-for the product requirements, and [docs/badgevms-std-target/index.md](docs/badgevms-std-target/index.md)
-for implementation docs, support matrix, examples, scripts, and test gates.
-
-The canonical raw BadgeVMS firmware bindings live in `why2025-badge-sys-bindings`. The sibling
-`why2025-badge-sys` crate is the thin wrapper over that ABI and adds Host builds using Emulation
-plus no_std app-link behavior.
+for the raw-ABI boundary, [docs/adr/0005-support-badgevms-std-through-the-superproject.md](docs/adr/0005-support-badgevms-std-through-the-superproject.md)
+for the supported std-target entrypoint, [tools/badgevms-std/README.md](tools/badgevms-std/README.md)
+for the current scripts, and [tests/badgevms-std/README.md](tests/badgevms-std/README.md) for the
+conformance inventory.
 
 ## App Linking
 

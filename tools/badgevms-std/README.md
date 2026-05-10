@@ -1,8 +1,9 @@
 # BadgeVMS std tooling
 
-These scripts support the repository side of the BadgeVMS std target. They assume the standard
-library backend lives in the bundled `why2025-badge-rust-toolchain` checkout and that the
-canonical raw ABI lives in `why2025-badge-sys-bindings` in this superproject.
+These scripts support the BadgeVMS std workflow in this superproject. They assume the bundled
+`why2025-badge-rust-toolchain` checkout is present. See
+[ADR 0005](../../docs/adr/0005-support-badgevms-std-through-the-superproject.md) for why this is
+the supported entrypoint.
 
 ## Scripts
 

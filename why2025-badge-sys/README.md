@@ -2,7 +2,7 @@
 
 <!-- cargo-rdme start -->
 
-Thin wrapper over the canonical raw bindings for the WHY2025 badge.
+Low-level BadgeVMS bindings plus host-side Emulation helpers.
 
 ### Example
 
@@ -14,9 +14,7 @@ unsafe {
 }
 ```
 
-The raw ABI lives in `why2025-badge-sys-bindings` and is the direct dependency boundary for the
-BadgeVMS std port. This crate re-exports that surface and adds wrapper-only behavior such as Host
-builds using Emulation and no_std badge-app-link support.
+This crate also provides no_std badge-app-link metadata behind the `badge-app-link` feature.
 
 The symbols definitely need more documentation. If you want to add some, please add it to the C
 code in the firmware repository so the regenerated raw bindings can pick it up.
@@ -34,10 +32,9 @@ code in the firmware repository so the regenerated raw bindings can pick it up.
 
 Badge binaries still need final linker args for `--shared`, `--entry=main`, and export pruning. Enable the `badge-app-link` feature on `why2025-badge-sys` to have this crate generate badge-link metadata, including a retain-symbols file in `OUT_DIR`, without requiring a checked-in `retain.txt`.
 
-This section describes the current no_std BadgeVMS App workflow. The incubating BadgeVMS std target
-uses `riscv32imafc-unknown-badgevms`, consumes `why2025-badge-sys-bindings` directly from this
-superproject, and keeps Rust-specific behavior in the patched std PAL. This wrapper crate remains
-for Host builds using Emulation and no_std badge-link behavior.
+This section describes the current no_std BadgeVMS App workflow. The repository's std-target
+architecture and support boundaries are recorded in [ADR 0004](../docs/adr/0004-canonical-badgevms-abi-layering.md)
+and [ADR 0005](../docs/adr/0005-support-badgevms-std-through-the-superproject.md).
 
 Cargo only lets the final binary emit `rustc-link-arg-bins`, so the application still needs a tiny build script. Use `why2025-badge-build` there and forward the build script path you want Cargo to watch:
 

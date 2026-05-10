@@ -28,4 +28,4 @@ jobs:
         run: |
           echo "Hardware runner integration is intentionally project-specific."
           echo "Requested runner label: ${{ inputs.hardware-runner-label }}"
-          echo "Expected record protocol: docs/badgevms-std-target/conformance-protocol.md"
+          echo "Expected record prefix: BADGEVMS_STD_TEST (see tests/badgevms-std/conformance.toml)"

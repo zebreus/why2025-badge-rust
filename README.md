@@ -12,6 +12,8 @@ This repository now documents three separate workflows:
 
 See [docs/prd/badgevms-std-target.md](docs/prd/badgevms-std-target.md) for the PRD and [docs/badgevms-std-target/index.md](docs/badgevms-std-target/index.md) for implementation docs, support matrix, examples, scripts, and test gates.
 
+The canonical raw BadgeVMS firmware bindings now live in `why2025-badge-sys-bindings`. The sibling `why2025-badge-sys` crate re-exports that ABI and adds host Emulation plus no_std app-link behavior.
+
 ## App Linking
 
 no_std BadgeVMS Apps still need to link as shared objects, keep `main` as the entry point, and prune exports for the loader. That policy lives at the App boundary instead of the workspace-wide target config.

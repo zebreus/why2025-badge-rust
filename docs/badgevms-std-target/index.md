@@ -2,7 +2,7 @@
 
 This directory describes the on-device Rust `std` target for BadgeVMS Apps.
 
-The target is a toolchain-and-standard-library port, not a crate feature. The patched Rust toolchain owns the target spec, `std` backend, panic strategy, allocator integration, and std-App final linking. This repository owns the BadgeVMS domain model, raw ABI references, Emulation, examples, smoke tests, installation scripts, and documentation.
+The target is a toolchain-and-standard-library port, not a crate feature. The patched Rust toolchain owns the target spec, `std` backend, panic strategy, allocator integration, and std-App final linking. This repository owns the BadgeVMS domain model, the canonical raw ABI artifact in `why2025-badge-sys-bindings`, the wrapper and Emulation layer in `why2025-badge-sys`, examples, smoke tests, installation scripts, and documentation.
 
 ## Target contract
 

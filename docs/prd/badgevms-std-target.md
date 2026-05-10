@@ -121,6 +121,7 @@ The implementation will be staged:
 - Encode the BadgeVMS load model directly in the target and backend assumptions: PIC application objects, shared-object linking model, a fixed `main` entrypoint, closed export pruning, BadgeVMS SDK/sysroot expectations, and abort-first failure behavior.
 - Make the target Unix-family for compatibility, but keep a distinct BadgeVMS OS identity instead of impersonating Linux or another existing Unix target.
 - Preserve the existing host-emulation path as a separate development mode. Host emulation and on-device `std` are related, but they are not the same product and must not be collapsed into one abstraction.
+- Keep the canonical raw firmware bindings in a low-level artifact (`why2025-badge-sys-bindings`) and keep wrapper plus Emulation behavior in `why2025-badge-sys`, so the ABI reference remains explicit instead of accumulating more policy in the wrapper crate.
 - Build a deep BadgeVMS ABI facade module that owns the translation between raw firmware exports and the needs of the Rust standard library.
 - Build a deep thread runtime module on top of BadgeVMS task/thread primitives. This module owns spawn, join, detach, lifecycle state, TLS teardown, and park/unpark semantics.
 - Do not implement `std::thread` as a thin direct mapping to the existing parent/child wait queue model. Rust thread semantics require unique join ownership, detach-on-drop, and defined synchronization guarantees.
@@ -197,7 +198,7 @@ The implementation will be staged:
 ## Further Notes
 
 - BadgeVMS already looks much more like an operating-system target than a bare-metal `unknown-none` target, but it still has a distinctive runtime model that should be represented honestly.
-- The right abstraction boundary is "BadgeVMS target plus BadgeVMS `std` backend", not "more features on the current sys crate".
+- The right abstraction boundary is "BadgeVMS target plus BadgeVMS `std` backend consuming a canonical raw ABI artifact", not "more features on the `why2025-badge-sys` wrapper crate".
 - For v1, some Unix-facing behavior is intentionally pragmatic rather than pure: the target is Unix-family for compatibility, but still has a distinct BadgeVMS OS identity and explicitly documented non-Unix edges.
 - For v1 process launch, `std` stays at the raw BadgeVMS executable-path layer. It does not become an Installed App launcher or infer extra app-manifest context from an `APPS:` path.
 - The repository should continue to support two complementary workflows: fast host emulation for iteration and true BadgeVMS `std` for on-device applications.

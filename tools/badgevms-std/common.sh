@@ -29,28 +29,13 @@ cargo_toolchain() {
 }
 
 rust_repo() {
-    if [[ -n "${BADGEVMS_RUST_REPO:-}" ]]; then
-        printf '%s\n' "$BADGEVMS_RUST_REPO"
-        return
-    fi
-
-    local metadata="$PROJECT_ROOT/docs/badgevms-std-target/toolchain-metadata.toml"
-    if [[ -f "$metadata" ]]; then
-        local value
-        value=$(sed -n 's/^rust_repo *= *"\(.*\)"/\1/p' "$metadata" | head -n1)
-        if [[ -n "$value" ]]; then
-            printf '%s\n' "$value"
-            return
-        fi
-    fi
-
     local submodule="$PROJECT_ROOT/why2025-badge-rust-toolchain"
     if [[ -d "$submodule/.git" || -f "$submodule/.git" ]]; then
         printf '%s\n' "$submodule"
         return
     fi
 
-    fail 'set BADGEVMS_RUST_REPO, initialize why2025-badge-rust-toolchain, or create docs/badgevms-std-target/toolchain-metadata.toml'
+    fail 'initialize why2025-badge-rust-toolchain'
 }
 
 stage2_dir_for_repo() {

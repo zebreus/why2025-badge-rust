@@ -3,12 +3,6 @@ name: BadgeVMS std toolchain
 on:
   workflow_dispatch:
     inputs:
-      rust-repo:
-        description: "URL of patched Rust fork"
-        required: true
-      rust-rev:
-        description: "Revision to checkout"
-        required: true
       toolchain-name:
         description: "Local rustup toolchain name"
         required: false
@@ -24,23 +18,22 @@ jobs:
           components: rust-src
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y git python3 cmake ninja-build build-essential binutils
-      - name: Clone patched Rust
-        run: git clone "${{ inputs.rust-repo }}" rust-badgevms
+      - name: Initialize bundled Rust toolchain
+        run: |
+          git config --global url."https://github.com/".insteadOf git@github.com:
+          git submodule update --init why2025-badge-rust-toolchain
       - name: Build patched toolchain
         env:
-          BADGEVMS_RUST_REPO: ${{ github.workspace }}/rust-badgevms
-          BADGEVMS_RUST_REV: ${{ inputs.rust-rev }}
           BADGEVMS_TOOLCHAIN_NAME: ${{ inputs.toolchain-name }}
         run: ./tools/badgevms-std/build-toolchain.sh
       - name: Link and verify toolchain
         env:
-          BADGEVMS_RUST_REPO: ${{ github.workspace }}/rust-badgevms
           BADGEVMS_TOOLCHAIN_NAME: ${{ inputs.toolchain-name }}
         run: |
           stage2=$(./tools/badgevms-std/common-stage2-path.sh 2>/dev/null || true)
           if [ -z "$stage2" ]; then
             host=$(rustc -vV | sed -n 's/^host: //p')
-            stage2="$BADGEVMS_RUST_REPO/build/$host/stage2"
+            stage2="$GITHUB_WORKSPACE/why2025-badge-rust-toolchain/build/$host/stage2"
           fi
           ./tools/badgevms-std/link-toolchain.sh "$stage2" "$BADGEVMS_TOOLCHAIN_NAME"
       - name: Build std smoke App

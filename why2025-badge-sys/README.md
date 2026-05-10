@@ -2,7 +2,7 @@
 
 <!-- cargo-rdme start -->
 
-Wrapper over the canonical raw bindings for the WHY2025 badge.
+Thin wrapper over the canonical raw bindings for the WHY2025 badge.
 
 ### Example
 
@@ -14,8 +14,9 @@ unsafe {
 }
 ```
 
-The raw ABI lives in `why2025-badge-sys-bindings`. This crate re-exports that surface and adds
-wrapper-only behavior such as host emulation and badge-app-link support.
+The raw ABI lives in `why2025-badge-sys-bindings` and is the direct dependency boundary for the
+BadgeVMS std port. This crate re-exports that surface and adds wrapper-only behavior such as Host
+builds using Emulation and no_std badge-app-link support.
 
 The symbols definitely need more documentation. If you want to add some, please add it to the C
 code in the firmware repository so the regenerated raw bindings can pick it up.
@@ -33,7 +34,10 @@ code in the firmware repository so the regenerated raw bindings can pick it up.
 
 Badge binaries still need final linker args for `--shared`, `--entry=main`, and export pruning. Enable the `badge-app-link` feature on `why2025-badge-sys` to have this crate generate badge-link metadata, including a retain-symbols file in `OUT_DIR`, without requiring a checked-in `retain.txt`.
 
-This section describes the current no_std BadgeVMS App workflow. The incubating BadgeVMS std target is toolchain-owned instead: std Apps use `riscv32imafc-unknown-badgevms`, and the patched Rust toolchain owns `std` plus final BadgeVMS linking. The raw bindings now live in `why2025-badge-sys-bindings`; this crate re-exports them and adds emulation plus badge-link behavior. `std` must not depend on the `why2025-badge-sys` wrapper crate.
+This section describes the current no_std BadgeVMS App workflow. The incubating BadgeVMS std target
+uses `riscv32imafc-unknown-badgevms`, consumes `why2025-badge-sys-bindings` directly from this
+superproject, and keeps Rust-specific behavior in the patched std PAL. This wrapper crate remains
+for Host builds using Emulation and no_std badge-link behavior.
 
 Cargo only lets the final binary emit `rustc-link-arg-bins`, so the application still needs a tiny build script. Use `why2025-badge-build` there and forward the build script path you want Cargo to watch:
 

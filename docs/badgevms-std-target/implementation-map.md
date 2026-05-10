@@ -7,15 +7,19 @@ The patched Rust fork owns these changes:
 1. Built-in target spec for `riscv32imafc-unknown-badgevms`.
 2. Linker integration for BadgeVMS std Apps: shared object, entry `main`, closed export pruning.
 3. `library/std` backend for `target_os = "badgevms"`.
-4. `library/libc` as a submodule pointing at the separate BadgeVMS libc fork.
-5. BadgeVMS ABI declarations required by `std`.
-6. Abort panic and shared allocator integration.
-7. Runtime modules for threads, park/unpark, process tracking, filesystem, networking, time, stdio, environment, and unsupported features.
-8. Selected upstream std tests with BadgeVMS-specific skips for non-goals.
+4. Direct consumption of the canonical raw ABI from `why2025-badge-sys-bindings`.
+5. Abort panic and shared allocator integration.
+6. Runtime modules for threads, park/unpark, process tracking, filesystem, networking, time,
+   stdio, environment, and unsupported features.
+7. Selected upstream std tests with BadgeVMS-specific skips for non-goals.
 
 ## Backend module layout
 
-The current patched Rust fork uses a small `os::badgevms` public-extension module plus targeted `target_os = "badgevms"` branches in the existing Unix PAL where BadgeVMS follows fd/socket/process-shaped APIs. Keep raw ABI declarations isolated under the Rust fork's BadgeVMS-owned modules and do not import this repository as a Rust dependency.
+The current patched Rust fork uses a small `os::badgevms` public-extension module plus targeted
+`target_os = "badgevms"` branches in the existing Unix PAL where BadgeVMS follows
+fd/socket/process-shaped APIs. Keep raw ABI consumption concentrated in a dedicated BadgeVMS ABI
+layer over `why2025-badge-sys-bindings`. The std port should not route BadgeVMS ABI use through the
+`why2025-badge-sys` wrapper crate.
 
 If the port outgrows those branches, migrate toward this dedicated PAL shape:
 
@@ -36,7 +40,8 @@ library/std/src/sys/pal/badgevms/
   net.rs
 ```
 
-`abi.rs` is the only module that should expose raw unsafe C declarations. Other modules use narrow safe wrappers.
+`abi.rs` is the only module that should expose raw unsafe C declarations or the narrow adapter over
+`why2025-badge-sys-bindings`. Other modules use narrow safe wrappers.
 
 ## Repository responsibilities
 
@@ -45,6 +50,7 @@ This repository owns:
 - PRD and ADRs.
 - Raw ABI reference via [why2025-badge-sys-bindings/src/bindings.rs](../../why2025-badge-sys-bindings/src/bindings.rs).
 - Firmware source snapshot under [why2025-badge-sys-bindings/firmware](../../why2025-badge-sys-bindings/firmware).
+- The wrapper and Emulation layer in [why2025-badge-sys](../../why2025-badge-sys).
 - Host build using Emulation.
 - no_std BadgeVMS App workflow.
 - Toolchain build/link scripts.
@@ -64,13 +70,9 @@ The std backend ABI should be derived from:
 The prepared `headers/` tree under `why2025-badge-sys-bindings` is generated staging data for
 bindgen, not source-of-truth input.
 
-The `libc` crate patches for BadgeVMS live in the separate
-[`why2025-badge-rust-libc`](https://github.com/zebreus/why2025-badge-rust-libc)
-fork and are consumed by the Rust fork through its `library/libc` submodule.
-
-Do not make `std` import the `why2025-badge-sys` wrapper crate as a Rust dependency. That would
-make the target depend on this application-support workspace and would violate the toolchain-owned
-design.
+The std backend consumes `why2025-badge-sys-bindings` directly from this superproject. The
+`why2025-badge-sys` wrapper remains for Host builds using Emulation and the no_std badge-link
+workflow; it is not the std dependency boundary.
 
 ## Linker reference
 

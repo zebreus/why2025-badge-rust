@@ -21,6 +21,8 @@ The current Host build using Emulation and the new on-device BadgeVMS std target
 - Target: `riscv32imafc-unknown-badgevms`.
 - Purpose: on-device Rust `std` Apps.
 - Linking: toolchain-owned, no App helper crate.
+- ABI source: `why2025-badge-sys-bindings` from this superproject.
+- Rust semantics: BadgeVMS std PAL code in the patched Rust toolchain.
 - Distribution: local custom toolchain first.
 
 Do not use Host build behavior to justify unsupported on-device std behavior. The target must reflect BadgeVMS process, path, thread, and loader semantics honestly.

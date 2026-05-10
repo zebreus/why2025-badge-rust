@@ -1,11 +1,14 @@
 # Getting started with the BadgeVMS std target
 
-The BadgeVMS std target is incubating. Use a patched Rust toolchain and local `rustup toolchain link` first. Hosted rustup distribution is intentionally deferred until the local flow and conformance tests are stable.
+The BadgeVMS std target is incubating. Use the patched Rust toolchain bundled with this
+superproject together with local `rustup toolchain link` first. Hosted rustup distribution is
+intentionally deferred until the local flow and conformance tests are stable.
 
 ## Prerequisites
 
 - Rustup.
-- A pinned patched Rust checkout containing the BadgeVMS target and `std` backend.
+- A checkout of this repository with the bundled `why2025-badge-rust-toolchain` submodule
+  initialized.
 - BadgeVMS/ESP RISC-V linker tools, normally including `riscv32-esp-elf-gcc` or the verified BadgeVMS SDK linker driver.
 - `rust-src`, Python, CMake, Ninja, Git, and ELF inspection tools such as `readelf`.
 
@@ -17,21 +20,12 @@ Initialize the bundled Rust checkout submodule:
 
 ```sh
 git submodule update --init why2025-badge-rust-toolchain
-git -C why2025-badge-rust-toolchain submodule update --init library/libc
 ```
 
-The nested `library/libc` update is required because the Rust checkout carries
-the BadgeVMS `libc` support as its own submodule. The build script also performs
-that nested update automatically.
+The tooling uses that bundled checkout automatically. Public documentation treats the superproject
+as the supported entrypoint for the BadgeVMS std target.
 
-The tooling uses that submodule automatically. To use a different patched Rust checkout, set the location explicitly:
-
-```sh
-export BADGEVMS_RUST_REPO=/path/to/patched/rust
-export BADGEVMS_TOOLCHAIN_NAME=badgevms-std
-```
-
-Build the toolchain:
+Build the bundled toolchain:
 
 ```sh
 ./tools/badgevms-std/build-toolchain.sh
@@ -56,7 +50,9 @@ Verify it:
 cargo +badgevms-std badgevms-std-build --manifest-path examples/std-hello-world/Cargo.toml
 ```
 
-If the active shell provides a non-rustup `cargo` before rustup's proxy in `PATH`, use the smoke wrapper or set `RUSTC=$(rustup which --toolchain badgevms-std rustc)` explicitly. The wrapper does this automatically.
+If the active shell provides a non-rustup `cargo` before rustup's proxy in `PATH`, use the smoke
+wrapper or set `RUSTC=$(rustup which --toolchain badgevms-std rustc)` explicitly. The wrapper does
+this automatically.
 
 Or use the smoke wrapper:
 

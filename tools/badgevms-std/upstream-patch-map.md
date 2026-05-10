@@ -25,14 +25,15 @@ The built-in target must force the executable export list to `main`. The current
 
 Add the BadgeVMS `std` backend modules described in [docs/badgevms-std-target/implementation-map.md](../../docs/badgevms-std-target/implementation-map.md). The current fork may reuse targeted Unix PAL branches where the firmware ABI is fd/socket/process-shaped; move to a dedicated `sys/pal/badgevms` tree if those branches stop being shallow.
 
-## libc target support
+The BadgeVMS ABI entrypoint for that backend should be the canonical raw bindings crate in this
+superproject, `why2025-badge-sys-bindings`. Keep Rust-specific semantic adaptation in the std PAL
+instead of pushing std policy into the shared wrapper crate.
 
-Keep the BadgeVMS `libc` changes in the separate
-[`why2025-badge-rust-libc`](https://github.com/zebreus/why2025-badge-rust-libc)
-fork. The Rust fork should carry `library/libc` as a submodule pointing at that
-repo, rather than vendoring the entire upstream `libc` source tree as normal
-files. This keeps the Rust-toolchain patch focused on rustc/std changes and
-makes the `libc` delta reviewable on its own.
+## Temporary libc migration
+
+Any remaining BadgeVMS-specific `libc` support in the Rust fork is migration scaffolding only while
+the std port is moved fully onto `why2025-badge-sys-bindings`. It is not the long-term BadgeVMS
+platform description and should be removed rather than expanded.
 
 ## Test selection
 

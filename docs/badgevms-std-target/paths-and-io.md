@@ -10,7 +10,9 @@ BadgeVMS paths are native VMS-style paths such as `FLASH0:[DIR.SUBDIR]FILE`. The
 - Do not synthesize a current working directory.
 - `std::env::current_dir()` and `std::env::set_current_dir()` fail explicitly.
 
-The existing Emulation path parser in [why2025-badge-sys/src/emulated/badgevms/fs/paths.rs](../../why2025-badge-sys/src/emulated/badgevms/fs/paths.rs) is a reference for syntax and test cases, not a `std` dependency.
+The existing Emulation path parser in [why2025-badge-sys/src/emulated/badgevms/fs/paths.rs](../../why2025-badge-sys/src/emulated/badgevms/fs/paths.rs)
+is a reference for syntax and test cases. The std port still consumes its ABI from
+`why2025-badge-sys-bindings` directly rather than depending on the wrapper crate.
 
 ## Files and directories
 

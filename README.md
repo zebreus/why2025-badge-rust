@@ -8,11 +8,18 @@ This repository now documents three separate workflows:
 
 - **no_std BadgeVMS Apps** use `riscv32imafc-unknown-none-elf`, `why2025-badge-app-no-std`, and the App-owned link helper described below.
 - **Host builds using Emulation** use the host target and the `emu-*` cargo aliases for fast iteration against host-side BadgeVMS behavior.
-- **BadgeVMS std Apps** use the incubating `riscv32imafc-unknown-badgevms` target from a patched Rust toolchain. The toolchain owns `std`, panic/allocator integration, and final App linking; std Apps do not use `why2025-badge-build` for link flags.
+- **BadgeVMS std Apps** use the incubating `riscv32imafc-unknown-badgevms` target from the patched
+  Rust toolchain bundled with this superproject. The toolchain owns `std`, panic/allocator
+  integration, and final App linking; std Apps do not use `why2025-badge-build` for link flags.
 
-See [docs/prd/badgevms-std-target.md](docs/prd/badgevms-std-target.md) for the PRD and [docs/badgevms-std-target/index.md](docs/badgevms-std-target/index.md) for implementation docs, support matrix, examples, scripts, and test gates.
+See [docs/adr/0004-canonical-badgevms-abi-layering.md](docs/adr/0004-canonical-badgevms-abi-layering.md)
+for the authoritative architecture decision, [docs/prd/badgevms-std-target.md](docs/prd/badgevms-std-target.md)
+for the product requirements, and [docs/badgevms-std-target/index.md](docs/badgevms-std-target/index.md)
+for implementation docs, support matrix, examples, scripts, and test gates.
 
-The canonical raw BadgeVMS firmware bindings now live in `why2025-badge-sys-bindings`. The sibling `why2025-badge-sys` crate re-exports that ABI and adds host Emulation plus no_std app-link behavior.
+The canonical raw BadgeVMS firmware bindings live in `why2025-badge-sys-bindings`. The sibling
+`why2025-badge-sys` crate is the thin wrapper over that ABI and adds Host builds using Emulation
+plus no_std app-link behavior.
 
 ## App Linking
 

@@ -32,6 +32,11 @@ repo=$(rust_repo)
 [[ -x "$repo/x.py" ]] || fail "resolved Rust checkout has no executable x.py: $repo"
 ensure_clean_release_tree
 
+for submodule in library/backtrace src/llvm-project src/tools/cargo; do
+    [[ -e "$repo/$submodule/.git" ]] || \
+        fail "missing required Rust submodule $submodule; run: git -C $repo submodule update --init $submodule"
+done
+
 host=$(host_triple_from_rustc rustc)
 config="$repo/build/badgevms-dist/config.toml"
 mkdir -p "$(dirname "$config")"

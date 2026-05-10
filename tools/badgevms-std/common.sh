@@ -14,6 +14,11 @@ need_cmd() {
     command -v "$1" >/dev/null 2>&1 || fail "missing required command: $1"
 }
 
+host_triple_from_rustc() {
+    local rustc=${1:-rustc}
+    "$rustc" -vV | sed -n 's/^host: //p'
+}
+
 rustc_toolchain() {
     local toolchain=$1
     shift
@@ -41,7 +46,7 @@ rust_repo() {
 stage2_dir_for_repo() {
     local repo=$1
     local host
-    host=$(rustc -vV | sed -n 's/^host: //p')
+    host=$(host_triple_from_rustc rustc)
     printf '%s/build/%s/stage2\n' "$repo" "$host"
 }
 

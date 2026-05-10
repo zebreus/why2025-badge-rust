@@ -62,4 +62,4 @@ stage2=$(stage2_dir_for_repo "$repo")
 [[ -x "$stage2/bin/rustc" ]] || fail "stage2 rustc was not produced at $stage2/bin/rustc"
 
 printf 'built BadgeVMS std toolchain stage2: %s\n' "$stage2"
-printf 'link it with:\n  %s/tools/badgevms-std/link-toolchain.sh %q %q\n' "$PROJECT_ROOT" "$stage2" "$BADGEVMS_TOOLCHAIN_NAME"
+printf 'developer-link it with:\n  %s/tools/badgevms-std/dev-link-stage2.sh %q %q\n' "$PROJECT_ROOT" "$stage2" "$BADGEVMS_TOOLCHAIN_NAME"

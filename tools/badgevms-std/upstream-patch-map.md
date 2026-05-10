@@ -9,13 +9,16 @@ Add a built-in target for `riscv32imafc-unknown-badgevms` with:
 - `target_os = "badgevms"`;
 - `target_family = "unix"`;
 - no non-empty `target_env` value (`newlib` is intentionally absent; rustc still prints
-	`target_env=""` for an unspecified environment);
+  `target_env=""` for an unspecified environment);
 - 32-bit RISC-V IMACF, little endian, `ilp32f` ABI;
 - abort panic;
 - PIC output;
 - `rust-lld` linker driver.
 
 The JSON file in this directory is a review aid only. The final target must be a built-in Rust target because `std` needs target-specific backend code and link orchestration.
+
+The built-in-target and explicit-std-backend decision is recorded in
+[ADR 0006](../../docs/adr/0006-implement-badgevms-std-as-a-built-in-rust-target.md).
 
 ## Link orchestration
 
@@ -48,6 +51,28 @@ crate or a custom `library/libc` fork.
 `library/unwind`, `library/panic_unwind`, `library/std_detect`, and the vendored `backtrace` crate
 must exclude BadgeVMS from libc-backed paths. BadgeVMS backtraces currently resolve to the no-op
 backend.
+
+## Packaging
+
+Release archives should include prebuilt `rust-std` for `riscv32imafc-unknown-badgevms`, so normal
+users can build with `cargo +badgevms-std build --target riscv32imafc-unknown-badgevms` without
+`-Zbuild-std`. The local `stage2`/`rustup toolchain link` workflow is a developer shortcut only.
+
+When `rust-src` is packaged for maintainers, the canonical `why2025-badge-sys-bindings` crate must
+be included in the installed source tree with a manifest whose `rustc-std-workspace-core` path points
+inside `lib/rustlib/src/rust/library`. Release packaging must not depend on symlinks back into the
+superproject checkout.
+
+The Rust fork patches the `rust-src` dist step to place `why2025-badge-sys-bindings` at
+`lib/rustlib/src/why2025-badge-sys-bindings`, matching the relative path used by
+`library/std/Cargo.toml`. The copyright generator also treats this out-of-tree path dependency as a
+source-tree crate instead of expecting it in the vendored registry directory. Release archives are
+assembled from Rust dist component tarballs, not from mutable `stage2` directories.
+
+The release dist config builds Cargo with `build.cargo-native-static = true` so packaged Cargo does
+not depend on the maintainer's Nix or system OpenSSL runtime path. The final assembled toolchain
+wraps the dist Cargo binary only to set `RUSTC` to the sibling packaged `rustc`; it does not fall
+back to a different host Cargo.
 
 ## Test selection
 

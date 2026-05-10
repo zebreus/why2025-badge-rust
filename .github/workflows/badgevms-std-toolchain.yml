@@ -7,9 +7,13 @@ on:
         description: "Local rustup toolchain name"
         required: false
         default: "badgevms-std"
+      package-version:
+        description: "Version string to embed in the packaged archive"
+        required: false
+        default: "ci"
 
 jobs:
-  build-toolchain:
+  package-toolchain:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,26 +21,31 @@ jobs:
         with:
           components: rust-src
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y git python3 cmake ninja-build build-essential binutils
+        run: sudo apt-get update && sudo apt-get install -y git python3 cmake ninja-build build-essential binutils pkg-config libssl-dev
       - name: Initialize bundled Rust toolchain
         run: |
           git config --global url."https://github.com/".insteadOf git@github.com:
           git submodule update --init why2025-badge-rust-toolchain
-      - name: Build patched toolchain
+      - name: Build Rust dist artifacts
         env:
           BADGEVMS_TOOLCHAIN_NAME: ${{ inputs.toolchain-name }}
-        run: ./tools/badgevms-std/build-toolchain.sh
-      - name: Link and verify toolchain
+        run: ./tools/badgevms-std/dist-toolchain.sh
+      - name: Package toolchain archive
+        env:
+          BADGEVMS_TOOLCHAIN_VERSION: ${{ inputs.package-version }}-${{ github.sha }}
+        run: ./tools/badgevms-std/package-toolchain.sh why2025-badge-rust-toolchain/build/dist dist/badgevms-std
+      - name: Test packaged install
         env:
           BADGEVMS_TOOLCHAIN_NAME: ${{ inputs.toolchain-name }}
         run: |
-          stage2=$(./tools/badgevms-std/common-stage2-path.sh 2>/dev/null || true)
-          if [ -z "$stage2" ]; then
-            host=$(rustc -vV | sed -n 's/^host: //p')
-            stage2="$GITHUB_WORKSPACE/why2025-badge-rust-toolchain/build/$host/stage2"
-          fi
-          ./tools/badgevms-std/link-toolchain.sh "$stage2" "$BADGEVMS_TOOLCHAIN_NAME"
-      - name: Build std smoke App
-        env:
-          BADGEVMS_TOOLCHAIN_NAME: ${{ inputs.toolchain-name }}
-        run: ./tools/badgevms-std/run-smoke.sh "$BADGEVMS_TOOLCHAIN_NAME" examples/std-hello-world/Cargo.toml
+          archive=$(find dist/badgevms-std -name 'badgevms-std-*.tar.gz' -print -quit)
+          ./tools/badgevms-std/install-toolchain.sh --archive "$archive" --name "$BADGEVMS_TOOLCHAIN_NAME" --force
+          ./tools/badgevms-std/verify-toolchain.sh "$BADGEVMS_TOOLCHAIN_NAME"
+          ./tools/badgevms-std/run-smoke.sh "$BADGEVMS_TOOLCHAIN_NAME" examples/std-hello-world/Cargo.toml
+          BADGEVMS_BUILD_STD=1 ./tools/badgevms-std/run-smoke.sh "$BADGEVMS_TOOLCHAIN_NAME" examples/std-hello-world/Cargo.toml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: badgevms-std-toolchain
+          path: |
+            dist/badgevms-std/*
+            tools/badgevms-std/install-toolchain.sh

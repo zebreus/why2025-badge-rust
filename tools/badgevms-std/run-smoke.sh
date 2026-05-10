@@ -10,10 +10,17 @@ package_dir=$(cd "$(dirname "$manifest")" && pwd)
 package_name=$(sed -n 's/^name *= *"\(.*\)"/\1/p' "$manifest" | head -n1)
 [[ -n "$package_name" ]] || fail "could not read package name from $manifest"
 
-cargo_toolchain "$toolchain" build \
-    --manifest-path "$manifest" \
-    --target "$BADGEVMS_STD_TARGET" \
-    -Zbuild-std=core,alloc,std,panic_abort,compiler_builtins
+args=(
+    build
+    --manifest-path "$manifest"
+    --target "$BADGEVMS_STD_TARGET"
+)
+
+if [[ ${BADGEVMS_BUILD_STD:-0} == 1 ]]; then
+    args+=("-Zbuild-std=core,alloc,std,panic_abort,compiler_builtins")
+fi
+
+cargo_toolchain "$toolchain" "${args[@]}"
 
 artifact="$package_dir/target/$BADGEVMS_STD_TARGET/debug/$package_name"
 if [[ ! -f "$artifact" ]]; then

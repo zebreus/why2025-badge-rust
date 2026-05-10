@@ -20,13 +20,17 @@
 #![feature(linkage)]
 #![cfg_attr(not(target_arch = "riscv32"), feature(thread_sleep_until))]
 
-mod bindings;
+mod bindings {
+	pub use why2025_badge_sys_bindings::bindings::*;
+}
 
 #[cfg(not(target_arch = "riscv32"))]
 mod emulated;
 #[cfg(not(target_arch = "riscv32"))]
 mod linker_test;
-mod types;
+mod types {
+	pub use why2025_badge_sys_bindings::types::*;
+}
 
 pub use bindings::*;
 pub use types::*;

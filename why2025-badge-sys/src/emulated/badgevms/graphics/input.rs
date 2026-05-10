@@ -576,27 +576,24 @@ const fn scancode_to_keycode(scancode: keyboard_scancode_t) -> key_code_t {
     scancode as u32 | (1 << 30)
 }
 
-impl event_t {
-    pub fn new_empty() -> Self {
-        // If no event is available, return an empty event
-        let empty_event = keyboard_event_t {
-            timestamp: 0,
-            scancode: keyboard_scancode_t::KEY_SCANCODE_UNKNOWN,
-            key: 0,
-            mod_: 0,
-            text: '0' as ::core::ffi::c_char,
-            down: false,
-            repeat: false,
-            __bindgen_padding_0: [0u8; 3],
-        };
-        let empty_union = event_t__bindgen_ty_1 {
-            keyboard: empty_event,
-        };
-        return event_t {
-            type_: event_type_t::EVENT_NONE,
-            __bindgen_padding_0: [0; 4],
-            __bindgen_anon_1: empty_union,
-        };
+pub(crate) fn empty_event() -> event_t {
+    let empty_event = keyboard_event_t {
+        timestamp: 0,
+        scancode: keyboard_scancode_t::KEY_SCANCODE_UNKNOWN,
+        key: 0,
+        mod_: 0,
+        text: '0' as ::core::ffi::c_char,
+        down: false,
+        repeat: false,
+        __bindgen_padding_0: [0u8; 3],
+    };
+    let empty_union = event_t__bindgen_ty_1 {
+        keyboard: empty_event,
+    };
+    event_t {
+        type_: event_type_t::EVENT_NONE,
+        __bindgen_padding_0: [0; 4],
+        __bindgen_anon_1: empty_union,
     }
 }
 

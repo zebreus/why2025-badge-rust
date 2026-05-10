@@ -20,6 +20,7 @@ SIMPLE_OBJECTS=( $(yq --raw-output '.simple_object[]' firmware/badgevms/symbols.
 WRAPPED_OBJECTS=( $(yq --raw-output '.wrapped_object[]' firmware/badgevms/symbols.yml ) )
 NORMALIZED_FUNCTION_EXPORTS=( __errno )
 BADGE_TARGET=riscv32imafc-unknown-none-elf
+RAW_BINDINGS_DIR=../why2025-badge-sys-bindings/src
 
 # Enums are by default represented as Rust enums. Add them here to make them bitfields insteads.
 BITFIELD_ENUMS=(
@@ -239,15 +240,17 @@ echo "#include \"gcc-builtins.h\"" >> headers/all.h
 
 export BINDGEN_EXTRA_CLANG_ARGS="-isystem headers -target riscv32-esp-elf"
 
-"${BINDGEN_COMMAND[@]}" -o src/generated.rs --generate 'functions,methods,constructors,destructors,types,vars'
+mkdir -p "$RAW_BINDINGS_DIR"
+
+"${BINDGEN_COMMAND[@]}" -o "$RAW_BINDINGS_DIR/generated.rs" --generate 'functions,methods,constructors,destructors,types,vars'
 
 # Split in types and functions
-sed -Ez      's|unsafe extern "C" \{\n(    [^\n]*\n)+}\n||g' src/generated.rs > src/types.rs
-echo $'use crate::types::*;\n' > src/bindings.rs
-grep -Pazo '(?s)unsafe extern "C" \{\n(    [^\n]*\n)+}\n' src/generated.rs | tr -d '\0' >> src/bindings.rs
+sed -Ez      's|unsafe extern "C" \{\n(    [^\n]*\n)+}\n||g' "$RAW_BINDINGS_DIR/generated.rs" > "$RAW_BINDINGS_DIR/types.rs"
+echo $'use crate::types::*;\n' > "$RAW_BINDINGS_DIR/bindings.rs"
+grep -Pazo '(?s)unsafe extern "C" \{\n(    [^\n]*\n)+}\n' "$RAW_BINDINGS_DIR/generated.rs" | tr -d '\0' >> "$RAW_BINDINGS_DIR/bindings.rs"
 
 # Remove the unsplit file
-rm src/generated.rs
+rm "$RAW_BINDINGS_DIR/generated.rs"
 
 function check_functions {
     local file="$1"
@@ -316,13 +319,13 @@ function check_vars {
     fi
 }
 
-check_functions src/bindings.rs "${SIMPLE_FUNCTIONS[@]}"
-check_functions src/bindings.rs "${EXTERN_SIMPLE_FUNCTIONS[@]}"
-check_functions src/bindings.rs "${WRAPPED_FUNCTIONS[@]}"
-check_functions src/bindings.rs "${NORMALIZED_FUNCTION_EXPORTS[@]}"
+check_functions "$RAW_BINDINGS_DIR/bindings.rs" "${SIMPLE_FUNCTIONS[@]}"
+check_functions "$RAW_BINDINGS_DIR/bindings.rs" "${EXTERN_SIMPLE_FUNCTIONS[@]}"
+check_functions "$RAW_BINDINGS_DIR/bindings.rs" "${WRAPPED_FUNCTIONS[@]}"
+check_functions "$RAW_BINDINGS_DIR/bindings.rs" "${NORMALIZED_FUNCTION_EXPORTS[@]}"
 
-check_vars src/bindings.rs "${SIMPLE_OBJECTS[@]}"
-check_vars src/bindings.rs "${WRAPPED_OBJECTS[@]}"
+check_vars "$RAW_BINDINGS_DIR/bindings.rs" "${SIMPLE_OBJECTS[@]}"
+check_vars "$RAW_BINDINGS_DIR/bindings.rs" "${WRAPPED_OBJECTS[@]}"
 
 # Generate a test that links all symbols
 

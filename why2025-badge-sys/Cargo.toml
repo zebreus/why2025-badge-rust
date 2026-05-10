@@ -9,6 +9,9 @@ repository.workspace = true
 keywords = ["why2025", "badge"]
 categories = ["embedded", "no-std", "os", "graphics"]
 
+[dependencies]
+why2025-badge-sys-bindings.workspace = true
+
 [target.'cfg(not(target_arch = "riscv32"))'.dependencies]
 libc = { version = "0.2", default-features = false }
 minifb = { version = "0.28", default-features = false, features = ["x11"] }

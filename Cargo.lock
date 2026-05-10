@@ -1900,8 +1900,13 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "why2025-badge-sys-bindings",
  "x11-dl",
 ]
+
+[[package]]
+name = "why2025-badge-sys-bindings"
+version = "0.2.0"
 
 [[package]]
 name = "winapi"

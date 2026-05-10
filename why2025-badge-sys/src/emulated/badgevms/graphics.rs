@@ -1,6 +1,6 @@
 use crate::{
     emulated::badgevms::graphics::{
-        input::WindowEventCallback,
+        input::{WindowEventCallback, empty_event},
         rendering::{present_windowbuffer, rescale_windowbuffer, update_windowbuffer},
     },
     types::*,
@@ -523,7 +523,7 @@ pub extern "C" fn window_event_poll(
     };
 
     let Some(event) = event else {
-        return event_t::new_empty();
+        return empty_event();
     };
 
     return event;

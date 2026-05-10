@@ -1,0 +1,13 @@
+[package]
+name = "why2025-badge-sys-bindings"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Raw generated bindings for the WHY2025 badge firmware ABI"
+repository.workspace = true
+keywords = ["why2025", "badge"]
+categories = ["embedded", "no-std", "os", "graphics"]
+
+[lib]
+path = "src/lib.rs"

@@ -1,0 +1,4 @@
+[submodule "why2025-badge-rust-toolchain"]
+	path = why2025-badge-rust-toolchain
+	url = git@github.com:zebreus/why2025-badge-rust-toolchain.git
+	branch = main

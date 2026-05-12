@@ -27,7 +27,8 @@ while [[ $# -gt 0 ]]; do
             done
             ;;
         --*)
-            fail "unknown argument: $1"
+            printf 'error: unknown argument: %s\n' "$1" >&2
+            exit 1
             ;;
         *)
             positionals+=("$1")
@@ -36,10 +37,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-need_cmd git
-need_cmd python3
-need_cmd tar
-need_cmd sha256sum
+command -v git >/dev/null 2>&1 || { printf 'error: missing required command: git\n' >&2; exit 1; }
+command -v python3 >/dev/null 2>&1 || { printf 'error: missing required command: python3\n' >&2; exit 1; }
+command -v tar >/dev/null 2>&1 || { printf 'error: missing required command: tar\n' >&2; exit 1; }
+command -v sha256sum >/dev/null 2>&1 || { printf 'error: missing required command: sha256sum\n' >&2; exit 1; }
 
 repo=$(rust_repo)
 dist_dir=${positionals[0]:-$repo/build/dist}
@@ -47,7 +48,7 @@ out_dir=${positionals[1]:-$PROJECT_ROOT/dist/badgevms-std}
 version=${positionals[2]:-${BADGEVMS_TOOLCHAIN_VERSION:-}}
 host=${BADGEVMS_TOOLCHAIN_HOST:-$(host_triple_from_rustc rustc)}
 
-[[ -d "$dist_dir" ]] || fail "dist directory does not exist: $dist_dir"
+[[ -d "$dist_dir" ]] || { printf 'error: dist directory does not exist: %s\n' "$dist_dir" >&2; exit 1; }
 dist_dir=$(cd "$dist_dir" && pwd)
 
 find_artifact() {
@@ -70,7 +71,8 @@ find_artifact() {
         fi
     done
 
-    fail "missing dist artifact for $component ${triple:-targetless} in $dist_dir"
+    printf 'error: missing dist artifact for %s %s in %s\n' "$component" "${triple:-targetless}" "$dist_dir" >&2
+    exit 1
 }
 
 install_component() {
@@ -85,11 +87,12 @@ install_component() {
 
     top=$(find "$work" -mindepth 1 -maxdepth 1 -type d -print)
     if [[ $(printf '%s\n' "$top" | sed '/^$/d' | wc -l) -ne 1 ]]; then
-        fail "dist artifact must contain exactly one top-level directory: $artifact"
+        printf 'error: dist artifact must contain exactly one top-level directory: %s\n' "$artifact" >&2
+        exit 1
     fi
 
     install_script="$top/install.sh"
-    [[ -x "$install_script" ]] || fail "dist artifact has no executable install.sh: $artifact"
+    [[ -x "$install_script" ]] || { printf 'error: dist artifact has no executable install.sh: %s\n' "$artifact" >&2; exit 1; }
     "$install_script" --prefix="$prefix" --disable-ldconfig >/dev/null
 }
 
@@ -120,13 +123,15 @@ audit_runtime_dependencies() {
         } >> "$report"
 
         if printf '%s\n' "$deps" | grep -Eiq 'lib(ssl|crypto)\.so|openssl'; then
-            fail "packaged $tool has a dynamic OpenSSL dependency"
+            printf 'error: packaged %s has a dynamic OpenSSL dependency\n' "$tool" >&2
+            exit 1
         fi
 
         bad_nix=$(printf '%s\n' "$deps" | grep '/nix/store/' | grep -Eiv 'glibc|gcc|libz' || true)
         if [[ -n "$bad_nix" ]]; then
             printf 'unexpected Nix runtime dependencies for %s:\n%s\n' "$tool" "$bad_nix" >&2
-            fail "packaged $tool depends on non-allowlisted Nix store libraries"
+            printf 'error: packaged %s depends on non-allowlisted Nix store libraries\n' "$tool" >&2
+            exit 1
         fi
     done
 }
@@ -163,29 +168,30 @@ exec "$toolchain_dir/bin/cargo-real" "$@"
 WRAPPER
 chmod +x "$image/bin/cargo"
 
-[[ -x "$image/bin/rustc" ]] || fail "assembled toolchain is missing bin/rustc"
-[[ -x "$image/bin/cargo" ]] || fail "assembled toolchain is missing bin/cargo"
-[[ -x "$image/bin/cargo-real" ]] || fail "assembled toolchain is missing bin/cargo-real"
-[[ -x "$image/bin/rustfmt" ]] || fail "assembled toolchain is missing bin/rustfmt"
+[[ -x "$image/bin/rustc" ]] || { printf 'error: assembled toolchain is missing bin/rustc\n' >&2; exit 1; }
+[[ -x "$image/bin/cargo" ]] || { printf 'error: assembled toolchain is missing bin/cargo\n' >&2; exit 1; }
+[[ -x "$image/bin/cargo-real" ]] || { printf 'error: assembled toolchain is missing bin/cargo-real\n' >&2; exit 1; }
+[[ -x "$image/bin/rustfmt" ]] || { printf 'error: assembled toolchain is missing bin/rustfmt\n' >&2; exit 1; }
 find "$image/lib/rustlib/$host/lib" -maxdepth 1 -name 'libstd-*.rlib' -print -quit 2>/dev/null | grep -q . || \
-    fail "assembled toolchain is missing host std"
+    { printf 'error: assembled toolchain is missing host std\n' >&2; exit 1; }
 find "$image/lib/rustlib/$BADGEVMS_STD_TARGET/lib" -maxdepth 1 -name 'libstd-*.rlib' -print -quit 2>/dev/null | grep -q . || \
-    fail "assembled toolchain is missing BadgeVMS std"
+    { printf 'error: assembled toolchain is missing BadgeVMS std\n' >&2; exit 1; }
 [[ -f "$image/lib/rustlib/src/why2025-badge-sys-bindings/Cargo.toml" ]] || \
-    fail "assembled rust-src is missing why2025-badge-sys-bindings"
+    { printf 'error: assembled rust-src is missing why2025-badge-sys-bindings\n' >&2; exit 1; }
 grep -q '../rust/library/rustc-std-workspace-core' \
     "$image/lib/rustlib/src/why2025-badge-sys-bindings/Cargo.toml" || \
-    fail "packaged why2025-badge-sys-bindings manifest does not use installed rust-src paths"
+    { printf 'error: packaged why2025-badge-sys-bindings manifest does not use installed rust-src paths\n' >&2; exit 1; }
 
 "$image/bin/rustc" -Vv >/dev/null
 "$image/bin/cargo" -V >/dev/null
 "$image/bin/rustfmt" -V >/dev/null
 
 cfg=$("$image/bin/rustc" --target "$BADGEVMS_STD_TARGET" --print cfg | sort)
-printf '%s\n' "$cfg" | grep -qx 'target_os="badgevms"' || fail 'packaged rustc target cfg missing target_os="badgevms"'
-printf '%s\n' "$cfg" | grep -qx 'target_family="unix"' || fail 'packaged rustc target cfg missing target_family="unix"'
+printf '%s\n' "$cfg" | grep -qx 'target_os="badgevms"' || { printf 'error: packaged rustc target cfg missing target_os="badgevms"\n' >&2; exit 1; }
+printf '%s\n' "$cfg" | grep -qx 'target_family="unix"' || { printf 'error: packaged rustc target cfg missing target_family="unix"\n' >&2; exit 1; }
 if printf '%s\n' "$cfg" | grep -Eq '^target_env=".+"$'; then
-    fail 'packaged BadgeVMS target must not set a non-empty target_env'
+    printf 'error: packaged BadgeVMS target must not set a non-empty target_env\n' >&2
+    exit 1
 fi
 
 audit_runtime_dependencies
@@ -236,26 +242,31 @@ while IFS= read -r link; do
     target=$(readlink "$link")
     case "$target" in
         /*)
-            fail "archive would contain absolute symlink: $link -> $target"
+            printf 'error: archive would contain absolute symlink: %s -> %s\n' "$link" "$target" >&2
+            exit 1
             ;;
         *why2025-badge-rust*|*stage2*|*build*)
-            fail "archive would contain workspace/build symlink: $link -> $target"
+            printf 'error: archive would contain workspace/build symlink: %s -> %s\n' "$link" "$target" >&2
+            exit 1
             ;;
     esac
 done < <(find "$image" -type l)
 
 if find "$image" \( -name .git -o -name .gitmodules \) -print -quit | grep -q .; then
-    fail "archive would contain git metadata"
+    printf 'error: archive would contain git metadata\n' >&2
+    exit 1
 fi
 if grep -RIl 'why2025-badge-rust-libc' "$image" | grep -q .; then
-    fail "archive would contain the removed why2025-badge-rust-libc crate"
+    printf 'error: archive would contain the removed why2025-badge-rust-libc crate\n' >&2
+    exit 1
 fi
 checkout_refs=$(grep -RIl --exclude='badgevms-toolchain.env' --exclude='badgevms-toolchain.json' \
     "$PROJECT_ROOT\|why2025-badge-rust-toolchain/build" "$image" || true)
 if [[ -n "$checkout_refs" ]]; then
     printf 'source checkout or stage2 references found in assembled image:\n%s\n' \
         "$(printf '%s\n' "$checkout_refs" | head -n 20)" >&2
-    fail "archive would contain source checkout or stage2 references"
+    printf 'error: archive would contain source checkout or stage2 references\n' >&2
+    exit 1
 fi
 
 mkdir -p "$out_dir"

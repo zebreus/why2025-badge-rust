@@ -5,15 +5,6 @@ BADGEVMS_STD_TARGET=${BADGEVMS_STD_TARGET:-riscv32imafc-unknown-badgevms}
 BADGEVMS_TOOLCHAIN_NAME=${BADGEVMS_TOOLCHAIN_NAME:-badgevms-std}
 PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 
-fail() {
-    printf 'error: %s\n' "$*" >&2
-    exit 1
-}
-
-need_cmd() {
-    command -v "$1" >/dev/null 2>&1 || fail "missing required command: $1"
-}
-
 host_triple_from_rustc() {
     local rustc=${1:-rustc}
     "$rustc" -vV | sed -n 's/^host: //p'
@@ -40,5 +31,6 @@ rust_repo() {
         return
     fi
 
-    fail 'initialize why2025-badge-rust-toolchain'
+    printf 'error: initialize why2025-badge-rust-toolchain\n' >&2
+    exit 1
 }

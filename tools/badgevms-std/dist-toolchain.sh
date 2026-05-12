@@ -2,8 +2,8 @@
 set -euo pipefail
 source "$(dirname "$0")/common.sh"
 
-need_cmd python3
-need_cmd rustc
+command -v python3 >/dev/null 2>&1 || { printf 'error: missing required command: python3\n' >&2; exit 1; }
+command -v rustc >/dev/null 2>&1 || { printf 'error: missing required command: rustc\n' >&2; exit 1; }
 
 for arg in "$@"; do
     case "$arg" in
@@ -16,18 +16,19 @@ USAGE
             exit 0
             ;;
         *)
-            fail "unknown argument: $arg"
+            printf 'error: unknown argument: %s\n' "$arg" >&2
+            exit 1
             ;;
     esac
 done
 
 repo=$(rust_repo)
-[[ -d "$repo/.git" || -f "$repo/.git" ]] || fail "resolved Rust checkout is not a git checkout: $repo"
-[[ -x "$repo/x.py" ]] || fail "resolved Rust checkout has no executable x.py: $repo"
+[[ -d "$repo/.git" || -f "$repo/.git" ]] || { printf 'error: resolved Rust checkout is not a git checkout: %s\n' "$repo" >&2; exit 1; }
+[[ -x "$repo/x.py" ]] || { printf 'error: resolved Rust checkout has no executable x.py: %s\n' "$repo" >&2; exit 1; }
 
 for submodule in library/backtrace src/llvm-project src/tools/cargo; do
     [[ -e "$repo/$submodule/.git" ]] || \
-        fail "missing required Rust submodule $submodule; run: git -C $repo submodule update --init $submodule"
+        { printf 'error: missing required Rust submodule %s; run: git -C %s submodule update --init %s\n' "$submodule" "$repo" "$submodule" >&2; exit 1; }
 done
 
 host=$(host_triple_from_rustc rustc)
@@ -63,7 +64,7 @@ CONFIG
 cd "$repo"
 
 [[ -f "$PROJECT_ROOT/why2025-badge-sys-bindings/Cargo.toml" ]] || \
-    fail "missing canonical raw BadgeVMS ABI crate: why2025-badge-sys-bindings"
+    { printf 'error: missing canonical raw BadgeVMS ABI crate: why2025-badge-sys-bindings\n' >&2; exit 1; }
 
 # Stage0 does not know the new built-in BadgeVMS target yet, so bootstrap's target sanity check
 # must be skipped until stage1 has been built from this patched checkout.
@@ -80,7 +81,7 @@ for pattern in \
     "rustfmt-*-$host.tar.*" \
     "rust-src-*.tar.*"; do
     find "$dist" -maxdepth 1 -type f -name "$pattern" -print -quit | grep -q . || \
-        fail "dist output missing expected artifact matching $pattern in $dist"
+        { printf 'error: dist output missing expected artifact matching %s in %s\n' "$pattern" "$dist" >&2; exit 1; }
 done
 
 printf 'built BadgeVMS dist artifacts in: %s/build/dist\n' "$repo"

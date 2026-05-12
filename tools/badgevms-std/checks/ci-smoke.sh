@@ -2,8 +2,8 @@
 set -euo pipefail
 source "$(dirname "$0")/../common.sh"
 
-need_cmd cargo
-need_cmd rustc
+command -v cargo >/dev/null 2>&1 || { printf 'error: missing required command: cargo\n' >&2; exit 1; }
+command -v rustc >/dev/null 2>&1 || { printf 'error: missing required command: rustc\n' >&2; exit 1; }
 
 cd "$PROJECT_ROOT"
 

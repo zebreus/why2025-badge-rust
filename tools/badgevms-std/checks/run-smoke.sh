@@ -20,7 +20,8 @@ if [[ ${BADGEVMS_BUILD_STD:-0} == 1 ]]; then
     args+=("-Zbuild-std=core,alloc,std,panic_abort,compiler_builtins")
 fi
 
-cargo_toolchain "$toolchain" "${args[@]}"
+toolchain_rustc=$(rustup which --toolchain "$toolchain" rustc)
+RUSTC="$toolchain_rustc" rustup run "$toolchain" cargo "${args[@]}"
 
 artifact="$package_dir/target/$BADGEVMS_STD_TARGET/debug/$package_name"
 if [[ ! -f "$artifact" ]]; then

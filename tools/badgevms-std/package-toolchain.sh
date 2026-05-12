@@ -46,7 +46,7 @@ repo=$(rust_repo)
 dist_dir=${positionals[0]:-$repo/build/dist}
 out_dir=${positionals[1]:-$PROJECT_ROOT/dist/badgevms-std}
 version=${positionals[2]:-${BADGEVMS_TOOLCHAIN_VERSION:-}}
-host=${BADGEVMS_TOOLCHAIN_HOST:-$(host_triple_from_rustc rustc)}
+host=${BADGEVMS_TOOLCHAIN_HOST:-$(rustc -vV | sed -n 's/^host: //p')}
 
 [[ -d "$dist_dir" ]] || { printf 'error: dist directory does not exist: %s\n' "$dist_dir" >&2; exit 1; }
 dist_dir=$(cd "$dist_dir" && pwd)

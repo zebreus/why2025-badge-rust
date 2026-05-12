@@ -31,7 +31,7 @@ for submodule in library/backtrace src/llvm-project src/tools/cargo; do
         { printf 'error: missing required Rust submodule %s; run: git -C %s submodule update --init %s\n' "$submodule" "$repo" "$submodule" >&2; exit 1; }
 done
 
-host=$(host_triple_from_rustc rustc)
+host=$(rustc -vV | sed -n 's/^host: //p')
 config="$repo/build/badgevms-dist/config.toml"
 mkdir -p "$(dirname "$config")"
 

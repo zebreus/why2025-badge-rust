@@ -8,9 +8,9 @@ command -v rustup >/dev/null 2>&1 || { printf 'error: missing required command: 
 
 toolchain=${1:-$BADGEVMS_TOOLCHAIN_NAME}
 
-rustc_toolchain "$toolchain" -Vv
+rustup run "$toolchain" rustc -Vv
 
-cfg=$(rustc_toolchain "$toolchain" --print cfg --target "$BADGEVMS_STD_TARGET" | sort)
+cfg=$(rustup run "$toolchain" rustc --print cfg --target "$BADGEVMS_STD_TARGET" | sort)
 printf '%s\n' "$cfg" | grep -qx 'target_os="badgevms"' || { printf 'error: target cfg missing target_os="badgevms"\n' >&2; exit 1; }
 printf '%s\n' "$cfg" | grep -qx 'target_family="unix"' || { printf 'error: target cfg missing target_family="unix"\n' >&2; exit 1; }
 printf '%s\n' "$cfg" | grep -qx 'target_arch="riscv32"' || { printf 'error: target cfg missing target_arch="riscv32"\n' >&2; exit 1; }

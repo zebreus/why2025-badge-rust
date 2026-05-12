@@ -7,7 +7,6 @@ the supported entrypoint.
 
 ## Files
 
-- `common.sh` — shared constants and shell primitives sourced by the repo-local scripts.
 - `dist-toolchain.sh` — build Rust dist artifacts for release packaging.
 - `package-toolchain.sh` — assemble a relocatable rustup-linkable toolchain archive from Rust dist artifacts.
 - `install-toolchain.sh` — install a packaged archive and register it with rustup.
@@ -22,8 +21,6 @@ the supported entrypoint.
 
 The std port uses `why2025-badge-sys-bindings` as the raw BadgeVMS ABI source. The Rust fork should
 not carry a BadgeVMS-specific `library/libc` fork.
-
-Set `BADGEVMS_TOOLCHAIN_NAME` to the local rustup name when needed.
 
 ## Install a packaged toolchain
 

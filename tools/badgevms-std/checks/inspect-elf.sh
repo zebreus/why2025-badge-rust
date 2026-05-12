@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-source "$(dirname "$0")/../common.sh"
 
 command -v readelf >/dev/null 2>&1 || { printf 'error: missing required command: readelf\n' >&2; exit 1; }
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-source "$(dirname "$0")/common.sh"
+
+PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 
 usage() {
     cat <<'USAGE'
@@ -42,7 +43,8 @@ command -v python3 >/dev/null 2>&1 || { printf 'error: missing required command:
 command -v tar >/dev/null 2>&1 || { printf 'error: missing required command: tar\n' >&2; exit 1; }
 command -v sha256sum >/dev/null 2>&1 || { printf 'error: missing required command: sha256sum\n' >&2; exit 1; }
 
-repo=$(rust_repo)
+repo="$PROJECT_ROOT/why2025-badge-rust-toolchain"
+[[ -d "$repo/.git" || -f "$repo/.git" ]] || { printf 'error: initialize why2025-badge-rust-toolchain\n' >&2; exit 1; }
 dist_dir=${positionals[0]:-$repo/build/dist}
 out_dir=${positionals[1]:-$PROJECT_ROOT/dist/badgevms-std}
 version=${positionals[2]:-${BADGEVMS_TOOLCHAIN_VERSION:-}}
@@ -138,7 +140,7 @@ audit_runtime_dependencies() {
 
 rustc_artifact=$(find_artifact rustc "$host")
 host_std_artifact=$(find_artifact rust-std "$host")
-target_std_artifact=$(find_artifact rust-std "$BADGEVMS_STD_TARGET")
+target_std_artifact=$(find_artifact rust-std "riscv32imafc-unknown-badgevms")
 cargo_artifact=$(find_artifact cargo "$host")
 rustfmt_artifact=$(find_artifact rustfmt "$host")
 rust_src_artifact=$(find_artifact rust-src)
@@ -174,7 +176,7 @@ chmod +x "$image/bin/cargo"
 [[ -x "$image/bin/rustfmt" ]] || { printf 'error: assembled toolchain is missing bin/rustfmt\n' >&2; exit 1; }
 find "$image/lib/rustlib/$host/lib" -maxdepth 1 -name 'libstd-*.rlib' -print -quit 2>/dev/null | grep -q . || \
     { printf 'error: assembled toolchain is missing host std\n' >&2; exit 1; }
-find "$image/lib/rustlib/$BADGEVMS_STD_TARGET/lib" -maxdepth 1 -name 'libstd-*.rlib' -print -quit 2>/dev/null | grep -q . || \
+find "$image/lib/rustlib/riscv32imafc-unknown-badgevms/lib" -maxdepth 1 -name 'libstd-*.rlib' -print -quit 2>/dev/null | grep -q . || \
     { printf 'error: assembled toolchain is missing BadgeVMS std\n' >&2; exit 1; }
 [[ -f "$image/lib/rustlib/src/why2025-badge-sys-bindings/Cargo.toml" ]] || \
     { printf 'error: assembled rust-src is missing why2025-badge-sys-bindings\n' >&2; exit 1; }
@@ -186,7 +188,7 @@ grep -q '../rust/library/rustc-std-workspace-core' \
 "$image/bin/cargo" -V >/dev/null
 "$image/bin/rustfmt" -V >/dev/null
 
-cfg=$("$image/bin/rustc" --target "$BADGEVMS_STD_TARGET" --print cfg | sort)
+cfg=$("$image/bin/rustc" --target "riscv32imafc-unknown-badgevms" --print cfg | sort)
 printf '%s\n' "$cfg" | grep -qx 'target_os="badgevms"' || { printf 'error: packaged rustc target cfg missing target_os="badgevms"\n' >&2; exit 1; }
 printf '%s\n' "$cfg" | grep -qx 'target_family="unix"' || { printf 'error: packaged rustc target cfg missing target_family="unix"\n' >&2; exit 1; }
 if printf '%s\n' "$cfg" | grep -Eq '^target_env=".+"$'; then
@@ -212,7 +214,7 @@ rustc_release=$("$image/bin/rustc" -V | awk '{ print $2 }')
 cat > "$image/badgevms-toolchain.env" <<EOF
 BADGEVMS_TOOLCHAIN_VERSION=$version
 BADGEVMS_TOOLCHAIN_HOST=$host
-BADGEVMS_STD_TARGET=$BADGEVMS_STD_TARGET
+BADGEVMS_STD_TARGET=riscv32imafc-unknown-badgevms
 BADGEVMS_SOURCE_REPO=$source_repo
 BADGEVMS_SOURCE_REV=$source_rev
 BADGEVMS_RUST_REPO=$rust_repo_url
@@ -224,7 +226,7 @@ cat > "$image/badgevms-toolchain.json" <<EOF
 {
     "version": $(json_quote "$version"),
     "host": $(json_quote "$host"),
-    "target": $(json_quote "$BADGEVMS_STD_TARGET"),
+    "target": $(json_quote "riscv32imafc-unknown-badgevms"),
     "built_at": $(json_quote "$built_at"),
     "rustc_release": $(json_quote "$rustc_release"),
     "source": {

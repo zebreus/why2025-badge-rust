@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-source "$(dirname "$0")/common.sh"
+
+PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 
 command -v python3 >/dev/null 2>&1 || { printf 'error: missing required command: python3\n' >&2; exit 1; }
 command -v rustc >/dev/null 2>&1 || { printf 'error: missing required command: rustc\n' >&2; exit 1; }
@@ -22,8 +23,8 @@ USAGE
     esac
 done
 
-repo=$(rust_repo)
-[[ -d "$repo/.git" || -f "$repo/.git" ]] || { printf 'error: resolved Rust checkout is not a git checkout: %s\n' "$repo" >&2; exit 1; }
+repo="$PROJECT_ROOT/why2025-badge-rust-toolchain"
+[[ -d "$repo/.git" || -f "$repo/.git" ]] || { printf 'error: initialize why2025-badge-rust-toolchain\n' >&2; exit 1; }
 [[ -x "$repo/x.py" ]] || { printf 'error: resolved Rust checkout has no executable x.py: %s\n' "$repo" >&2; exit 1; }
 
 for submodule in library/backtrace src/llvm-project src/tools/cargo; do
@@ -46,7 +47,7 @@ targets = "RISCV;X86"
 
 [build]
 host = ["$host"]
-target = ["$host", "$BADGEVMS_STD_TARGET"]
+target = ["$host", "riscv32imafc-unknown-badgevms"]
 extended = true
 tools = ["cargo", "rustfmt"]
 cargo-native-static = true
@@ -56,7 +57,7 @@ debug = false
 incremental = false
 lld = true
 
-[target.$BADGEVMS_STD_TARGET]
+[target.riscv32imafc-unknown-badgevms]
 # The patched built-in target owns linker flags. Keep this section available for SDK paths only.
 
 CONFIG
@@ -76,7 +77,7 @@ dist="$repo/build/dist"
 for pattern in \
     "rustc-*-$host.tar.*" \
     "rust-std-*-$host.tar.*" \
-    "rust-std-*-$BADGEVMS_STD_TARGET.tar.*" \
+    "rust-std-*-riscv32imafc-unknown-badgevms.tar.*" \
     "cargo-*-$host.tar.*" \
     "rustfmt-*-$host.tar.*" \
     "rust-src-*.tar.*"; do

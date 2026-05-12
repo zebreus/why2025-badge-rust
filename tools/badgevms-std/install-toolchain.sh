@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BADGEVMS_STD_TARGET=${BADGEVMS_STD_TARGET:-riscv32imafc-unknown-badgevms}
 BADGEVMS_RELEASE_REPO=${BADGEVMS_RELEASE_REPO:-zebreus/why2025-badge-rust}
 
 detect_host() {
@@ -34,7 +33,7 @@ Options:
 USAGE
 }
 
-name=${BADGEVMS_TOOLCHAIN_NAME:-badgevms-std}
+name=badgevms-std
 version=${BADGEVMS_TOOLCHAIN_VERSION:-latest}
 host=${BADGEVMS_TOOLCHAIN_HOST:-}
 install_dir=${BADGEVMS_TOOLCHAIN_INSTALL_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/badgevms-rust/toolchains}
@@ -135,7 +134,7 @@ mv "$root" "$dest"
 
 rustup toolchain link "$name" "$dest"
 
-cfg=$(rustup run "$name" rustc --target "$BADGEVMS_STD_TARGET" --print cfg | sort)
+cfg=$(rustup run "$name" rustc --target "riscv32imafc-unknown-badgevms" --print cfg | sort)
 printf '%s\n' "$cfg" | grep -qx 'target_os="badgevms"' || { printf 'error: target cfg missing target_os="badgevms"\n' >&2; exit 1; }
 printf '%s\n' "$cfg" | grep -qx 'target_family="unix"' || { printf 'error: target cfg missing target_family="unix"\n' >&2; exit 1; }
 if printf '%s\n' "$cfg" | grep -Eq '^target_env=".+"$'; then
@@ -145,9 +144,9 @@ fi
 
 if [[ "$print_json" -eq 1 ]]; then
     printf '{"toolchain":"%s","path":"%s","host":"%s","target":"%s"}\n' \
-        "$name" "$dest" "$host" "$BADGEVMS_STD_TARGET"
+        "$name" "$dest" "$host" 'riscv32imafc-unknown-badgevms'
 else
     printf 'installed BadgeVMS Rust toolchain %s at %s\n' "$name" "$dest"
     printf 'next steps:\n'
-    printf '  rustup run %s cargo build --target %s\n' "$name" "$BADGEVMS_STD_TARGET"
+    printf '  rustup run %s cargo build --target %s\n' "$name" 'riscv32imafc-unknown-badgevms'
 fi

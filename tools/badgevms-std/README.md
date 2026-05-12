@@ -7,8 +7,8 @@ the supported entrypoint.
 
 ## Files
 
-- `dist-toolchain.sh` — build Rust dist artifacts for release packaging.
-- `package-toolchain.sh` — assemble a relocatable rustup-linkable toolchain archive from Rust dist artifacts.
+- `dist-toolchain.sh` — build a rustup-linkable archive with Rust's standard `x.py install` flow
+  plus the standard `rust-src` dist component installer.
 - `install-toolchain.sh` — install a packaged archive and register it with rustup.
 
 ## Checks
@@ -45,23 +45,30 @@ Archives include prebuilt BadgeVMS `std`, so normal users should not need `-Zbui
 `BADGEVMS_BUILD_STD=1 tools/badgevms-std/checks/run-smoke.sh badgevms-std` only when validating
 packaged `rust-src` support.
 
-Release packages are assembled from Rust dist artifacts and include real `rustc`, `cargo`,
-`rustfmt`, host std, BadgeVMS std, and `rust-src`. The packaged `cargo` entrypoint is a thin
-wrapper around the dist Cargo binary that points Cargo at the sibling packaged `rustc`, which keeps
-`rustup run badgevms-std cargo ...` independent of the user's ambient `PATH`.
+Release packages are archived Rust install prefixes produced by `x.py install`, with `rust-src`
+added from Rust's own dist component installer. They include real `rustc`, Cargo, `rustfmt`, host
+std, BadgeVMS std, and `rust-src`. The packaged Cargo entrypoint sets `RUSTC` to the sibling
+packaged `rustc` before executing the real Cargo binary, so `rustup run badgevms-std cargo ...` does
+not accidentally use the user's ambient compiler.
+
+## Maintainer local flow
+
+For local compiler iteration, use Rust's standard custom-toolchain path from inside the bundled Rust
+checkout: build a stage sysroot with `x.py`, then point rustup at it with `rustup toolchain link`.
+The exact `x.py` command depends on what you are changing; the important bit is that rustup links a
+Rust build sysroot directly instead of using the release archive path.
 
 ## Maintainer packaging flow
 
 ```sh
-tools/badgevms-std/dist-toolchain.sh
-tools/badgevms-std/package-toolchain.sh why2025-badge-rust-toolchain/build/dist
+tools/badgevms-std/dist-toolchain.sh dist/badgevms-std
 tools/badgevms-std/install-toolchain.sh --archive dist/badgevms-std/*.tar.gz --force
 tools/badgevms-std/checks/run-smoke.sh badgevms-std examples/std-hello-world/Cargo.toml
 BADGEVMS_BUILD_STD=1 tools/badgevms-std/checks/run-smoke.sh badgevms-std examples/std-hello-world/Cargo.toml
 ```
 
-Real release artifacts are produced by CI. Local maintainer runs of `dist-toolchain.sh` and
-`package-toolchain.sh` are allowed on a dirty checkout; the scripts no longer gate that case.
+Real release artifacts are produced by CI. Local maintainer runs of `dist-toolchain.sh` are allowed
+on a dirty checkout; the script no longer gates that case.
 
 ## Troubleshooting
 

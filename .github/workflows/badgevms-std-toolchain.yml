@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 jobs:
-  package-toolchain:
+  build-toolchain:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -53,12 +53,10 @@ jobs:
             version="$input_version-${GITHUB_SHA}"
           fi
           printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
-      - name: Build Rust dist artifacts
-        run: ./tools/badgevms-std/dist-toolchain.sh
-      - name: Package toolchain archive
+      - name: Build toolchain archive with x.py install
         env:
           BADGEVMS_TOOLCHAIN_VERSION: ${{ steps.version.outputs.version }}
-        run: ./tools/badgevms-std/package-toolchain.sh why2025-badge-rust-toolchain/build/dist dist/badgevms-std
+        run: ./tools/badgevms-std/dist-toolchain.sh dist/badgevms-std
       - name: Test packaged install
         run: |
           archive=$(find dist/badgevms-std -name 'badgevms-std-*.tar.gz' -print -quit)
@@ -72,7 +70,8 @@ jobs:
           trap 'rm -rf "$tmp"' EXIT
           rustup run "$BADGEVMS_TOOLCHAIN_NAME" cargo new --bin "$tmp/badgevms-outside-smoke"
           cd "$tmp/badgevms-outside-smoke"
-          env -u RUSTC rustup run "$BADGEVMS_TOOLCHAIN_NAME" cargo build --target riscv32imafc-unknown-badgevms
+          toolchain_rustc=$(rustup which --toolchain "$BADGEVMS_TOOLCHAIN_NAME" rustc)
+          RUSTC="$toolchain_rustc" rustup run "$BADGEVMS_TOOLCHAIN_NAME" cargo build --target riscv32imafc-unknown-badgevms
           "$GITHUB_WORKSPACE/tools/badgevms-std/checks/inspect-elf.sh" \
             "target/riscv32imafc-unknown-badgevms/debug/badgevms-outside-smoke"
       - name: Prepare release aliases

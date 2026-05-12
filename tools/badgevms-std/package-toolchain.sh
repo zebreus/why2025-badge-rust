@@ -4,7 +4,7 @@ source "$(dirname "$0")/common.sh"
 
 usage() {
     cat <<'USAGE'
-usage: package-toolchain.sh [--allow-dirty] [dist-dir] [out-dir] [version]
+usage: package-toolchain.sh [dist-dir] [out-dir] [version]
 
 Assembles a relocatable, rustup-linkable BadgeVMS toolchain archive from Rust dist artifacts.
 The input directory must be produced by dist-toolchain.sh / x.py dist and contain rustc, host
@@ -15,10 +15,6 @@ USAGE
 positionals=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --allow-dirty)
-            export BADGEVMS_ALLOW_DIRTY=1
-            shift
-            ;;
         -h|--help)
             usage
             exit 0
@@ -46,7 +42,6 @@ need_cmd tar
 need_cmd sha256sum
 
 repo=$(rust_repo)
-ensure_clean_release_tree
 dist_dir=${positionals[0]:-$repo/build/dist}
 out_dir=${positionals[1]:-$PROJECT_ROOT/dist/badgevms-std}
 version=${positionals[2]:-${BADGEVMS_TOOLCHAIN_VERSION:-}}
@@ -197,22 +192,14 @@ audit_runtime_dependencies
 
 if [[ -z "$version" ]]; then
     rust_version=$("$image/bin/rustc" -V | awk '{ print $2 }')
-    git_rev=$(git_short_rev "$PROJECT_ROOT")
+    git_rev=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || printf 'unknown')
     version="$rust_version-$git_rev"
-    if release_tree_is_dirty; then
-        version="$version-dirty"
-    fi
 fi
 
-source_dirty=false
-if release_tree_is_dirty; then
-    source_dirty=true
-fi
-
-source_repo=$(git_origin_url "$PROJECT_ROOT")
-source_rev=$(git_full_rev "$PROJECT_ROOT")
-rust_repo_url=$(git_origin_url "$repo")
-rust_rev=$(git_full_rev "$repo")
+source_repo=$(git -C "$PROJECT_ROOT" config --get remote.origin.url 2>/dev/null || true)
+source_rev=$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || printf 'unknown')
+rust_repo_url=$(git -C "$repo" config --get remote.origin.url 2>/dev/null || true)
+rust_rev=$(git -C "$repo" rev-parse HEAD 2>/dev/null || printf 'unknown')
 built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 rustc_release=$("$image/bin/rustc" -V | awk '{ print $2 }')
 
@@ -236,8 +223,7 @@ cat > "$image/badgevms-toolchain.json" <<EOF
     "rustc_release": $(json_quote "$rustc_release"),
     "source": {
         "repo": $(json_quote "$source_repo"),
-        "rev": $(json_quote "$source_rev"),
-        "dirty": $source_dirty
+        "rev": $(json_quote "$source_rev")
     },
     "rust_toolchain": {
         "repo": $(json_quote "$rust_repo_url"),

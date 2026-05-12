@@ -63,9 +63,9 @@ jobs:
         run: |
           archive=$(find dist/badgevms-std -name 'badgevms-std-*.tar.gz' -print -quit)
           ./tools/badgevms-std/install-toolchain.sh --archive "$archive" --name "$BADGEVMS_TOOLCHAIN_NAME" --force
-          ./tools/badgevms-std/verify-toolchain.sh "$BADGEVMS_TOOLCHAIN_NAME"
-          ./tools/badgevms-std/run-smoke.sh "$BADGEVMS_TOOLCHAIN_NAME" examples/std-hello-world/Cargo.toml
-          BADGEVMS_BUILD_STD=1 ./tools/badgevms-std/run-smoke.sh "$BADGEVMS_TOOLCHAIN_NAME" examples/std-hello-world/Cargo.toml
+          ./tools/badgevms-std/checks/verify-toolchain.sh "$BADGEVMS_TOOLCHAIN_NAME"
+          ./tools/badgevms-std/checks/run-smoke.sh "$BADGEVMS_TOOLCHAIN_NAME" examples/std-hello-world/Cargo.toml
+          BADGEVMS_BUILD_STD=1 ./tools/badgevms-std/checks/run-smoke.sh "$BADGEVMS_TOOLCHAIN_NAME" examples/std-hello-world/Cargo.toml
       - name: Test standalone consumer build
         run: |
           tmp=$(mktemp -d)
@@ -73,7 +73,7 @@ jobs:
           rustup run "$BADGEVMS_TOOLCHAIN_NAME" cargo new --bin "$tmp/badgevms-outside-smoke"
           cd "$tmp/badgevms-outside-smoke"
           env -u RUSTC rustup run "$BADGEVMS_TOOLCHAIN_NAME" cargo build --target riscv32imafc-unknown-badgevms
-          "$GITHUB_WORKSPACE/tools/badgevms-std/inspect-elf.sh" \
+          "$GITHUB_WORKSPACE/tools/badgevms-std/checks/inspect-elf.sh" \
             "target/riscv32imafc-unknown-badgevms/debug/badgevms-outside-smoke"
       - name: Prepare release aliases
         if: startsWith(github.ref, 'refs/tags/badgevms-std-v')

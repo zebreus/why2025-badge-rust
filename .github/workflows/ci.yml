@@ -36,4 +36,4 @@ jobs:
             cargo check --manifest-path "$manifest"
           done
       - name: Repository-side BadgeVMS std smoke
-        run: ./tools/badgevms-std/ci-smoke.sh
+        run: ./tools/badgevms-std/checks/ci-smoke.sh

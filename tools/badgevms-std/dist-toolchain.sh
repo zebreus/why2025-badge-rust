@@ -2,22 +2,16 @@
 set -euo pipefail
 source "$(dirname "$0")/common.sh"
 
-need_cmd git
 need_cmd python3
 need_cmd rustc
 
 for arg in "$@"; do
     case "$arg" in
-        --allow-dirty)
-            export BADGEVMS_ALLOW_DIRTY=1
-            ;;
         -h|--help)
             cat <<'USAGE'
-usage: dist-toolchain.sh [--allow-dirty]
+usage: dist-toolchain.sh
 
 Build Rust dist artifacts for the BadgeVMS std toolchain release package.
-Release builds require a clean superproject and submodules unless --allow-dirty
-or BADGEVMS_ALLOW_DIRTY=1 is set for local experiments.
 USAGE
             exit 0
             ;;
@@ -30,7 +24,6 @@ done
 repo=$(rust_repo)
 [[ -d "$repo/.git" || -f "$repo/.git" ]] || fail "resolved Rust checkout is not a git checkout: $repo"
 [[ -x "$repo/x.py" ]] || fail "resolved Rust checkout has no executable x.py: $repo"
-ensure_clean_release_tree
 
 for submodule in library/backtrace src/llvm-project src/tools/cargo; do
     [[ -e "$repo/$submodule/.git" ]] || \

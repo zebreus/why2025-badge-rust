@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-source "$(dirname "$0")/common.sh"
+source "$(dirname "$0")/../common.sh"
 
 need_cmd cargo
 need_cmd rustc
@@ -16,8 +16,8 @@ for manifest in examples/std-*/Cargo.toml; do
 done
 
 if rustup toolchain list 2>/dev/null | grep -q "^$BADGEVMS_TOOLCHAIN_NAME"; then
-    "$PROJECT_ROOT/tools/badgevms-std/verify-toolchain.sh" "$BADGEVMS_TOOLCHAIN_NAME"
-    "$PROJECT_ROOT/tools/badgevms-std/run-smoke.sh" "$BADGEVMS_TOOLCHAIN_NAME" examples/std-hello-world/Cargo.toml
+    "$PROJECT_ROOT/tools/badgevms-std/checks/verify-toolchain.sh" "$BADGEVMS_TOOLCHAIN_NAME"
+    "$PROJECT_ROOT/tools/badgevms-std/checks/run-smoke.sh" "$BADGEVMS_TOOLCHAIN_NAME" examples/std-hello-world/Cargo.toml
 else
     printf 'skipping BadgeVMS std toolchain verification: rustup toolchain %s is not linked\n' "$BADGEVMS_TOOLCHAIN_NAME"
 fi

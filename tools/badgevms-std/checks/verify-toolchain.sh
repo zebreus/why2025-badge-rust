@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-source "$(dirname "$0")/common.sh"
+source "$(dirname "$0")/../common.sh"
 
 need_cmd rustc
 need_cmd cargo
@@ -20,4 +20,4 @@ if printf '%s\n' "$cfg" | grep -Eq '^target_env=".+"$'; then
 fi
 
 printf 'BadgeVMS std target cfg looks correct for %s.\n' "$BADGEVMS_STD_TARGET"
-print_target_cfg_summary "$toolchain"
+printf '%s\n' "$cfg" | grep -E 'target_(arch|family|os|pointer_width)|panic' || true

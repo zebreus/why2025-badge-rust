@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-source "$(dirname "$0")/common.sh"
+source "$(dirname "$0")/../common.sh"
 
 need_cmd rustup
 
@@ -28,4 +28,4 @@ if [[ ! -f "$artifact" ]]; then
 fi
 [[ -f "$artifact" ]] || fail "could not locate built artifact for $package_name"
 
-"$PROJECT_ROOT/tools/badgevms-std/inspect-elf.sh" "$artifact"
+"$PROJECT_ROOT/tools/badgevms-std/checks/inspect-elf.sh" "$artifact"

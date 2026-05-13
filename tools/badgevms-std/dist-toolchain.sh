@@ -57,6 +57,10 @@ done
 host=$(rustc -vV | sed -n 's/^host: //p')
 out_dir=${positionals[0]:-$PROJECT_ROOT/dist/badgevms-std}
 version=${positionals[1]:-${BADGEVMS_TOOLCHAIN_VERSION:-}}
+case "$out_dir" in
+    /*) ;;
+    *) out_dir="$PROJECT_ROOT/$out_dir" ;;
+esac
 
 config="$repo/build/badgevms-dist/config.toml"
 mkdir -p "$(dirname "$config")"

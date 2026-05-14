@@ -16,6 +16,16 @@ for the raw-ABI boundary, [docs/adr/0005-support-badgevms-std-through-the-superp
 for the supported std-target entrypoint, [tools/badgevms-std/README.md](tools/badgevms-std/README.md)
 for the current scripts.
 
+The incubating BadgeVMS std backend is intentionally partial. It currently owns the
+BadgeVMS ABI boundary for allocator, stdio, process launch, threads, sync/TLS,
+startup argv capture, environment lookup/enumeration, clocks, best-effort
+randomness, and a narrow native filesystem surface for fd-backed files,
+metadata, directory iteration, and directly backed path-mutating operations.
+Unsupported Unix-shaped behavior remains explicit: pipes are out of scope,
+current-directory APIs are not synthesized, PATH search is not added, symlinks
+and uid/gid or POSIX permission mutation are not emulated, and randomness should
+not yet be treated as a cryptographic-strength firmware guarantee.
+
 ## App Linking
 
 no_std BadgeVMS Apps still need to link as shared objects, keep `main` as the entry point, and prune exports for the loader. That policy lives at the App boundary instead of the workspace-wide target config.

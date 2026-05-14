@@ -114,6 +114,10 @@ fn macro_generated_exports() -> &'static [&'static str] {
         "socket",
         "freeaddrinfo",
         "getaddrinfo",
+        "_Exit",
+        "_exit",
+        "abort",
+        "exit",
     ]
 }
 
@@ -284,9 +288,31 @@ fn parse_local_exports(src_dir: &Path) -> BTreeSet<String> {
             .unwrap_or_else(|err| panic!("failed to read {}: {err}", source.display()));
         let mut saw_no_mangle = false;
         let mut export_name: Option<String> = None;
+        let mut macro_block_depth = 0usize;
 
         for raw_line in contents.lines() {
             let trimmed = raw_line.trim();
+
+            if macro_block_depth == 0
+                && trimmed.contains("! {")
+                && !trimmed.starts_with("macro_rules!")
+            {
+                macro_block_depth = brace_delta(trimmed);
+                if let Some(symbol) = extract_macro_decl_name(trimmed) {
+                    exports.insert(symbol);
+                }
+                continue;
+            }
+
+            if macro_block_depth != 0 {
+                if let Some(symbol) = extract_macro_decl_name(trimmed) {
+                    exports.insert(symbol);
+                }
+                macro_block_depth = macro_block_depth
+                    .saturating_add(trimmed.matches('{').count())
+                    .saturating_sub(trimmed.matches('}').count());
+                continue;
+            }
 
             if trimmed.starts_with("#[unsafe(no_mangle)]") {
                 saw_no_mangle = true;
@@ -319,6 +345,18 @@ fn parse_local_exports(src_dir: &Path) -> BTreeSet<String> {
     }
 
     exports
+}
+
+fn brace_delta(line: &str) -> usize {
+    line.matches('{')
+        .count()
+        .saturating_sub(line.matches('}').count())
+}
+
+fn extract_macro_decl_name(line: &str) -> Option<String> {
+    let remainder = line.strip_prefix("fn ")?;
+    let name = remainder.split('(').next()?.trim();
+    (!name.is_empty()).then(|| name.to_string())
 }
 
 fn extract_exported_item_name(line: &str) -> Option<String> {

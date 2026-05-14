@@ -19,6 +19,7 @@ use core::ffi::{c_char, c_int};
 pub mod deferred;
 pub mod host_forward;
 pub mod libc_compat;
+pub mod libc_fallback;
 pub mod runtime;
 
 mod allocator;

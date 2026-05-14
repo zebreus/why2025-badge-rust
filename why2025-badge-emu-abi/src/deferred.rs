@@ -84,19 +84,10 @@ pub unsafe extern "C" fn curl_easy_getinfo(
     runtime::abort_unimplemented_symbol("curl_easy_getinfo", "networking")
 }
 
-aborting_export!("networking", fn inet_ntoa(__in: in_addr) -> *mut c_char);
-aborting_export!("networking", fn inet_aton(__cp: *const c_char, __inp: *mut in_addr) -> c_int);
-aborting_export!("networking", fn accept(s: c_int, addr: *mut sockaddr, addrlen: *mut socklen_t) -> c_int);
-aborting_export!("networking", fn bind(s: c_int, name: *const sockaddr, namelen: socklen_t) -> c_int);
-aborting_export!("networking", fn connect(s: c_int, name: *const sockaddr, namelen: socklen_t) -> c_int);
-aborting_export!("networking", fn listen(s: c_int, backlog: c_int) -> c_int);
-aborting_export!("networking", fn socket(domain: c_int, type_: c_int, protocol: c_int) -> c_int);
-aborting_export!("networking", fn freeaddrinfo(ai: *mut addrinfo));
-aborting_export!("networking", fn getaddrinfo(nodename: *const c_char, servname: *const c_char, hints: *const addrinfo, res: *mut *mut addrinfo) -> c_int);
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::host_forward::socket;
 
     #[test]
     fn deferred_symbols_have_addresses() {

@@ -1,14 +1,69 @@
 use core::cell::UnsafeCell;
 use core::ffi::{c_char, c_int, c_long, c_void};
+use core::mem;
 
-struct ErrnoCell(UnsafeCell<c_int>);
+struct PthreadKey(UnsafeCell<libc::pthread_key_t>);
+struct PthreadOnce(UnsafeCell<libc::pthread_once_t>);
 
-unsafe impl Sync for ErrnoCell {}
+unsafe impl Sync for PthreadKey {}
+unsafe impl Sync for PthreadOnce {}
 
-static ERRNO: ErrnoCell = ErrnoCell(UnsafeCell::new(0));
+static ERRNO_KEY: PthreadKey = PthreadKey(UnsafeCell::new(0));
+static ERRNO_KEY_ONCE: PthreadOnce = PthreadOnce(UnsafeCell::new(libc::PTHREAD_ONCE_INIT));
+
+unsafe extern "C" fn free_errno_slot(value: *mut c_void) {
+    if !value.is_null() {
+        unsafe {
+            libc::free(value);
+        }
+    }
+}
+
+extern "C" fn init_errno_key() {
+    let rc = unsafe { libc::pthread_key_create(ERRNO_KEY.0.get(), Some(free_errno_slot)) };
+    if rc != 0 {
+        abort_with_message(b"why2025-badge-emu-abi failed to initialize errno TLS\n")
+    }
+}
+
+fn ensure_errno_key() -> libc::pthread_key_t {
+    let rc = unsafe { libc::pthread_once(ERRNO_KEY_ONCE.0.get(), init_errno_key) };
+    if rc != 0 {
+        abort_with_message(b"why2025-badge-emu-abi failed to run errno TLS init\n")
+    }
+
+    unsafe { *ERRNO_KEY.0.get() }
+}
+
+fn errno_slot() -> *mut c_int {
+    let key = ensure_errno_key();
+    let existing = unsafe { libc::pthread_getspecific(key) }.cast::<c_int>();
+    if !existing.is_null() {
+        return existing;
+    }
+
+    let slot = unsafe { libc::malloc(mem::size_of::<c_int>().max(1)) }.cast::<c_int>();
+    if slot.is_null() {
+        abort_with_message(b"why2025-badge-emu-abi failed to allocate errno TLS\n")
+    }
+
+    unsafe {
+        *slot = 0;
+    }
+
+    let rc = unsafe { libc::pthread_setspecific(key, slot.cast::<c_void>()) };
+    if rc != 0 {
+        unsafe {
+            libc::free(slot.cast::<c_void>());
+        }
+        abort_with_message(b"why2025-badge-emu-abi failed to install errno TLS\n")
+    }
+
+    slot
+}
 
 pub fn __errno() -> *mut c_int {
-    ERRNO.0.get()
+    errno_slot()
 }
 
 pub fn set_errno(value: c_int) {
@@ -38,7 +93,7 @@ pub fn abort_with_message(message: &[u8]) -> ! {
     abort_process()
 }
 
-fn write_stderr(bytes: &[u8]) {
+pub(crate) fn write_stderr(bytes: &[u8]) {
     if bytes.is_empty() {
         return;
     }
@@ -116,6 +171,25 @@ mod tests {
         unsafe {
             assert_eq!(*__errno(), 42);
         }
+        set_errno(0);
+    }
+
+    #[test]
+    fn errno_is_thread_local() {
+        set_errno(41);
+        let main_slot = __errno() as usize;
+
+        let (thread_slot, thread_errno) = std::thread::spawn(|| {
+            set_errno(7);
+            (__errno() as usize, unsafe { *__errno() })
+        })
+        .join()
+        .expect("thread result");
+
+        assert_eq!(unsafe { *__errno() }, 41);
+        assert_eq!(thread_errno, 7);
+        assert_ne!(main_slot, thread_slot);
+
         set_errno(0);
     }
 }

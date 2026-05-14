@@ -17,6 +17,7 @@ members = [
     "why2025-badge-app-no-std",
     "why2025-badge-build",
     "why2025-badge-embedded-graphics",
+    "why2025-badge-emu-abi",
     "why2025-badge-sys-bindings",
     "why2025-badge-sys",
 ]
@@ -40,6 +41,7 @@ lto = "thin"
 [workspace.dependencies]
 why2025-badge-app-no-std = { path = "why2025-badge-app-no-std", version = "0.2.0" }
 why2025-badge-build = { path = "why2025-badge-build", version = "0.2.0" }
+why2025-badge-emu-abi = { path = "why2025-badge-emu-abi", version = "0.2.0" }
 why2025-badge-sys-bindings = { path = "why2025-badge-sys-bindings", version = "0.2.0" }
 why2025-badge-sys = { path = "why2025-badge-sys", version = "0.2.0" }
 why2025-badge-embedded-graphics = { path = "why2025-badge-embedded-graphics", version = "0.2.0" }

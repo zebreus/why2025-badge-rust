@@ -1909,6 +1909,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "why2025-badge-emu-abi"
+version = "0.2.0"
+dependencies = [
+ "libc",
+ "why2025-badge-sys-bindings",
+]
+
+[[package]]
 name = "why2025-badge-sys"
 version = "0.2.0"
 dependencies = [

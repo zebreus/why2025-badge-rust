@@ -18,4 +18,5 @@ optional = true
 package = "rustc-std-workspace-core"
 
 [features]
+no-std = []
 rustc-dep-of-std = ["dep:core"]

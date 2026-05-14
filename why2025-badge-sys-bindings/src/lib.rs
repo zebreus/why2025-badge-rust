@@ -4,7 +4,7 @@
 //! The repository's raw-ABI boundary is recorded in
 //! `docs/adr/0004-canonical-badgevms-abi-layering.md`.
 
-#![cfg_attr(target_arch = "riscv32", no_std)]
+#![cfg_attr(any(target_arch = "riscv32", feature = "no-std"), no_std)]
 #![allow(nonstandard_style)]
 #![allow(non_camel_case_types)]
 

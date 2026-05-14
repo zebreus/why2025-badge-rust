@@ -1,0 +1,24 @@
+[package]
+name = "why2025-badge-emu-abi"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Experimental no_std Linux host implementation of BadgeVMS ABI exports"
+repository.workspace = true
+keywords = ["why2025", "badge", "emulator", "abi"]
+categories = ["embedded", "no-std", "os"]
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["rlib", "staticlib", "cdylib"]
+
+[features]
+default = []
+graphics = []
+networking = []
+wifi = []
+
+[dependencies]
+why2025-badge-sys-bindings = { workspace = true, features = ["no-std"] }
+libc = { version = "0.2", default-features = false }

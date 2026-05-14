@@ -20,11 +20,16 @@ The incubating BadgeVMS std backend is intentionally partial. It currently owns 
 BadgeVMS ABI boundary for allocator, stdio, process launch, threads, sync/TLS,
 startup argv capture, environment lookup/enumeration, clocks, best-effort
 randomness, and a narrow native filesystem surface for fd-backed files,
-metadata, directory iteration, and directly backed path-mutating operations.
-Unsupported Unix-shaped behavior remains explicit: pipes are out of scope,
-current-directory APIs are not synthesized, PATH search is not added, symlinks
-and uid/gid or POSIX permission mutation are not emulated, and randomness should
-not yet be treated as a cryptographic-strength firmware guarantee.
+metadata, directory iteration, directly backed path-mutating operations,
+`std::io::IsTerminal` over BadgeVMS `isatty`, and TCP/IPv4 `std::net` operations
+backed by native `socket`, `connect`, `bind`, `listen`, `accept`, `read`,
+`write`, and `getaddrinfo` calls. Unsupported Unix-shaped behavior remains
+explicit: pipes are out of scope, current-directory APIs are not synthesized,
+PATH search is not added, UDP and Unix-domain sockets are not emulated, socket
+duplication/options/nonblocking/timeouts remain unsupported without direct
+BadgeVMS backing, symlinks and uid/gid or POSIX permission mutation are not
+emulated, and randomness should not yet be treated as a cryptographic-strength
+firmware guarantee.
 
 ## App Linking
 

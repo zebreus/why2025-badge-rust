@@ -99,7 +99,7 @@ pub extern "C" fn bzero(dst: *mut c_void, count: size_t) {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn explicit_bzero(dst: *mut c_void, count: size_t) {
+pub extern "C" fn explicit_bzero(dst: *mut c_void, count: usize) {
     let dst_bytes = dst.cast::<u8>();
 
     unsafe {
@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn explicit_bzero_clears_bytes() {
         let mut buffer = *b"secret";
-        explicit_bzero(buffer.as_mut_ptr().cast::<c_void>(), buffer.len() as size_t);
+        explicit_bzero(buffer.as_mut_ptr().cast::<c_void>(), buffer.len());
         assert_eq!(&buffer, b"\0\0\0\0\0\0");
     }
 }

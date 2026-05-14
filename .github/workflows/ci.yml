@@ -40,3 +40,225 @@ jobs:
           for manifest in examples/std-*/Cargo.toml; do
             cargo check --manifest-path "$manifest"
           done
+
+  emu-abi-signature-parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2025-08-09
+      - name: Initialize Rust manifest dependency
+        run: |
+          git config --global url."https://github.com/".insteadOf git@github.com:
+          git submodule update --init --depth 1 --filter=blob:none why2025-badge-rust-toolchain
+      - name: Build emu-abi stubs
+        run: cargo emu-abi-build
+      - name: Verify emu-abi manifest function signatures
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import sys
+
+          root = Path.cwd()
+          manual_files = {
+              "lib": root / "why2025-badge-emu-abi/src/lib.rs",
+              "libc_compat": root / "why2025-badge-emu-abi/src/libc_compat.rs",
+              "host_forward": root / "why2025-badge-emu-abi/src/host_forward.rs",
+              "deferred_fn": root / "why2025-badge-emu-abi/src/deferred.rs",
+              "deferred_macro": root / "why2025-badge-emu-abi/src/deferred.rs",
+          }
+          generated_candidates = sorted(
+              root.glob(
+                  "target/x86_64-unknown-linux-gnu/debug/build/why2025-badge-emu-abi-*/out/generated_stubs.rs"
+              ),
+              key=lambda path: path.stat().st_mtime,
+          )
+          if not generated_candidates:
+              raise SystemExit("generated_stubs.rs not found; run cargo emu-abi-build first")
+          generated = generated_candidates[-1]
+          bindings = root / "why2025-badge-sys-bindings/src/bindings.rs"
+          symbols = root / "why2025-badge-sys-bindings/firmware/badgevms/symbols.yml"
+
+          fn_re = re.compile(
+              r'pub\s+(?:unsafe\s+)?extern\s+"C"\s+fn\s+(\w+)\s*\((.*?)\)\s*(?:->\s*([^\{\n]+(?:\n[^\{\n]+)*?))?\s*\{',
+              re.S,
+          )
+          macro_re = re.compile(
+              r'aborting_export!\(\s*"[^"]+"\s*,\s*fn\s+(\w+)\s*\((.*?)\)\s*(?:->\s*([^\)]+?))?\s*\);',
+              re.S,
+          )
+          alias_re = re.compile(r'type\s+(\w+)\s*=\s*([^;]+);')
+          bind_re = re.compile(r'pub\s+fn\s+(\w+)\s*\((.*?)\)\s*(?:->\s*([^;]+))?;', re.S)
+          function_sections = {
+              "simple_function",
+              "simple_function_extern",
+              "wrapped_function",
+          }
+
+          def split_args(arg_blob: str) -> list[str]:
+              arg_blob = arg_blob.strip()
+              if not arg_blob:
+                  return []
+              parts = []
+              current = []
+              depth = 0
+              for ch in arg_blob:
+                  if ch == "," and depth == 0:
+                      part = "".join(current).strip()
+                      if part:
+                          parts.append(part)
+                      current = []
+                      continue
+                  current.append(ch)
+                  if ch in "(<[":
+                      depth += 1
+                  elif ch in ")>]":
+                      depth -= 1
+              part = "".join(current).strip()
+              if part:
+                  parts.append(part)
+              return parts
+
+          def normalize(ty: str) -> str:
+              ty = ty.strip()
+              ty = ty.replace("::core::ffi::", "")
+              ty = ty.replace("core::ffi::", "")
+              ty = ty.replace("::core::ptr::", "")
+              ty = re.sub(r"\s+", " ", ty)
+              ty = ty.replace(" *", "*").replace("* ", "*")
+              ty = ty.replace("& mut", "&mut").replace("& ", "&")
+              ty = ty.replace(" ,", ",")
+              return ty
+
+          def parse_aliases(text: str) -> dict[str, str]:
+              aliases = {}
+              for name, target in alias_re.findall(text):
+                  aliases[name.strip()] = normalize(target)
+              return aliases
+
+          def resolve_aliases(ty: str, aliases: dict[str, str]) -> str:
+              ty = normalize(ty)
+              seen = set()
+              while ty in aliases and ty not in seen:
+                  seen.add(ty)
+                  ty = normalize(aliases[ty])
+              return ty
+
+          def parse_signature(name: str, args_blob: str, ret: str | None, aliases: dict[str, str], source: str) -> dict[str, object]:
+              args = []
+              for arg in split_args(args_blob):
+                  if arg == "...":
+                      args.append("...")
+                      continue
+                  if ":" in arg:
+                      _, ty = arg.split(":", 1)
+                  else:
+                      ty = arg
+                  args.append(resolve_aliases(ty, aliases))
+              return {
+                  "name": name,
+                  "args": args,
+                  "ret": resolve_aliases(ret or "()", aliases),
+                  "source": source,
+              }
+
+          def parse_manual_file(label: str, path: Path) -> dict[str, dict[str, object]]:
+              text = path.read_text()
+              aliases = parse_aliases(text)
+              parsed = {}
+              for name, args_blob, ret in fn_re.findall(text):
+                  parsed[name] = parse_signature(name, args_blob, ret, aliases, label)
+              if label == "deferred_macro":
+                  for name, args_blob, ret in macro_re.findall(text):
+                      parsed[name] = parse_signature(name, args_blob, ret, aliases, label)
+              return parsed
+
+          def parse_bindings(path: Path) -> dict[str, dict[str, object]]:
+              parsed = {}
+              for name, args_blob, ret in bind_re.findall(path.read_text()):
+                  args = []
+                  for arg in split_args(args_blob):
+                      if arg == "...":
+                          args.append("...")
+                          continue
+                      if ":" in arg:
+                          _, ty = arg.split(":", 1)
+                      else:
+                          ty = arg
+                      args.append(normalize(ty))
+                  parsed[name] = {
+                      "args": args,
+                      "ret": normalize(ret or "()"),
+                  }
+              return parsed
+
+          def parse_manifest_functions(path: Path) -> set[str]:
+              names = set()
+              current_section = None
+              for raw_line in path.read_text().splitlines():
+                  trimmed = raw_line.strip()
+                  if not trimmed or trimmed == "---" or trimmed.startswith("#"):
+                      continue
+                  if trimmed.endswith(":"):
+                      section = trimmed[:-1]
+                      current_section = section if section in function_sections else None
+                      continue
+                  if current_section is None or not trimmed.startswith("- "):
+                      continue
+                  names.add(trimmed[2:].strip())
+              return names
+
+          manifest_functions = parse_manifest_functions(symbols)
+          binding_map = parse_bindings(bindings)
+          missing_bindings = sorted(manifest_functions - binding_map.keys())
+          if missing_bindings:
+              print("bindings_missing_for_manifest_functions=")
+              for name in missing_bindings:
+                  print(name)
+              sys.exit(1)
+
+          all_exports = {}
+          for label, path in manual_files.items():
+              if label == "deferred_macro":
+                  for name, sig in parse_manual_file(label, path).items():
+                      all_exports.setdefault(name, sig)
+              else:
+                  all_exports.update(parse_manual_file(label, path))
+          for name, sig in parse_manual_file("generated_stub", generated).items():
+              all_exports.setdefault(name, sig)
+
+          missing_exports = sorted(manifest_functions - all_exports.keys())
+          mismatches = []
+          source_counts = {}
+          for name in sorted(manifest_functions & all_exports.keys()):
+              sig = all_exports[name]
+              bind = binding_map[name]
+              source_counts[sig["source"]] = source_counts.get(sig["source"], 0) + 1
+              if sig["args"] != bind["args"] or sig["ret"] != bind["ret"]:
+                  mismatches.append((name, sig, bind))
+
+          print(f"audited_function_symbols={len(manifest_functions)}")
+          for source, count in sorted(source_counts.items()):
+              print(f"{source}={count}")
+          print(f"missing_exports={len(missing_exports)}")
+          print(f"mismatches={len(mismatches)}")
+
+          if missing_exports:
+              print("missing_export_list=")
+              for name in missing_exports:
+                  print(name)
+
+          if mismatches:
+              for name, sig, bind in mismatches:
+                  print(name)
+                  print(f"  source kind: {sig['source']}")
+                  print(f"  source args: {sig['args']}")
+                  print(f"  binding args: {bind['args']}")
+                  print(f"  source ret: {sig['ret']}")
+                  print(f"  binding ret: {bind['ret']}")
+
+          if missing_exports or mismatches:
+              sys.exit(1)
+          PY

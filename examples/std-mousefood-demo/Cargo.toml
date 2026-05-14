@@ -1,0 +1,11 @@
+[package]
+name = "std-mousefood-demo"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+why2025-badge-embedded-graphics = { path = "../../why2025-badge-embedded-graphics", version = "0.2.0" }
+embedded-graphics = "=0.8.1"
+mousefood = { git = "https://github.com/j-g00da/mousefood.git", rev = "8d05b0255528c8b56cd8bf880484a5336ee06f02", default-features = false, features = ["fonts"] }
+ratatui = { version = "=0.30.0-alpha.5", default-features = false }

@@ -1,0 +1,10 @@
+= std ratatui demo
+
+Richer Rust `std` App for the BadgeVMS std target using the existing Badge window plus the
+mousefood embedded backend and ratatui widgets.
+
+Build with an installed `badgevms-std` toolchain:
+
+----
+rustup run badgevms-std cargo build --target riscv32imafc-unknown-badgevms --manifest-path examples/std-ratatui-demo/Cargo.toml
+----

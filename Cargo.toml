@@ -2,6 +2,8 @@
 resolver = "3"
 exclude = [
     "examples/std-hello-world",
+    "examples/std-mousefood-demo",
+    "examples/std-ratatui-demo",
     "why2025-badge-rust-toolchain",
 ]
 members = [

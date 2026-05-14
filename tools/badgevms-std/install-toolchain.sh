@@ -5,8 +5,12 @@ BADGEVMS_RELEASE_REPO=${BADGEVMS_RELEASE_REPO:-zebreus/why2025-badge-rust}
 
 detect_host() {
     if command -v rustc >/dev/null 2>&1; then
-        rustc -vV | sed -n 's/^host: //p'
-        return
+        local rustc_host
+        rustc_host=$(rustc -vV 2>/dev/null | sed -n 's/^host: //p' || true)
+        if [[ -n "$rustc_host" ]]; then
+            printf '%s\n' "$rustc_host"
+            return
+        fi
     fi
 
     case "$(uname -s)-$(uname -m)" in

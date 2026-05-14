@@ -16,6 +16,10 @@ jobs:
           targets: riscv32imafc-unknown-none-elf
       - name: Install host dependencies
         run: sudo apt-get update && sudo apt-get install -y libx11-dev libxcursor-dev libxkbcommon-dev libgl1-mesa-dev libwayland-dev zlib1g-dev
+      - name: Initialize Rust manifest dependency
+        run: |
+          git config --global url."https://github.com/".insteadOf git@github.com:
+          git submodule update --init --depth 1 --filter=blob:none why2025-badge-rust-toolchain
       - name: Format
         run: cargo fmt --check
       - name: Host build using Emulation

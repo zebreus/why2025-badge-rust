@@ -12,5 +12,10 @@ categories = ["embedded", "no-std", "os", "graphics"]
 [lib]
 path = "src/lib.rs"
 
+[dependencies.core]
+path = "../why2025-badge-rust-toolchain/library/rustc-std-workspace-core"
+optional = true
+package = "rustc-std-workspace-core"
+
 [features]
-rustc-dep-of-std = []
+rustc-dep-of-std = ["dep:core"]

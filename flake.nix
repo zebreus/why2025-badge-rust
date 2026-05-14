@@ -71,6 +71,7 @@
             pkgs.ninja
             pkgs.pkg-config
             pkgs.openssl
+            pkgs.just
             pkgs.python3
             pkgs.binutils
             pkgs.llvmPackages.bintools

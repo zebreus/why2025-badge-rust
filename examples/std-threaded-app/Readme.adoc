@@ -1,3 +1,7 @@
 = std threaded app
 
-Exercises the v1 `std::thread`, TLS destructor, `park_timeout`, `unpark`, `Mutex`, and `Condvar` contract.
+Exploratory BadgeVMS std demo.
+
+Repository CI only host-checks this crate with `cargo check`. Its on-device behavior is not exercised by CI or release automation, so the API list below is current intent, not a compatibility guarantee.
+
+Current focus: the v1 `std::thread`, TLS destructor, `park_timeout`, `unpark`, `Mutex`, and `Condvar` contract.

@@ -1,3 +1,7 @@
 = std fs demo
 
-Exercises `std::fs::File`, `read`, `write`, and `metadata` against a BadgeVMS path. The default on-device path is `FLASH0:[RUST_STD]HELLO.TXT`.
+Exploratory BadgeVMS std demo.
+
+Repository CI only host-checks this crate with `cargo check`. Its on-device behavior is not exercised by CI or release automation, so the notes below are current intent, not a compatibility guarantee.
+
+Current focus: `std::fs::File`, `read`, `write`, and `metadata` against a BadgeVMS path. The default on-device path is `FLASH0:[RUST_STD]HELLO.TXT`.

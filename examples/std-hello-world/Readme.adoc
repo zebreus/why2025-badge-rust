@@ -2,8 +2,10 @@
 
 Minimal Rust `std` App for the BadgeVMS std target.
 
-Build with a linked BadgeVMS std toolchain:
+This is the example exercised by the packaged-toolchain smoke checks.
+
+Build with an installed `badgevms-std` toolchain:
 
 ----
-cargo +badgevms-std badgevms-std-build --manifest-path examples/std-hello-world/Cargo.toml
+rustup run badgevms-std cargo build --target riscv32imafc-unknown-badgevms --manifest-path examples/std-hello-world/Cargo.toml
 ----

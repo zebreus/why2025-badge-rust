@@ -1,9 +1,13 @@
 = std TCP demo
 
-Exercises the v1 TCP path. Run with a fixture address:
+Exploratory BadgeVMS std demo.
+
+Repository CI only host-checks this crate with `cargo check`. Its on-device behavior is not exercised by CI or release automation, so the notes below are current intent, not a compatibility guarantee.
+
+Current focus: the v1 TCP path. If you run it manually on BadgeVMS, pass a fixture address:
 
 ----
 std-tcp-demo example.org:80
 ----
 
-UDP and Unix-domain sockets are intentionally out of scope for v1.
+UDP and Unix-domain sockets remain intentionally out of scope for v1.

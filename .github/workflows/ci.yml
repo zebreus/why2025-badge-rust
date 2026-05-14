@@ -40,5 +40,3 @@ jobs:
           for manifest in examples/std-*/Cargo.toml; do
             cargo check --manifest-path "$manifest"
           done
-      - name: Repository-side BadgeVMS std smoke
-        run: ./tools/badgevms-std/checks/ci-smoke.sh

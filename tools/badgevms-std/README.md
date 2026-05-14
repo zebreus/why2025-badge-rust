@@ -17,7 +17,10 @@ the supported entrypoint.
   no non-empty `target_env` such as `newlib`.
 - `checks/run-smoke.sh` — build a std example and inspect the ELF artifact.
 - `checks/inspect-elf.sh` — verify BadgeVMS shared-object shape and closed exports.
-- `checks/ci-smoke.sh` — run repository-side checks that do not require BadgeVMS hardware.
+
+Repository CI runs host-side format, emulation, and `cargo check` for `examples/std-*` directly
+from the workflow. BadgeVMS target smoke stays in the release workflow, where the packaged
+toolchain is available.
 
 The std port uses `why2025-badge-sys-bindings` as the raw BadgeVMS ABI source. The Rust fork should
 not carry a BadgeVMS-specific `library/libc` fork.

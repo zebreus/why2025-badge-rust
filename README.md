@@ -14,8 +14,7 @@ This repository now documents three separate workflows:
 See [docs/adr/0004-canonical-badgevms-abi-layering.md](docs/adr/0004-canonical-badgevms-abi-layering.md)
 for the raw-ABI boundary, [docs/adr/0005-support-badgevms-std-through-the-superproject.md](docs/adr/0005-support-badgevms-std-through-the-superproject.md)
 for the supported std-target entrypoint, [tools/badgevms-std/README.md](tools/badgevms-std/README.md)
-for the current scripts, and [tests/badgevms-std/README.md](tests/badgevms-std/README.md) for the
-conformance inventory.
+for the current scripts.
 
 ## App Linking
 

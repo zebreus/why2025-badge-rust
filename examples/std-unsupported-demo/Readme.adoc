@@ -1,7 +1,0 @@
-= std unsupported demo
-
-Exploratory BadgeVMS std demo.
-
-Repository CI only host-checks this crate with `cargo check`. Its on-device behavior is not exercised by CI or release automation, so the notes below are current intent, not a compatibility guarantee.
-
-Current focus: APIs that should fail explicitly on BadgeVMS v1, including cwd, UDP, and process stdio redirection.

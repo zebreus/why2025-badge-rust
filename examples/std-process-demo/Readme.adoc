@@ -1,7 +1,0 @@
-= std process demo
-
-Exploratory BadgeVMS std demo.
-
-Repository CI only host-checks this crate with `cargo check`. Its on-device behavior is not exercised by CI or release automation, so the notes below are current intent, not a compatibility guarantee.
-
-Current focus: the narrow `std::process::Command` subset. On BadgeVMS the default child path is `APP:std-process-demo`; pass an explicit BadgeVMS executable path if needed.

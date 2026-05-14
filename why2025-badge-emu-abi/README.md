@@ -10,8 +10,9 @@ Current scope:
 - Production crate is `no_std` with `alloc` available for later phases.
 - Host target is Linux/ELF only.
 - Crate artifacts include `rlib`, `staticlib`, and `cdylib`.
-- A first libc-compatible slice exports errno, ctype normalization symbols, and simple memory/string helpers.
-- Graphics, networking, cURL, and Wi-Fi are intentionally deferred and currently abort with diagnostics.
+- The crate now exports the full manifest surface from `symbols.yml`.
+- Easy host-backed wrapped exports are forwarded with `RTLD_NEXT`.
+- Remaining not-yet-implemented families are still exported, but many currently terminate via deterministic generated abort stubs.
 
 The crate treats exported symbols as the contract. Later phases will add manifest-driven symbol audits,
 C/dlopen consumers, and differential tests against the existing emulator.
@@ -21,6 +22,7 @@ Validation aliases:
 - `cargo emu-abi-check`
 - `cargo emu-abi-build`
 - `cargo emu-abi-test`
+- `tools/emu-abi/checks/report-symbol-coverage.sh`
 - `tools/emu-abi/checks/inspect-exports.sh`
 
 The test alias intentionally runs the unit-test target only. The crate's production artifacts are

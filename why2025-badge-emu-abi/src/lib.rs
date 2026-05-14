@@ -17,10 +17,15 @@ extern crate std;
 use core::ffi::{c_char, c_int};
 
 pub mod deferred;
+pub mod host_forward;
 pub mod libc_compat;
 pub mod runtime;
 
 mod allocator;
+#[cfg(not(test))]
+mod generated {
+    include!(concat!(env!("OUT_DIR"), "/generated_stubs.rs"));
+}
 
 pub mod types {
     pub use why2025_badge_sys_bindings::types::*;

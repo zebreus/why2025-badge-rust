@@ -1,5 +1,5 @@
 use core::cell::UnsafeCell;
-use core::ffi::{c_int, c_long};
+use core::ffi::{c_char, c_int, c_long, c_void};
 
 struct ErrnoCell(UnsafeCell<c_int>);
 
@@ -21,6 +21,13 @@ pub fn abort_unimplemented_symbol(symbol: &str, family: &str) -> ! {
     write_stderr(b"why2025-badge-emu-abi unsupported ");
     write_stderr(family.as_bytes());
     write_stderr(b" symbol: ");
+    write_stderr(symbol.as_bytes());
+    write_stderr(b"\n");
+    abort_process()
+}
+
+pub fn abort_missing_host_symbol(symbol: &str) -> ! {
+    write_stderr(b"why2025-badge-emu-abi could not resolve host symbol: ");
     write_stderr(symbol.as_bytes());
     write_stderr(b"\n");
     abort_process()
@@ -48,6 +55,31 @@ fn write_stderr(bytes: &[u8]) {
 
 fn raw_syscall0(number: c_long) -> c_long {
     unsafe { libc::syscall(number) as c_long }
+}
+
+pub unsafe fn resolve_next_symbol(symbol: &'static [u8]) -> *mut c_void {
+    unsafe {
+        libc::dlerror();
+        let resolved = libc::dlsym(libc::RTLD_NEXT, symbol.as_ptr().cast::<c_char>());
+        let error = libc::dlerror();
+
+        if error.is_null() && !resolved.is_null() {
+            resolved
+        } else {
+            let name = core::str::from_utf8(&symbol[..symbol.len().saturating_sub(1)])
+                .unwrap_or("<invalid>");
+            abort_missing_host_symbol(name)
+        }
+    }
+}
+
+pub unsafe fn resolve_next_function<T: Copy>(symbol: &'static [u8]) -> T {
+    let resolved = unsafe { resolve_next_symbol(symbol) };
+    unsafe { core::mem::transmute_copy::<*mut c_void, T>(&resolved) }
+}
+
+pub unsafe fn resolve_next_object_value<T: Copy>(symbol: &'static [u8]) -> T {
+    unsafe { *resolve_next_symbol(symbol).cast::<T>() }
 }
 
 fn raw_syscall1(number: c_long, arg0: c_long) -> c_long {

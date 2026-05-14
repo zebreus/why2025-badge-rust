@@ -8,6 +8,7 @@ description = "Experimental no_std Linux host implementation of BadgeVMS ABI exp
 repository.workspace = true
 keywords = ["why2025", "badge", "emulator", "abi"]
 categories = ["embedded", "no-std", "os"]
+build = "build.rs"
 
 [lib]
 path = "src/lib.rs"

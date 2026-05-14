@@ -2,6 +2,7 @@
 set -euo pipefail
 
 artifact="${1:-target/x86_64-unknown-linux-gnu/debug/libwhy2025_badge_emu_abi.so}"
+report="${2:-target/x86_64-unknown-linux-gnu/debug/why2025-badge-emu-abi-symbol-report.txt}"
 
 if [[ ! -f "$artifact" ]]; then
     echo "error: emu-abi cdylib not found: $artifact" >&2
@@ -9,43 +10,18 @@ if [[ ! -f "$artifact" ]]; then
     exit 1
 fi
 
-if command -v nm >/dev/null 2>&1; then
-    symbol_list="$(nm -D --defined-only "$artifact")"
-elif command -v llvm-nm >/dev/null 2>&1; then
-    symbol_list="$(llvm-nm -D --defined-only "$artifact")"
-else
-    echo "error: need nm or llvm-nm in PATH" >&2
+script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
+bash "$script_dir/report-symbol-coverage.sh" "$artifact" "$report"
+
+if ! grep -Eq '^missing_symbols:[[:space:]]+0$' "$report"; then
+    echo "error: emu-abi is still missing exported manifest symbols" >&2
     exit 1
 fi
 
-required_symbols=(
-    __errno
-    _ctype_
-    _ctype_b
-    strlen
-    memcmp
-    memcpy
-    memmove
-    memset
-    memchr
-    bzero
-    explicit_bzero
-    window_create
-    wifi_get_status
-    curl_easy_init
-    socket
-)
-
-missing=0
-for symbol in "${required_symbols[@]}"; do
-    if ! grep -Eq "[[:space:]]${symbol}$" <<<"$symbol_list"; then
-        echo "missing required emu-abi export: $symbol" >&2
-        missing=1
-    fi
-done
-
-if [[ "$missing" -ne 0 ]]; then
+if ! grep -Eq '^extra_symbols:[[:space:]]+0$' "$report"; then
+    echo "error: emu-abi exports symbols that are not present in the BadgeVMS manifest" >&2
     exit 1
 fi
 
-echo "emu-abi export inspection passed: ${#required_symbols[@]} symbols present in $artifact"
+echo "emu-abi export inspection passed: exact 1:1 manifest parity present in $artifact"
+

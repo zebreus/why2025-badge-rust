@@ -1,0 +1,19 @@
+artifact: target/x86_64-unknown-linux-gnu/debug/libwhy2025_badge_emu_abi.so
+manifest_symbols: 831
+exported_symbols: 831
+matching_symbols: 831
+missing_symbols: 0
+extra_symbols: 0
+
+per_section:
+simple_function present=658 missing=0
+simple_function_extern present=55 missing=0
+wrapped_function present=112 missing=0
+simple_object present=1 missing=0
+wrapped_object present=5 missing=0
+
+missing:
+none
+
+extra:
+none

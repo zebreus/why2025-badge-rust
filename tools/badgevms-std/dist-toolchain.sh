@@ -17,12 +17,11 @@ Defaults:
   dist-base-url: https://zebreus.github.io/why2025-badge-rust/dist
 
 Environment:
-  BADGEVMS_DIST_DATE       Manifest/archive date. Default: 2099-01-01.
-  BADGEVMS_DIST_CHANNEL    Rust dist channel. Default: nightly.
-  BADGEVMS_DIST_TOOLCHAIN  Rustup toolchain users install. Default: nightly-2099-01-01.
-    BADGEVMS_DIST_BASE_URL   Public /dist URL used inside manifests.
-    BADGEVMS_DIST_REUSE_ARTIFACTS  Reuse existing Rust dist tarballs when set to 1.
-    BADGEVMS_TARGET          BadgeVMS target triple. Default: riscv32imafc-unknown-badgevms.
+BADGEVMS_DIST_DATE       Manifest/archive date. Default: 2099-01-01.
+BADGEVMS_DIST_CHANNEL    Rust dist channel. Default: nightly.
+BADGEVMS_DIST_TOOLCHAIN  Rustup toolchain users install. Default: nightly-2099-01-01.
+BADGEVMS_DIST_BASE_URL   Public /dist URL used inside manifests.
+BADGEVMS_TARGET          BadgeVMS target triple. Default: riscv32imafc-unknown-badgevms.
 USAGE
 }
 
@@ -56,7 +55,6 @@ target=${BADGEVMS_TARGET:-riscv32imafc-unknown-badgevms}
 dist_date=${BADGEVMS_DIST_DATE:-2099-01-01}
 dist_channel=${BADGEVMS_DIST_CHANNEL:-nightly}
 dist_toolchain=${BADGEVMS_DIST_TOOLCHAIN:-nightly-2099-01-01}
-reuse_artifacts=${BADGEVMS_DIST_REUSE_ARTIFACTS:-0}
 out_root=${positionals[0]:-$PROJECT_ROOT/dist/badgevms-rustup}
 base_url=${positionals[1]:-${BADGEVMS_DIST_BASE_URL:-https://zebreus.github.io/why2025-badge-rust/dist}}
 
@@ -72,11 +70,6 @@ fi
 
 if [[ "$dist_toolchain" != nightly-* ]]; then
     printf 'error: BADGEVMS_DIST_TOOLCHAIN must be a rustup-accepted nightly-* name, got %s\n' "$dist_toolchain" >&2
-    exit 1
-fi
-
-if [[ "$reuse_artifacts" != 0 && "$reuse_artifacts" != 1 ]]; then
-    printf 'error: BADGEVMS_DIST_REUSE_ARTIFACTS must be 0 or 1, got %s\n' "$reuse_artifacts" >&2
     exit 1
 fi
 
@@ -119,15 +112,10 @@ CONFIG
 
 cd "$repo"
 
-rust_dist="$repo/build/dist"
-if [[ "$reuse_artifacts" == 1 ]]; then
-    [[ -d "$rust_dist" ]] || { printf 'error: missing reusable Rust dist artifact directory: %s\n' "$rust_dist" >&2; exit 1; }
-    printf 'reusing existing Rust dist artifacts: %s\n' "$rust_dist"
-else
-    python3 ./x.py dist --config "$config" --target "$host" extended rust-src
-    python3 ./x.py dist --config "$config" --target "$target" rust-std
-fi
+python3 ./x.py dist --config "$config" --target "$host" extended rust-src
+python3 ./x.py dist --config "$config" --target "$target" rust-std
 
+rust_dist="$repo/build/dist"
 date_dir="$out_root/dist/$dist_date"
 rm -rf "$out_root/dist"
 mkdir -p "$date_dir"

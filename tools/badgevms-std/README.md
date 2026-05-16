@@ -32,7 +32,7 @@ and does not collide with official Rust nightly toolchains in a normal rustup ho
 
 ## Maintainer packaging flow
 
-Build a Pages-ready tree locally:
+Build a locally served tree for development:
 
 ```sh
 tools/badgevms-std/dist-toolchain.sh site http://127.0.0.1:8000/dist
@@ -45,17 +45,13 @@ Then validate from another shell:
 tools/badgevms-std/checks/run-dist-smoke.sh http://127.0.0.1:8000 nightly-2099-01-01
 ```
 
-The manifest embeds absolute component URLs. If you smoke-test a locally served tree before
-deploying, build it with the local `/dist` URL, then regenerate the deployable tree from the
-existing tarballs:
+The manifest embeds absolute component URLs. CI deploys the public `site/` shape to GitHub Pages,
+but does not run rustup smoke tests inside the deploy workflow. After deployment, validate the
+public Pages URL locally:
 
 ```sh
-BADGEVMS_DIST_REUSE_ARTIFACTS=1 \
-  tools/badgevms-std/dist-toolchain.sh site https://zebreus.github.io/why2025-badge-rust/dist
+tools/badgevms-std/checks/run-dist-smoke.sh https://zebreus.github.io/why2025-badge-rust nightly-2099-01-01
 ```
-
-CI deploys the same `site/` shape to GitHub Pages and then validates the public Pages URL from a
-clean Ubuntu container.
 
 The std port uses `why2025-badge-sys-bindings` as the raw BadgeVMS ABI source. The Rust fork should
 not carry a BadgeVMS-specific `library/libc` fork.

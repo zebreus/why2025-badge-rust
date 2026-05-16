@@ -46,8 +46,8 @@ jobs:
       - name: Initialize bundled Rust toolchain
         run: |
           git config --global url."https://github.com/".insteadOf git@github.com:
-          git submodule update --init why2025-badge-rust-toolchain
-          git -C why2025-badge-rust-toolchain submodule update --init \
+          git submodule update --init --depth 1 why2025-badge-rust-toolchain
+          git -C why2025-badge-rust-toolchain submodule update --init --depth 1 --jobs 3 \
             library/backtrace \
             src/llvm-project \
             src/tools/cargo

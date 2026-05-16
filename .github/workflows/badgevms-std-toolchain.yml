@@ -51,16 +51,41 @@ jobs:
             library/backtrace \
             src/llvm-project \
             src/tools/cargo
+      - name: Capture toolchain cache inputs
+        id: toolchain-cache-inputs
+        run: |
+          echo "host=$(rustc -vV | sed -n 's/^host: //p')" >> "$GITHUB_OUTPUT"
+          echo "toolchain_sha=$(git -C why2025-badge-rust-toolchain rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Restore LLVM build cache
+        id: llvm-cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            why2025-badge-rust-toolchain/build/${{ steps.toolchain-cache-inputs.outputs.host }}/ci-llvm
+            why2025-badge-rust-toolchain/build/${{ steps.toolchain-cache-inputs.outputs.host }}/lld
+            why2025-badge-rust-toolchain/build/${{ steps.toolchain-cache-inputs.outputs.host }}/llvm
+          key: badgevms-std-llvm-${{ runner.os }}-${{ steps.toolchain-cache-inputs.outputs.host }}-${{ hashFiles('.github/workflows/badgevms-std-toolchain.yml', 'tools/badgevms-std/dist-toolchain.sh') }}-${{ steps.toolchain-cache-inputs.outputs.toolchain_sha }}
+          restore-keys: |
+            badgevms-std-llvm-${{ runner.os }}-${{ steps.toolchain-cache-inputs.outputs.host }}-${{ hashFiles('.github/workflows/badgevms-std-toolchain.yml', 'tools/badgevms-std/dist-toolchain.sh') }}-
       - uses: Swatinem/rust-cache@v2
         with:
           shared-key: badgevms-std-dist
           cache-on-failure: true
           workspaces: |
-            why2025-badge-rust-toolchain -> build
+            why2025-badge-rust-toolchain
       - name: Build rustup dist tree
         env:
           BADGEVMS_DIST_BASE_URL: ${{ env.BADGEVMS_PAGES_ROOT }}/dist
         run: ./tools/badgevms-std/dist-toolchain.sh site "$BADGEVMS_DIST_BASE_URL"
+      - name: Save LLVM build cache
+        if: ${{ always() && !cancelled() && steps.llvm-cache-restore.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            why2025-badge-rust-toolchain/build/${{ steps.toolchain-cache-inputs.outputs.host }}/ci-llvm
+            why2025-badge-rust-toolchain/build/${{ steps.toolchain-cache-inputs.outputs.host }}/lld
+            why2025-badge-rust-toolchain/build/${{ steps.toolchain-cache-inputs.outputs.host }}/llvm
+          key: badgevms-std-llvm-${{ runner.os }}-${{ steps.toolchain-cache-inputs.outputs.host }}-${{ hashFiles('.github/workflows/badgevms-std-toolchain.yml', 'tools/badgevms-std/dist-toolchain.sh') }}-${{ steps.toolchain-cache-inputs.outputs.toolchain_sha }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

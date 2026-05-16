@@ -2,6 +2,7 @@
 set -euo pipefail
 
 PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+INSTALL_SCRIPT_SOURCE="$PROJECT_ROOT/tools/badgevms-std/install.sh"
 
 usage() {
     cat <<'USAGE'
@@ -44,6 +45,7 @@ done
 repo="$PROJECT_ROOT/why2025-badge-rust-toolchain"
 [[ -d "$repo/.git" || -f "$repo/.git" ]] || { printf 'error: initialize why2025-badge-rust-toolchain\n' >&2; exit 1; }
 [[ -x "$repo/x.py" ]] || { printf 'error: resolved Rust checkout has no executable x.py: %s\n' "$repo" >&2; exit 1; }
+[[ -f "$INSTALL_SCRIPT_SOURCE" ]] || { printf 'error: missing installer script template: %s\n' "$INSTALL_SCRIPT_SOURCE" >&2; exit 1; }
 
 for submodule in library/backtrace src/llvm-project src/tools/cargo; do
     [[ -e "$repo/$submodule/.git" ]] || \
@@ -174,12 +176,17 @@ BadgeVMS Rust std rustup dist tree
 
 Install with:
 
-  RUSTUP_DIST_SERVER=<this site root> rustup toolchain install $dist_toolchain --profile minimal
-  RUSTUP_DIST_SERVER=<this site root> rustup target add $target --toolchain $dist_toolchain
-  RUSTUP_DIST_SERVER=<this site root> rustup component add rust-src --toolchain $dist_toolchain
+    curl -fsSL <this site root>/install.sh | bash
 
-The deployed site root must contain this file and the dist/ directory next to it.
+Then use:
+
+    cargo +badgevms build --target $target
+
+The deployed site root must contain this file, install.sh, and the dist/ directory next to them.
 EOF
+
+cp "$INSTALL_SCRIPT_SOURCE" "$out_root/install.sh"
+chmod +x "$out_root/install.sh"
 
 printf 'built BadgeVMS rustup dist tree: %s\n' "$out_root"
 printf 'dist server root: %s\n' "${base_url%/dist}"

@@ -19,16 +19,13 @@ for the broader superproject ownership boundary.
 ## Consumer install flow
 
 ```sh
-export RUSTUP_DIST_SERVER=https://zebreus.github.io/why2025-badge-rust
-rustup toolchain install nightly-2099-01-01 --profile minimal
-rustup target add riscv32imafc-unknown-badgevms --toolchain nightly-2099-01-01
-rustup component add rust-src --toolchain nightly-2099-01-01
-cargo +nightly-2099-01-01 build --target riscv32imafc-unknown-badgevms
+curl -fsSL https://zebreus.github.io/why2025-badge-rust/install.sh | bash
+cargo +badgevms build --target riscv32imafc-unknown-badgevms
 ```
 
-The toolchain is intentionally named `nightly-2099-01-01` because stock rustup rejects arbitrary
-installable channel names such as `badgevms`. A future-dated nightly name is accepted by stock rustup
-and does not collide with official Rust nightly toolchains in a normal rustup home.
+The public installer hides the internal toolchain name and links the installed toolchain locally as
+`badgevms`. Under the hood it still installs the pinned `nightly-2099-01-01` toolchain because
+stock rustup rejects arbitrary installable channel names such as `badgevms`.
 
 ## Maintainer packaging flow
 
@@ -45,11 +42,19 @@ Then validate from another shell:
 tools/badgevms-std/checks/run-dist-smoke.sh http://127.0.0.1:8000 nightly-2099-01-01
 ```
 
+The published Pages root also contains `install.sh`. You can test the public-facing installer
+against a local server by overriding the Pages root:
+
+```sh
+BADGEVMS_PAGES_ROOT=http://127.0.0.1:8000 bash site/install.sh
+```
+
 The manifest embeds absolute component URLs. CI deploys the public `site/` shape to GitHub Pages,
 but does not run rustup smoke tests inside the deploy workflow. After deployment, validate the
 public Pages URL locally:
 
 ```sh
+curl -fsSL https://zebreus.github.io/why2025-badge-rust/install.sh | bash
 tools/badgevms-std/checks/run-dist-smoke.sh https://zebreus.github.io/why2025-badge-rust nightly-2099-01-01
 ```
 

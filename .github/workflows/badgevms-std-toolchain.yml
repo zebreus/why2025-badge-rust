@@ -53,7 +53,7 @@ jobs:
             src/tools/cargo
       - name: Build rustup dist tree
         env:
-          BADGEVMS_DIST_BASE_URL: ${{ env.BADGEVMS_PAGES_ROOT }}/dist
+          BADGEVMS_DIST_BASE_URL: http://127.0.0.1:8000/dist
         run: ./tools/badgevms-std/dist-toolchain.sh site "$BADGEVMS_DIST_BASE_URL"
       - name: Test generated dist tree locally
         run: |
@@ -67,6 +67,11 @@ jobs:
             sleep 1
           done
           ./tools/badgevms-std/checks/run-dist-smoke.sh http://127.0.0.1:8000 "$BADGEVMS_DIST_TOOLCHAIN"
+      - name: Regenerate Pages dist manifest
+        env:
+          BADGEVMS_DIST_BASE_URL: ${{ env.BADGEVMS_PAGES_ROOT }}/dist
+          BADGEVMS_DIST_REUSE_ARTIFACTS: "1"
+        run: ./tools/badgevms-std/dist-toolchain.sh site "$BADGEVMS_DIST_BASE_URL"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -45,6 +45,15 @@ Then validate from another shell:
 tools/badgevms-std/checks/run-dist-smoke.sh http://127.0.0.1:8000 nightly-2099-01-01
 ```
 
+The manifest embeds absolute component URLs. If you smoke-test a locally served tree before
+deploying, build it with the local `/dist` URL, then regenerate the deployable tree from the
+existing tarballs:
+
+```sh
+BADGEVMS_DIST_REUSE_ARTIFACTS=1 \
+  tools/badgevms-std/dist-toolchain.sh site https://zebreus.github.io/why2025-badge-rust/dist
+```
+
 CI deploys the same `site/` shape to GitHub Pages and then validates the public Pages URL from a
 clean Ubuntu container.
 

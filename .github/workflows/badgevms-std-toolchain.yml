@@ -1,30 +1,40 @@
-name: BadgeVMS std toolchain
+name: BadgeVMS std rustup dist
 
 on:
   push:
-    tags:
-      - "badgevms-std-v*"
+    branches:
+      - main
+    paths:
+      - ".github/workflows/badgevms-std-toolchain.yml"
+      - "tools/badgevms-std/**"
+      - "why2025-badge-rust-toolchain"
+      - "why2025-badge-sys-bindings/**"
+      - "examples/std-hello-world/**"
   workflow_dispatch:
-    inputs:
-      toolchain-name:
-        description: "Local rustup toolchain name"
-        required: false
-        default: "badgevms-std"
-      package-version:
-        description: "Version string to embed in the packaged archive"
-        required: false
-        default: "ci"
+  schedule:
+    - cron: "17 3 * * *"
+
+concurrency:
+  group: badgevms-std-pages
+  cancel-in-progress: false
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
+
+env:
+  BADGEVMS_DIST_TOOLCHAIN: nightly-2099-01-01
+  BADGEVMS_DIST_DATE: "2099-01-01"
+  BADGEVMS_TARGET: riscv32imafc-unknown-badgevms
+  BADGEVMS_PAGES_ROOT: https://zebreus.github.io/why2025-badge-rust
 
 jobs:
-  build-toolchain:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    env:
-      BADGEVMS_TOOLCHAIN_NAME: ${{ inputs['toolchain-name'] || 'badgevms-std' }}
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -32,7 +42,7 @@ jobs:
           toolchain: nightly-2025-08-09
           components: rust-src
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y git python3 cmake ninja-build build-essential binutils pkg-config libssl-dev
+        run: sudo apt-get update && sudo apt-get install -y git python3 cmake ninja-build build-essential binutils pkg-config libssl-dev file
       - name: Initialize bundled Rust toolchain
         run: |
           git config --global url."https://github.com/".insteadOf git@github.com:
@@ -41,69 +51,49 @@ jobs:
             library/backtrace \
             src/llvm-project \
             src/tools/cargo
-      - name: Determine package version
-        id: version
-        run: |
-          if [[ "${GITHUB_REF_TYPE:-}" == "tag" && "${GITHUB_REF_NAME:-}" == badgevms-std-v* ]]; then
-            version="${GITHUB_REF_NAME#badgevms-std-v}"
-          else
-            input_version="${{ inputs['package-version'] }}"
-            if [[ -z "$input_version" ]]; then
-              input_version=ci
-            fi
-            version="$input_version-${GITHUB_SHA}"
-          fi
-          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
-      - name: Build toolchain archive with x.py install
+      - name: Build rustup dist tree
         env:
-          BADGEVMS_TOOLCHAIN_VERSION: ${{ steps.version.outputs.version }}
-        run: ./tools/badgevms-std/dist-toolchain.sh dist/badgevms-std
-      - name: Test packaged install
+          BADGEVMS_DIST_BASE_URL: ${{ env.BADGEVMS_PAGES_ROOT }}/dist
+        run: ./tools/badgevms-std/dist-toolchain.sh site "$BADGEVMS_DIST_BASE_URL"
+      - name: Test generated dist tree locally
         run: |
-          archive=$(find dist/badgevms-std -name 'badgevms-std-*.tar.gz' -print -quit)
-          ./tools/badgevms-std/install-toolchain.sh --archive "$archive" --name "$BADGEVMS_TOOLCHAIN_NAME" --force
-          ./tools/badgevms-std/checks/verify-toolchain.sh "$BADGEVMS_TOOLCHAIN_NAME"
-          ./tools/badgevms-std/checks/run-smoke.sh "$BADGEVMS_TOOLCHAIN_NAME" examples/std-hello-world/Cargo.toml
-          BADGEVMS_BUILD_STD=1 ./tools/badgevms-std/checks/run-smoke.sh "$BADGEVMS_TOOLCHAIN_NAME" examples/std-hello-world/Cargo.toml
-      - name: Test standalone consumer build
-        run: |
-          tmp=$(mktemp -d)
-          trap 'rm -rf "$tmp"' EXIT
-          rustup run "$BADGEVMS_TOOLCHAIN_NAME" cargo new --bin "$tmp/badgevms-outside-smoke"
-          cd "$tmp/badgevms-outside-smoke"
-          toolchain_rustc=$(rustup which --toolchain "$BADGEVMS_TOOLCHAIN_NAME" rustc)
-          RUSTC="$toolchain_rustc" rustup run "$BADGEVMS_TOOLCHAIN_NAME" cargo build --target riscv32imafc-unknown-badgevms
-          "$GITHUB_WORKSPACE/tools/badgevms-std/checks/inspect-elf.sh" \
-            "target/riscv32imafc-unknown-badgevms/debug/badgevms-outside-smoke"
-      - name: Prepare release aliases
-        if: startsWith(github.ref, 'refs/tags/badgevms-std-v')
-        run: |
-          host=$(rustc -vV | sed -n 's/^host: //p')
-          archive=$(find dist/badgevms-std -name "badgevms-std-${{ steps.version.outputs.version }}-$host.tar.gz" -print -quit)
-          metadata="${archive%.tar.gz}.json"
-          cp "$archive" "dist/badgevms-std/badgevms-std-$host.tar.gz"
-          (cd dist/badgevms-std && sha256sum "badgevms-std-$host.tar.gz" > "badgevms-std-$host.tar.gz.sha256")
-          cp "$metadata" "dist/badgevms-std/badgevms-std-$host.json"
-      - uses: actions/upload-artifact@v4
+          python3 -m http.server 8000 --directory site > /tmp/badgevms-dist-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for _ in {1..30}; do
+            if curl -fsS http://127.0.0.1:8000/dist/channel-rust-nightly.toml.sha256 >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          ./tools/badgevms-std/checks/run-dist-smoke.sh http://127.0.0.1:8000 "$BADGEVMS_DIST_TOOLCHAIN"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
         with:
-          name: badgevms-std-toolchain
-          path: |
-            dist/badgevms-std/*
-            tools/badgevms-std/install-toolchain.sh
-      - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/badgevms-std-v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            dist/badgevms-std/*
-            tools/badgevms-std/install-toolchain.sh
-          body: |
-            BadgeVMS Rust std toolchain ${{ steps.version.outputs.version }}.
-
-            Install with:
-
-            ```sh
-            curl -fLO https://github.com/${{ github.repository }}/releases/latest/download/install-toolchain.sh
-            bash install-toolchain.sh --version latest
-            rustup run badgevms-std cargo build --target riscv32imafc-unknown-badgevms
-            ```
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Test deployed GitHub Pages dist in clean Ubuntu container
+        run: |
+          pages_root="${{ steps.deployment.outputs.page_url }}"
+          pages_root="${pages_root%/}"
+          docker run --rm \
+            -e RUSTUP_DIST_SERVER="$pages_root" \
+            -e BADGEVMS_DIST_TOOLCHAIN="$BADGEVMS_DIST_TOOLCHAIN" \
+            -e BADGEVMS_TARGET="$BADGEVMS_TARGET" \
+            ubuntu:24.04 bash -lc '
+              set -euo pipefail
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update >/dev/null
+              apt-get install -y ca-certificates curl build-essential file >/dev/null
+              curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal >/dev/null
+              . "$HOME/.cargo/env"
+              export RUSTUP_TERM_PROGRESS_WHEN=never
+              rustup toolchain install "$BADGEVMS_DIST_TOOLCHAIN" --profile minimal
+              rustup target add "$BADGEVMS_TARGET" --toolchain "$BADGEVMS_DIST_TOOLCHAIN"
+              rustup component add rust-src --toolchain "$BADGEVMS_DIST_TOOLCHAIN"
+              cargo +"$BADGEVMS_DIST_TOOLCHAIN" new --bin hello-badgevms >/dev/null
+              cd hello-badgevms
+              cargo +"$BADGEVMS_DIST_TOOLCHAIN" build --target "$BADGEVMS_TARGET"
+              file "target/$BADGEVMS_TARGET/debug/hello-badgevms"
+            '

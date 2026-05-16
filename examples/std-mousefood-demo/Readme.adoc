@@ -3,8 +3,8 @@
 Minimal Rust `std` App for the BadgeVMS std target using the existing Badge window plus the
 mousefood embedded backend.
 
-Build with an installed `badgevms-std` toolchain:
+Build with the installed BadgeVMS std toolchain:
 
 ----
-rustup run badgevms-std cargo build --target riscv32imafc-unknown-badgevms --manifest-path examples/std-mousefood-demo/Cargo.toml
+cargo +nightly-2099-01-01 build --target riscv32imafc-unknown-badgevms --manifest-path examples/std-mousefood-demo/Cargo.toml
 ----

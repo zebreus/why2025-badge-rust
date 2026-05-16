@@ -5,44 +5,40 @@ PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 
 usage() {
     cat <<'USAGE'
-usage: dist-toolchain.sh [out-dir] [version]
+usage: dist-toolchain.sh [out-root] [dist-base-url]
 
-Build and package a rustup-linkable BadgeVMS std toolchain with Rust's standard
-`x.py install` flow. The archive contains an installed Rust prefix with rustc,
-host std, BadgeVMS std, cargo, rustfmt, and the standard `rust-src` component.
+Build a rustup dist-server tree for the BadgeVMS std target.
+
+The output root contains a top-level dist/ directory suitable for GitHub Pages.
+Consumers install the toolchain with RUSTUP_DIST_SERVER=<pages-root>.
+
+Defaults:
+  out-root:      dist/badgevms-rustup
+  dist-base-url: https://zebreus.github.io/why2025-badge-rust/dist
+
+Environment:
+  BADGEVMS_DIST_DATE       Manifest/archive date. Default: 2099-01-01.
+  BADGEVMS_DIST_CHANNEL    Rust dist channel. Default: nightly.
+  BADGEVMS_DIST_TOOLCHAIN  Rustup toolchain users install. Default: nightly-2099-01-01.
+  BADGEVMS_DIST_BASE_URL   Public /dist URL used inside manifests.
+  BADGEVMS_TARGET          BadgeVMS target triple. Default: riscv32imafc-unknown-badgevms.
 USAGE
 }
 
 command -v python3 >/dev/null 2>&1 || { printf 'error: missing required command: python3\n' >&2; exit 1; }
 command -v rustc >/dev/null 2>&1 || { printf 'error: missing required command: rustc\n' >&2; exit 1; }
+command -v cargo >/dev/null 2>&1 || { printf 'error: missing required command: cargo\n' >&2; exit 1; }
 command -v git >/dev/null 2>&1 || { printf 'error: missing required command: git\n' >&2; exit 1; }
-command -v tar >/dev/null 2>&1 || { printf 'error: missing required command: tar\n' >&2; exit 1; }
 command -v sha256sum >/dev/null 2>&1 || { printf 'error: missing required command: sha256sum\n' >&2; exit 1; }
 
 positionals=()
-for arg in "$@"; do
-    case "$arg" in
-        -h|--help)
-            usage
-            exit 0
-            ;;
-        --)
-            shift
-            while [[ $# -gt 0 ]]; do
-                positionals+=("$1")
-                shift
-            done
-            break
-            ;;
-        --*)
-            printf 'error: unknown argument: %s\n' "$arg" >&2
-            exit 1
-            ;;
-        *)
-            positionals+=("$arg")
-            ;;
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help) usage; exit 0 ;;
+        --) shift; while [[ $# -gt 0 ]]; do positionals+=("$1"); shift; done; break ;;
+        --*) printf 'error: unknown argument: %s\n' "$1" >&2; exit 1 ;;
+        *) positionals+=("$1"); shift ;;
     esac
-    shift || true
 done
 
 repo="$PROJECT_ROOT/why2025-badge-rust-toolchain"
@@ -55,19 +51,30 @@ for submodule in library/backtrace src/llvm-project src/tools/cargo; do
 done
 
 host=$(rustc -vV | sed -n 's/^host: //p')
-out_dir=${positionals[0]:-$PROJECT_ROOT/dist/badgevms-std}
-version=${positionals[1]:-${BADGEVMS_TOOLCHAIN_VERSION:-}}
-case "$out_dir" in
+target=${BADGEVMS_TARGET:-riscv32imafc-unknown-badgevms}
+dist_date=${BADGEVMS_DIST_DATE:-2099-01-01}
+dist_channel=${BADGEVMS_DIST_CHANNEL:-nightly}
+dist_toolchain=${BADGEVMS_DIST_TOOLCHAIN:-nightly-2099-01-01}
+out_root=${positionals[0]:-$PROJECT_ROOT/dist/badgevms-rustup}
+base_url=${positionals[1]:-${BADGEVMS_DIST_BASE_URL:-https://zebreus.github.io/why2025-badge-rust/dist}}
+
+case "$out_root" in
     /*) ;;
-    *) out_dir="$PROJECT_ROOT/$out_dir" ;;
+    *) out_root="$PROJECT_ROOT/$out_root" ;;
 esac
+
+if [[ "$dist_channel" != nightly ]]; then
+    printf 'error: only nightly dist channel is supported for BadgeVMS std for now\n' >&2
+    exit 1
+fi
+
+if [[ "$dist_toolchain" != nightly-* ]]; then
+    printf 'error: BADGEVMS_DIST_TOOLCHAIN must be a rustup-accepted nightly-* name, got %s\n' "$dist_toolchain" >&2
+    exit 1
+fi
 
 config="$repo/build/badgevms-dist/config.toml"
 mkdir -p "$(dirname "$config")"
-
-tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
-image="$tmp/toolchain"
 
 cat > "$config" <<CONFIG
 profile = "compiler"
@@ -80,149 +87,102 @@ targets = "RISCV;X86"
 
 [build]
 host = ["$host"]
-target = ["$host", "riscv32imafc-unknown-badgevms"]
+target = ["$host", "$target"]
 extended = true
-tools = ["cargo", "rustfmt"]
+tools = ["cargo"]
 cargo-native-static = true
 
 [rust]
+channel = "nightly"
 debug = false
 incremental = false
 lld = true
 
-[install]
-prefix = "$image"
-sysconfdir = "etc"
-
-[target.riscv32imafc-unknown-badgevms]
+[target.$target]
 # The patched built-in target owns linker flags. Keep this section available for SDK paths only.
+# Avoid requiring a target C compiler for compiler-rt builtins while producing the rust-std dist
+# package. Rust implementations are sufficient for this target and keep CI/consumer packaging
+# self-contained.
+optimized-compiler-builtins = false
 
 CONFIG
-
-cd "$repo"
 
 [[ -f "$PROJECT_ROOT/why2025-badge-sys-bindings/Cargo.toml" ]] || \
     { printf 'error: missing canonical raw BadgeVMS ABI crate: why2025-badge-sys-bindings\n' >&2; exit 1; }
 
-python3 ./x.py install --config "$config" compiler/rustc library/std cargo rustfmt
-python3 ./x.py dist --config "$config" rust-src
+cd "$repo"
 
-rust_src_artifact=$(find "$repo/build/dist" -maxdepth 1 -type f -name 'rust-src-*.tar.*' | sort | tail -n1)
-[[ -n "$rust_src_artifact" ]] || { printf 'error: dist output missing rust-src artifact in %s\n' "$repo/build/dist" >&2; exit 1; }
-rust_src_extract="$tmp/rust-src"
-mkdir -p "$rust_src_extract"
-tar -C "$rust_src_extract" -xf "$rust_src_artifact"
-rust_src_top=$(find "$rust_src_extract" -mindepth 1 -maxdepth 1 -type d -print)
-if [[ $(printf '%s\n' "$rust_src_top" | sed '/^$/d' | wc -l) -ne 1 ]]; then
-    printf 'error: rust-src artifact must contain exactly one top-level directory: %s\n' "$rust_src_artifact" >&2
-    exit 1
-fi
-rust_src_install="$rust_src_top/install.sh"
-[[ -x "$rust_src_install" ]] || { printf 'error: rust-src artifact has no executable install.sh: %s\n' "$rust_src_artifact" >&2; exit 1; }
-"$rust_src_install" --prefix="$image" --disable-ldconfig >/dev/null
+python3 ./x.py dist --config "$config" --target "$host" extended rust-src
+python3 ./x.py dist --config "$config" --target "$target" rust-std
 
-mv "$image/bin/cargo" "$image/bin/cargo-real"
-cat > "$image/bin/cargo" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
+rust_dist="$repo/build/dist"
+date_dir="$out_root/dist/$dist_date"
+rm -rf "$out_root/dist"
+mkdir -p "$date_dir"
 
-bin_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-if [[ -z ${RUSTC:-} ]]; then
-    export RUSTC="$bin_dir/rustc"
-fi
-exec "$bin_dir/cargo-real" "$@"
-EOF
-chmod +x "$image/bin/cargo"
+copy_required_component() {
+    local base=$1
+    local found=0
+    local artifact
 
-[[ -x "$image/bin/rustc" ]] || { printf 'error: installed toolchain is missing bin/rustc\n' >&2; exit 1; }
-[[ -x "$image/bin/cargo" ]] || { printf 'error: installed toolchain is missing bin/cargo\n' >&2; exit 1; }
-[[ -x "$image/bin/cargo-real" ]] || { printf 'error: installed toolchain is missing bin/cargo-real\n' >&2; exit 1; }
-[[ -x "$image/bin/rustfmt" ]] || { printf 'error: installed toolchain is missing bin/rustfmt\n' >&2; exit 1; }
-find "$image/lib/rustlib/$host/lib" -maxdepth 1 -name 'libstd-*.rlib' -print -quit 2>/dev/null | grep -q . || \
-    { printf 'error: installed toolchain is missing host std\n' >&2; exit 1; }
-find "$image/lib/rustlib/riscv32imafc-unknown-badgevms/lib" -maxdepth 1 -name 'libstd-*.rlib' -print -quit 2>/dev/null | grep -q . || \
-    { printf 'error: installed toolchain is missing BadgeVMS std\n' >&2; exit 1; }
-[[ -f "$image/lib/rustlib/src/why2025-badge-sys-bindings/Cargo.toml" ]] || \
-    { printf 'error: installed rust-src is missing why2025-badge-sys-bindings\n' >&2; exit 1; }
+    for artifact in "$rust_dist/$base".tar.{gz,xz}; do
+        if [[ -f "$artifact" ]]; then
+            cp "$artifact" "$date_dir/"
+            found=1
+        fi
+    done
 
-cfg=$("$image/bin/rustc" --target "riscv32imafc-unknown-badgevms" --print cfg | sort)
-printf '%s\n' "$cfg" | grep -qx 'target_os="badgevms"' || { printf 'error: installed rustc target cfg missing target_os="badgevms"\n' >&2; exit 1; }
-printf '%s\n' "$cfg" | grep -qx 'target_family="unix"' || { printf 'error: installed rustc target cfg missing target_family="unix"\n' >&2; exit 1; }
-if printf '%s\n' "$cfg" | grep -Eq '^target_env=".+"$'; then
-    printf 'error: installed BadgeVMS target must not set a non-empty target_env\n' >&2
-    exit 1
-fi
-
-if [[ -z "$version" ]]; then
-    rust_version=$("$image/bin/rustc" -V | awk '{ print $2 }')
-    git_rev=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || printf 'unknown')
-    version="$rust_version-$git_rev"
-fi
-
-source_repo=$(git -C "$PROJECT_ROOT" config --get remote.origin.url 2>/dev/null || true)
-source_rev=$(git -C "$PROJECT_ROOT" rev-parse HEAD 2>/dev/null || printf 'unknown')
-rust_repo_url=$(git -C "$repo" config --get remote.origin.url 2>/dev/null || true)
-rust_rev=$(git -C "$repo" rev-parse HEAD 2>/dev/null || printf 'unknown')
-built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-rustc_release=$("$image/bin/rustc" -V | awk '{ print $2 }')
-
-cat > "$image/badgevms-toolchain.env" <<EOF
-BADGEVMS_TOOLCHAIN_VERSION=$version
-BADGEVMS_TOOLCHAIN_HOST=$host
-BADGEVMS_STD_TARGET=riscv32imafc-unknown-badgevms
-BADGEVMS_SOURCE_REPO=$source_repo
-BADGEVMS_SOURCE_REV=$source_rev
-BADGEVMS_RUST_REPO=$rust_repo_url
-BADGEVMS_RUST_REV=$rust_rev
-BADGEVMS_BUILT_AT=$built_at
-EOF
-
-VERSION="$version" \
-HOST="$host" \
-TARGET="riscv32imafc-unknown-badgevms" \
-BUILT_AT="$built_at" \
-RUSTC_RELEASE="$rustc_release" \
-SOURCE_REPO="$source_repo" \
-SOURCE_REV="$source_rev" \
-RUST_REPO="$rust_repo_url" \
-RUST_REV="$rust_rev" \
-python3 - "$image/badgevms-toolchain.json" <<'PY'
-import json
-import os
-import sys
-
-data = {
-    "version": os.environ["VERSION"],
-    "host": os.environ["HOST"],
-    "target": os.environ["TARGET"],
-    "built_at": os.environ["BUILT_AT"],
-    "rustc_release": os.environ["RUSTC_RELEASE"],
-    "source": {
-        "repo": os.environ["SOURCE_REPO"],
-        "rev": os.environ["SOURCE_REV"],
-    },
-    "rust_toolchain": {
-        "repo": os.environ["RUST_REPO"],
-        "rev": os.environ["RUST_REV"],
-    },
+    [[ "$found" -eq 1 ]] || { printf 'error: missing required dist artifact matching %s.tar.{gz,xz}\n' "$base" >&2; exit 1; }
 }
-with open(sys.argv[1], "w", encoding="utf-8") as f:
-    json.dump(data, f, indent=4)
-    f.write("\n")
-PY
 
-mkdir -p "$out_dir"
-out_dir=$(cd "$out_dir" && pwd)
-package="badgevms-std-$version-$host"
-package_root="$tmp/$package"
-mv "$image" "$package_root"
+copy_required_component "rust-$dist_channel-$host"
+copy_required_component "rustc-$dist_channel-$host"
+copy_required_component "cargo-$dist_channel-$host"
+copy_required_component "rust-std-$dist_channel-$host"
+copy_required_component "rust-std-$dist_channel-$target"
+copy_required_component "rust-src-$dist_channel"
 
-archive="$out_dir/$package.tar.gz"
-metadata="$out_dir/$package.json"
-cp "$package_root/badgevms-toolchain.json" "$metadata"
-tar -C "$tmp" -czf "$archive" "$package"
-(cd "$out_dir" && sha256sum "$(basename "$archive")" > "$(basename "$archive").sha256")
+BUILD_MANIFEST_EXTRA_TARGETS="$target" \
+BUILD_MANIFEST_SHIPPED_FILES_PATH="$date_dir/shipped-files.txt" \
+    cargo run --manifest-path "$repo/Cargo.toml" --release -p build-manifest -- \
+    "$date_dir" "$date_dir" "$dist_date" "$base_url" "$dist_channel"
 
-printf 'packaged BadgeVMS toolchain with x.py install: %s\n' "$archive"
-printf 'checksum: %s.sha256\n' "$archive"
-printf 'metadata: %s\n' "$metadata"
+(
+    cd "$date_dir"
+    sha256sum "channel-rust-$dist_channel.toml" > "channel-rust-$dist_channel.toml.sha256"
+)
+
+cp "$date_dir/channel-rust-$dist_channel.toml" "$out_root/dist/channel-rust-$dist_channel.toml"
+cp "$date_dir/channel-rust-$dist_channel.toml.sha256" "$out_root/dist/channel-rust-$dist_channel.toml.sha256"
+for suffix in -date.txt -git-commit-hash.txt; do
+    if [[ -f "$date_dir/channel-rust-$dist_channel$suffix" ]]; then
+        cp "$date_dir/channel-rust-$dist_channel$suffix" "$out_root/dist/channel-rust-$dist_channel$suffix"
+    fi
+done
+
+grep -q "\[pkg.rust-std.target.$target\]" "$date_dir/channel-rust-$dist_channel.toml" || {
+    printf 'error: generated manifest does not contain rust-std for %s\n' "$target" >&2
+    exit 1
+}
+grep -q "\[pkg.rust-src.target.\"\*\"\]" "$date_dir/channel-rust-$dist_channel.toml" || {
+    printf 'error: generated manifest does not contain rust-src\n' >&2
+    exit 1
+}
+
+cat > "$out_root/README.txt" <<EOF
+BadgeVMS Rust std rustup dist tree
+
+Install with:
+
+  RUSTUP_DIST_SERVER=<this site root> rustup toolchain install $dist_toolchain --profile minimal
+  RUSTUP_DIST_SERVER=<this site root> rustup target add $target --toolchain $dist_toolchain
+  RUSTUP_DIST_SERVER=<this site root> rustup component add rust-src --toolchain $dist_toolchain
+
+The deployed site root must contain this file and the dist/ directory next to it.
+EOF
+
+printf 'built BadgeVMS rustup dist tree: %s\n' "$out_root"
+printf 'dist server root: %s\n' "${base_url%/dist}"
+printf 'dist base URL: %s\n' "$base_url"
+printf 'rustup toolchain: %s\n' "$dist_toolchain"
+printf 'target: %s\n' "$target"

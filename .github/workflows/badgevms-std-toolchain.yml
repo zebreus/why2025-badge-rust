@@ -78,7 +78,7 @@ jobs:
           pages_root="${{ steps.deployment.outputs.page_url }}"
           pages_root="${pages_root%/}"
           docker run --rm \
-            -e RUSTUP_DIST_SERVER="$pages_root" \
+            -e BADGEVMS_PAGES_ROOT="$pages_root" \
             -e BADGEVMS_DIST_TOOLCHAIN="$BADGEVMS_DIST_TOOLCHAIN" \
             -e BADGEVMS_TARGET="$BADGEVMS_TARGET" \
             ubuntu:24.04 bash -lc '
@@ -88,12 +88,15 @@ jobs:
               apt-get install -y ca-certificates curl build-essential file >/dev/null
               curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal >/dev/null
               . "$HOME/.cargo/env"
+              export RUSTUP_DIST_SERVER="$BADGEVMS_PAGES_ROOT"
               export RUSTUP_TERM_PROGRESS_WHEN=never
               rustup toolchain install "$BADGEVMS_DIST_TOOLCHAIN" --profile minimal
               rustup target add "$BADGEVMS_TARGET" --toolchain "$BADGEVMS_DIST_TOOLCHAIN"
               rustup component add rust-src --toolchain "$BADGEVMS_DIST_TOOLCHAIN"
-              cargo +"$BADGEVMS_DIST_TOOLCHAIN" new --bin hello-badgevms >/dev/null
+              export RUSTC
+              RUSTC=$(rustup which --toolchain "$BADGEVMS_DIST_TOOLCHAIN" rustc)
+              rustup run "$BADGEVMS_DIST_TOOLCHAIN" cargo new --bin hello-badgevms >/dev/null
               cd hello-badgevms
-              cargo +"$BADGEVMS_DIST_TOOLCHAIN" build --target "$BADGEVMS_TARGET"
+              rustup run "$BADGEVMS_DIST_TOOLCHAIN" cargo build --target "$BADGEVMS_TARGET"
               file "target/$BADGEVMS_TARGET/debug/hello-badgevms"
             '

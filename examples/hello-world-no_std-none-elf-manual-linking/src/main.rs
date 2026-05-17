@@ -14,7 +14,11 @@ pub extern "C" fn main() -> i32 {
 
 fn run() -> i32 {
     unsafe {
-        why2025_badge_sys::printf(b"Hello, world! (manual linking on stock nightly)\n\0".as_ptr().cast());
+        why2025_badge_sys::printf(
+            b"Hello, world! (manual linking on stock nightly)\n\0"
+                .as_ptr()
+                .cast(),
+        );
     }
     121
 }

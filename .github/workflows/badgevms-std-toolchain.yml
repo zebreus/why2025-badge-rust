@@ -67,17 +67,25 @@ jobs:
           key: badgevms-std-llvm-${{ runner.os }}-${{ steps.toolchain-cache-inputs.outputs.host }}-${{ hashFiles('.github/workflows/badgevms-std-toolchain.yml', 'tools/badgevms-std/dist-toolchain.sh') }}-${{ steps.toolchain-cache-inputs.outputs.toolchain_sha }}
           restore-keys: |
             badgevms-std-llvm-${{ runner.os }}-${{ steps.toolchain-cache-inputs.outputs.host }}-${{ hashFiles('.github/workflows/badgevms-std-toolchain.yml', 'tools/badgevms-std/dist-toolchain.sh') }}-
-      - uses: Swatinem/rust-cache@v2
+      - id: rust-cache
+        uses: Swatinem/rust-cache@v2
         with:
           shared-key: badgevms-std-dist
           cache-on-failure: true
           workspaces: |
             why2025-badge-rust-toolchain
       - name: Build rustup dist tree
+        id: build-dist
         env:
           BADGEVMS_DIST_BASE_URL: ${{ env.BADGEVMS_PAGES_ROOT }}/dist
-        run: ./tools/badgevms-std/dist-toolchain.sh site "$BADGEVMS_DIST_BASE_URL"
+        run: |
+          set -euo pipefail
+          start=$(date +%s)
+          ./tools/badgevms-std/dist-toolchain.sh site "$BADGEVMS_DIST_BASE_URL"
+          end=$(date +%s)
+          printf 'duration_seconds=%s\n' "$((end - start))" >> "$GITHUB_OUTPUT"
       - name: Save LLVM build cache
+        id: llvm-cache-save
         if: ${{ always() && !cancelled() && steps.llvm-cache-restore.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
@@ -86,6 +94,40 @@ jobs:
             why2025-badge-rust-toolchain/build/${{ steps.toolchain-cache-inputs.outputs.host }}/lld
             why2025-badge-rust-toolchain/build/${{ steps.toolchain-cache-inputs.outputs.host }}/llvm
           key: badgevms-std-llvm-${{ runner.os }}-${{ steps.toolchain-cache-inputs.outputs.host }}-${{ hashFiles('.github/workflows/badgevms-std-toolchain.yml', 'tools/badgevms-std/dist-toolchain.sh') }}-${{ steps.toolchain-cache-inputs.outputs.toolchain_sha }}
+      - name: Summarize cache status
+        if: ${{ always() && !cancelled() }}
+        env:
+          LLVM_CACHE_HIT: ${{ steps.llvm-cache-restore.outputs.cache-hit }}
+          LLVM_CACHE_SAVE_OUTCOME: ${{ steps.llvm-cache-save.outcome }}
+          CARGO_CACHE_HIT: ${{ steps.rust-cache.outputs.cache-hit }}
+          BUILD_DIST_DURATION_SECONDS: ${{ steps.build-dist.outputs.duration_seconds }}
+        run: |
+          set -euo pipefail
+
+          llvm_status='miss'
+          if [[ "${LLVM_CACHE_HIT:-}" == 'true' ]]; then
+            llvm_status='exact hit'
+          elif [[ "${LLVM_CACHE_SAVE_OUTCOME:-}" == 'success' ]]; then
+            llvm_status='miss, seeded after build'
+          elif [[ "${LLVM_CACHE_SAVE_OUTCOME:-}" == 'skipped' ]]; then
+            llvm_status='miss or partial restore'
+          fi
+
+          cargo_status='not exact hit'
+          if [[ "${CARGO_CACHE_HIT:-}" == 'true' ]]; then
+            cargo_status='exact hit'
+          fi
+
+          {
+            echo '## Dist Cache Summary'
+            echo
+            echo "- LLVM native cache: ${llvm_status}"
+            echo "- Cargo dependency cache: ${cargo_status}"
+            if [[ -n "${BUILD_DIST_DURATION_SECONDS:-}" ]]; then
+              echo "- Dist build duration: ${BUILD_DIST_DURATION_SECONDS}s"
+            fi
+            echo '- Note: exact cache hits here avoid the LLVM/CMake rebuild and Cargo dependency rebuilds, but x.py still rebuilds uncached Rust stage artifacts.'
+          } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

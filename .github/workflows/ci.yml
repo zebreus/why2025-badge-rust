@@ -20,6 +20,12 @@ jobs:
         run: |
           git config --global url."https://github.com/".insteadOf git@github.com:
           git submodule update --init --depth 1 --filter=blob:none why2025-badge-rust-toolchain
+      - name: Initialize upstream firmware manifest
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch main --single-branch \
+            https://gitlab.com/why2025/team-badge/firmware \
+            why2025-badge-sys-bindings/firmware
       - name: Format
         run: cargo fmt --check
       - name: Host build using Emulation
@@ -52,6 +58,12 @@ jobs:
         run: |
           git config --global url."https://github.com/".insteadOf git@github.com:
           git submodule update --init --depth 1 --filter=blob:none why2025-badge-rust-toolchain
+      - name: Initialize upstream firmware manifest
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch main --single-branch \
+            https://gitlab.com/why2025/team-badge/firmware \
+            why2025-badge-sys-bindings/firmware
       - name: Build emu-abi stubs
         run: cargo emu-abi-build
       - name: Verify emu-abi manifest function signatures

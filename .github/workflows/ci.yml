@@ -84,6 +84,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
+          import subprocess
           import sys
 
           root = Path.cwd()
@@ -94,15 +95,13 @@ jobs:
               "deferred_fn": root / "why2025-badge-emu-abi/src/deferred.rs",
               "deferred_macro": root / "why2025-badge-emu-abi/src/deferred.rs",
           }
-          generated_candidates = sorted(
-              root.glob(
-                  "target/x86_64-unknown-linux-gnu/debug/build/why2025-badge-emu-abi-*/out/generated_stubs.rs"
-              ),
-              key=lambda path: path.stat().st_mtime,
-          )
-          if not generated_candidates:
-              raise SystemExit("generated_stubs.rs not found; run cargo emu-abi-build first")
-          generated = generated_candidates[-1]
+          artifact_candidates = [
+              root / "target/x86_64-unknown-linux-gnu/debug/libwhy2025_badge_emu_abi.so",
+              root / "target/debug/libwhy2025_badge_emu_abi.so",
+          ]
+          artifact = next((path for path in artifact_candidates if path.exists()), None)
+          if artifact is None:
+              raise SystemExit("libwhy2025_badge_emu_abi.so not found; run cargo emu-abi-build first")
           bindings = root / "why2025-badge-sys-bindings/src/bindings.rs"
           symbols = root / "why2025-badge-sys-bindings/firmware/badgevms/symbols.yml"
 
@@ -156,6 +155,11 @@ jobs:
               ty = ty.replace("& mut", "&mut").replace("& ", "&")
               ty = ty.replace(" ,", ",")
               return ty
+
+          def normalize_manifest_function_name(name: str) -> str | None:
+              if name == "_ctype_":
+                  return None
+              return name
 
           def parse_aliases(text: str) -> dict[str, str]:
               aliases = {}
@@ -232,7 +236,27 @@ jobs:
                       continue
                   if current_section is None or not trimmed.startswith("- "):
                       continue
-                  names.add(trimmed[2:].strip())
+                  name = normalize_manifest_function_name(trimmed[2:].strip())
+                  if name is not None:
+                      names.add(name)
+              return names
+
+          def parse_defined_symbols(path: Path) -> set[str]:
+              result = subprocess.run(
+                  ["nm", "-g", "--defined-only", str(path)],
+                  check=True,
+                  capture_output=True,
+                  text=True,
+              )
+              names = set()
+              for raw_line in result.stdout.splitlines():
+                  trimmed = raw_line.strip()
+                  if not trimmed or trimmed.endswith(":"):
+                      continue
+                  parts = trimmed.split()
+                  if len(parts) < 2:
+                      continue
+                  names.add(parts[-1])
               return names
 
           manifest_functions = parse_manifest_functions(symbols)
@@ -244,27 +268,28 @@ jobs:
                   print(name)
               sys.exit(1)
 
-          all_exports = {}
+          exported_symbols = parse_defined_symbols(artifact)
+          missing_exports = sorted(manifest_functions - exported_symbols)
+
+          manual_exports = {}
           for label, path in manual_files.items():
               if label == "deferred_macro":
                   for name, sig in parse_manual_file(label, path).items():
-                      all_exports.setdefault(name, sig)
+                      manual_exports.setdefault(name, sig)
               else:
-                  all_exports.update(parse_manual_file(label, path))
-          for name, sig in parse_manual_file("generated_stub", generated).items():
-              all_exports.setdefault(name, sig)
+                  manual_exports.update(parse_manual_file(label, path))
 
-          missing_exports = sorted(manifest_functions - all_exports.keys())
           mismatches = []
           source_counts = {}
-          for name in sorted(manifest_functions & all_exports.keys()):
-              sig = all_exports[name]
+          for name in sorted(manifest_functions & manual_exports.keys()):
+              sig = manual_exports[name]
               bind = binding_map[name]
               source_counts[sig["source"]] = source_counts.get(sig["source"], 0) + 1
               if sig["args"] != bind["args"] or sig["ret"] != bind["ret"]:
                   mismatches.append((name, sig, bind))
 
           print(f"audited_function_symbols={len(manifest_functions)}")
+          print(f"compiled_exports={len(manifest_functions) - len(missing_exports)}")
           for source, count in sorted(source_counts.items()):
               print(f"{source}={count}")
           print(f"missing_exports={len(missing_exports)}")

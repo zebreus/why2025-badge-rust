@@ -30,21 +30,19 @@ code in the firmware repository so the regenerated raw bindings can pick it up.
 
 ## Badge App Linking
 
-Badge binaries still need final linker args for `--shared`, `--entry=main`, and export pruning. Enable the `badge-app-link` feature on `why2025-badge-sys` to have this crate generate badge-link metadata, including a retain-symbols file in `OUT_DIR`, without requiring a checked-in `retain.txt`.
+The repository's primary BadgeVMS workflow now targets `riscv32imafc-unknown-badgevms` for both
+std and no_std Apps. That built-in target owns the BadgeVMS shared-object link contract, including
+`--shared`, `--entry=main`, PIC, and export pruning, so the active workspace examples do not need a
+root `build.rs` or `why2025-badge-build`.
 
-This section describes the current no_std BadgeVMS App workflow. The repository's std-target
-architecture and support boundaries are recorded in [ADR 0004](../docs/adr/0004-canonical-badgevms-abi-layering.md)
-and [ADR 0005](../docs/adr/0005-support-badgevms-std-through-the-superproject.md).
+`why2025-badge-app-no-std` remains the app-facing no_std layer for runtime and entry glue on top of
+this crate. The target architecture and ownership boundary are recorded in
+[ADR 0006](../docs/adr/0006-implement-badgevms-std-as-a-built-in-rust-target.md) and
+[ADR 0008](../docs/adr/0008-make-badgevms-the-primary-no-std-target.md).
 
-Cargo only lets the final binary emit `rustc-link-arg-bins`, so the application still needs a tiny build script. Use `why2025-badge-build` there and forward the build script path you want Cargo to watch:
-
-```rust
-fn main() {
-    why2025_badge_build::configure();
-}
-```
-
-The helper reads the `DEP_WHY2025_BADGE_SYS_*` metadata emitted by this crate and only emits the final linker args for `riscv32imafc-unknown-none-elf`, so host builds stay as a no-op.
+The `badge-app-link` feature and `why2025-badge-build` remain available only for legacy downstreams
+that still target `riscv32imafc-unknown-none-elf`. That metadata path is preserved for
+compatibility, but it is no longer the repo's primary App workflow.
 
 ## Firmware Symbol Coverage
 

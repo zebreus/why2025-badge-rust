@@ -5,7 +5,7 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "App-facing facade for building WHY2025 badge Apps across BadgeVMS and Emulation"
+description = "App-facing runtime and entry glue for building WHY2025 badge Apps across BadgeVMS and Emulation"
 keywords = ["why2025", "badge"]
 categories = ["embedded", "no-std", "os"]
 

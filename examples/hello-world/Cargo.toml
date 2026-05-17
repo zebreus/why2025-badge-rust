@@ -10,6 +10,3 @@ categories = ["embedded", "no-std", "os"]
 
 [dependencies]
 why2025-badge-app-no-std.workspace = true
-
-[build-dependencies]
-why2025-badge-build.workspace = true

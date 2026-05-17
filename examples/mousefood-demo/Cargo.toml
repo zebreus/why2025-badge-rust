@@ -16,6 +16,3 @@ mousefood.workspace = true
 ratatui-core.workspace = true
 embedded-graphics-unicodefonts.workspace = true
 ratatui.workspace = true
-
-[build-dependencies]
-why2025-badge-build.workspace = true

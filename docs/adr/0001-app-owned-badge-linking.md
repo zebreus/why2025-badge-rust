@@ -1,10 +1,13 @@
 ---
-status: accepted
+status: superseded
+superseded_by: 0008
 ---
 
 # Make no_std badge final linking app-owned
 
-This ADR applies only to no_std BadgeVMS Apps targeting `riscv32imafc-unknown-none-elf`. The incubating BadgeVMS std target (`riscv32imafc-unknown-badgevms`) has separate toolchain-owned linking behavior and is out of scope here.
+This ADR records the legacy no_std BadgeVMS App workflow that targeted `riscv32imafc-unknown-none-elf`. The repo's primary no_std workflow moved to `riscv32imafc-unknown-badgevms` in ADR 0008, so this document remains only as historical context for downstreams that still use the old helper path.
+
+This ADR applies only to no_std BadgeVMS Apps targeting `riscv32imafc-unknown-none-elf`. The built-in BadgeVMS target (`riscv32imafc-unknown-badgevms`) now has separate toolchain-owned linking behavior and is out of scope here.
 
 no_std BadgeVMS Apps in this workspace own the final badge-link policy instead of inheriting it from workspace-global target rustflags. We chose this because Cargo lets dependency build scripts publish metadata but not impose final `rustc-link-arg-bins` behavior on consuming binaries, and the old root-level `retain.txt` plus linker-arg flow made the repo awkward to reuse outside this workspace. The settled pattern is: keep only PIC in the root target config, let `why2025-badge-sys` publish badge-link metadata behind `badge-app-link`, and have each App emit the final linker args through a tiny build script that calls `why2025-badge-build`.
 

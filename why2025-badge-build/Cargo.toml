@@ -5,7 +5,7 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Build-script helper for WHY2025 badge application linker configuration"
+description = "Compatibility build-script helper for WHY2025 badge apps that don't use our toolchain"
 keywords = ["why2025", "badge"]
 categories = ["development-tools::build-utils", "embedded", "no-std", "os"]
 

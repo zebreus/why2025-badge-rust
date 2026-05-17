@@ -11,8 +11,8 @@ for the broader superproject ownership boundary.
   checkout, `x.py dist`, and Rust's `build-manifest` tool to produce a top-level `dist/` directory.
 - `checks/verify-toolchain.sh` — verify the built-in target cfg and that the BadgeVMS std library is
   installed for `riscv32imafc-unknown-badgevms`.
-- `checks/run-smoke.sh` — build a std example using an already-installed toolchain and inspect the
-  resulting ELF.
+- `checks/run-smoke.sh` — build a BadgeVMS example, std or no_std, using an already-installed
+  toolchain and inspect the resulting ELF.
 - `checks/run-dist-smoke.sh` — install from a supplied `RUSTUP_DIST_SERVER`, add the BadgeVMS target
   and `rust-src`, build a fresh hello-world crate, and inspect the ELF.
 
@@ -21,6 +21,7 @@ for the broader superproject ownership boundary.
 ```sh
 curl -fsSL https://zebreus.github.io/why2025-badge-rust/install.sh | bash
 cargo +badgevms build --target riscv32imafc-unknown-badgevms
+cargo +badgevms build --manifest-path examples/hello-world/Cargo.toml --target riscv32imafc-unknown-badgevms
 ```
 
 The public installer hides the internal toolchain name and links the installed toolchain locally as
@@ -40,6 +41,7 @@ Then validate from another shell:
 
 ```sh
 tools/badgevms-std/checks/run-dist-smoke.sh http://127.0.0.1:8000 nightly-2099-01-01
+tools/badgevms-std/checks/run-smoke.sh nightly-2099-01-01 examples/hello-world/Cargo.toml
 ```
 
 The published Pages root also contains `install.sh`. You can test the public-facing installer

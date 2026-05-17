@@ -89,12 +89,12 @@ The Rust target for building Apps to run on BadgeVMS.
 _Avoid_: badge target
 
 **App Linking**:
-The App build policy for producing a BadgeVMS-loadable shared object. In this repo it means keeping `main` as the entry point, pruning exports for the loader, and emitting the final linker arguments from a tiny local `build.rs`, typically via `why2025-badge-build`.
+The App build policy for producing a BadgeVMS-loadable shared object. In this repo the primary workflow uses the built-in `riscv32imafc-unknown-badgevms` target, which owns `main`, PIC, shared-object linking, and export pruning. The old `why2025-badge-build` `build.rs` flow remains only as legacy `riscv32imafc-unknown-none-elf` compatibility.
 _Avoid_: linker args, retain.txt, build.rs snippet
 
 **App-facing facade**:
-The Rust crate layer an App depends on to target both BadgeVMS and Emulation without pulling the lower-level badge bindings into the App's build setup. In this repo that role is currently provided by `why2025-badge-app-no-std`.
-_Avoid_: runtime, sys crate, app template
+The Rust crate layer an App depends on to target both BadgeVMS and Emulation without pulling the lower-level badge bindings into the App's build setup. In this repo that role is currently provided by `why2025-badge-app-no-std`, mainly as no*std runtime and entry glue.
+\_Avoid*: runtime, sys crate, app template
 
 **Provided runtime**:
 The default runtime bundle supplied by the current **App-facing facade** for `riscv32` Apps. In this repo it enables the **Provided allocator** and **Provided panic handler** unless an App disables the default feature set.
@@ -125,7 +125,7 @@ The host-side export layer inside this repo that implements or shims firmware sy
 _Avoid_: Emulation, host libc, safe wrapper
 
 **Badge-link metadata**:
-The Cargo build-script metadata that carries badge-linking inputs such as the entry symbol and retain-symbols file to the final App build step. In this repo `why2025-badge-sys` can emit it behind `badge-app-link`, and `why2025-badge-build` or the **App-facing facade** consumes it to finish **App Linking**.
+The Cargo build-script metadata that carries badge-linking inputs such as the entry symbol and retain-symbols file to the final App build step. In this repo `why2025-badge-sys` can still emit it behind `badge-app-link`, and `why2025-badge-build` can still consume it for the legacy `riscv32imafc-unknown-none-elf` path, but the repo's primary BadgeVMS workflow no longer depends on this metadata because the built-in target owns final linking.
 _Avoid_: linker args, retain.txt, final binary
 
 **Firmware Symbol Coverage**:

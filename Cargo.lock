@@ -426,7 +426,6 @@ version = "0.2.0"
 dependencies = [
  "embedded-graphics",
  "why2025-badge-app-no-std",
- "why2025-badge-build",
  "why2025-badge-embedded-graphics",
 ]
 
@@ -452,7 +451,6 @@ name = "hello-world"
 version = "0.2.0"
 dependencies = [
  "why2025-badge-app-no-std",
- "why2025-badge-build",
 ]
 
 [[package]]
@@ -909,7 +907,6 @@ dependencies = [
  "ratatui",
  "ratatui-core",
  "why2025-badge-app-no-std",
- "why2025-badge-build",
  "why2025-badge-embedded-graphics",
 ]
 
@@ -1174,7 +1171,6 @@ dependencies = [
  "ratatui",
  "ratatui-core",
  "why2025-badge-app-no-std",
- "why2025-badge-build",
  "why2025-badge-embedded-graphics",
 ]
 

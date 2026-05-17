@@ -13,7 +13,6 @@ jobs:
         with:
           toolchain: nightly-2025-08-09
           components: rust-src,rustfmt
-          targets: riscv32imafc-unknown-none-elf
       - name: Install host dependencies
         run: sudo apt-get update && sudo apt-get install -y libx11-dev libxcursor-dev libxkbcommon-dev libgl1-mesa-dev libwayland-dev zlib1g-dev
       - name: Initialize Rust manifest dependency
@@ -30,9 +29,11 @@ jobs:
         run: cargo fmt --check
       - name: Host build using Emulation
         run: cargo emu-check --workspace
+      - name: Install BadgeVMS toolchain
+        run: bash ./tools/badgevms-std/install.sh
       - name: no_std BadgeVMS build
         run: >-
-          cargo badge-check
+          cargo +badgevms badge-check
           -p why2025-badge-sys
           -p why2025-badge-app-no-std
           -p why2025-badge-embedded-graphics
@@ -40,6 +41,10 @@ jobs:
           -p graphics-demo
           -p mousefood-demo
           -p ratatui-demo
+      - name: no_std BadgeVMS smoke
+        run: bash ./tools/badgevms-std/checks/run-smoke.sh badgevms examples/hello-world/Cargo.toml
+      - name: std BadgeVMS smoke
+        run: bash ./tools/badgevms-std/checks/run-smoke.sh badgevms examples/std-hello-world/Cargo.toml
       - name: std example host checks
         run: |
           set -euo pipefail

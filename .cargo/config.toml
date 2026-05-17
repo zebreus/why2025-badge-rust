@@ -1,36 +1,29 @@
-[target.riscv32imafc-unknown-none-elf]
-rustflags = ["-Crelocation-model=pic"]
-
-[target.riscv32imafc-unknown-badgevms]
-rustflags = ["-Crelocation-model=pic"]
-
 [alias]
-badge-check = [
-	"check",
-	"--target",
-	"riscv32imafc-unknown-none-elf",
-	"-Zbuild-std=core,alloc,compiler_builtins",
-]
-badge-build = [
-	"build",
-	"--target",
-	"riscv32imafc-unknown-none-elf",
-	"-Zbuild-std=core,alloc,compiler_builtins",
-]
-badge-run = [
-	"run",
-	"--target",
-	"riscv32imafc-unknown-none-elf",
-	"-Zbuild-std=core,alloc,compiler_builtins",
-]
+badge-check = ["check", "--target", "riscv32imafc-unknown-badgevms"]
+badge-build = ["build", "--target", "riscv32imafc-unknown-badgevms"]
+badge-run = ["run", "--target", "riscv32imafc-unknown-badgevms"]
 emu-check = ["check", "--target", "x86_64-unknown-linux-gnu"]
 emu-build = ["build", "--target", "x86_64-unknown-linux-gnu"]
 emu-run = ["run", "--target", "x86_64-unknown-linux-gnu"]
-emu-abi-check = ["check", "-p", "why2025-badge-emu-abi", "--target", "x86_64-unknown-linux-gnu"]
-emu-abi-build = ["build", "-p", "why2025-badge-emu-abi", "--target", "x86_64-unknown-linux-gnu"]
-emu-abi-test = ["test", "-p", "why2025-badge-emu-abi", "--lib", "--target", "x86_64-unknown-linux-gnu"]
-badgevms-std-check = ["check", "--target", "riscv32imafc-unknown-badgevms"]
-badgevms-std-build = ["build", "--target", "riscv32imafc-unknown-badgevms"]
-badgevms-std-run = ["run", "--target", "riscv32imafc-unknown-badgevms"]
-badgevms-std-check-with-build-std = ["check", "--target", "riscv32imafc-unknown-badgevms", "-Zbuild-std=core,alloc,std,panic_abort,compiler_builtins"]
-badgevms-std-build-with-build-std = ["build", "--target", "riscv32imafc-unknown-badgevms", "-Zbuild-std=core,alloc,std,panic_abort,compiler_builtins"]
+emu-abi-check = [
+	"check",
+	"-p",
+	"why2025-badge-emu-abi",
+	"--target",
+	"x86_64-unknown-linux-gnu",
+]
+emu-abi-build = [
+	"build",
+	"-p",
+	"why2025-badge-emu-abi",
+	"--target",
+	"x86_64-unknown-linux-gnu",
+]
+emu-abi-test = [
+	"test",
+	"-p",
+	"why2025-badge-emu-abi",
+	"--lib",
+	"--target",
+	"x86_64-unknown-linux-gnu",
+]

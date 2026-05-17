@@ -6,7 +6,8 @@ use alloc::string::{String, ToString};
 use core::ptr::null_mut;
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::{geometry::Size, pixelcolor::Rgb888, prelude::*};
-use why2025_badge_sys::{
+
+use why2025_badge_sys_bindings::{
     framebuffer_t, pixel_format_t, window_coords_t, window_create, window_flag_t, window_flags_get,
     window_flags_set, window_framebuffer_create, window_framebuffer_size_set, window_handle_t,
     window_position_get, window_position_set, window_present, window_size_get, window_size_set,

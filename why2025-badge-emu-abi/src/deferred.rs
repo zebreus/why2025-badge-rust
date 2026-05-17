@@ -19,25 +19,6 @@ macro_rules! aborting_export {
     };
 }
 
-aborting_export!("graphics", fn window_create(title: *const c_char, size: window_size_t, flags: window_flag_t) -> window_handle_t);
-aborting_export!("graphics", fn window_framebuffer_create(window: window_handle_t, size: window_size_t, pixel_format: pixel_format_t) -> *mut framebuffer_t);
-aborting_export!("graphics", fn window_destroy(window: window_handle_t));
-aborting_export!("graphics", fn window_title_get(window: window_handle_t) -> *const c_char);
-aborting_export!("graphics", fn window_title_set(window: window_handle_t, title: *const c_char));
-aborting_export!("graphics", fn window_position_get(window: window_handle_t) -> window_coords_t);
-aborting_export!("graphics", fn window_position_set(window: window_handle_t, coords: window_coords_t) -> window_coords_t);
-aborting_export!("graphics", fn window_size_get(window: window_handle_t) -> window_size_t);
-aborting_export!("graphics", fn window_size_set(window: window_handle_t, size: window_size_t) -> window_size_t);
-aborting_export!("graphics", fn window_flags_get(window: window_handle_t) -> window_flag_t);
-aborting_export!("graphics", fn window_flags_set(window: window_handle_t, flags: window_flag_t) -> window_flag_t);
-aborting_export!("graphics", fn window_framebuffer_size_get(window: window_handle_t) -> window_size_t);
-aborting_export!("graphics", fn window_framebuffer_size_set(window: window_handle_t, size: window_size_t) -> window_size_t);
-aborting_export!("graphics", fn window_framebuffer_format_get(window: window_handle_t) -> pixel_format_t);
-aborting_export!("graphics", fn window_framebuffer_get(window: window_handle_t) -> *mut framebuffer_t);
-aborting_export!("graphics", fn window_present(window: window_handle_t, block: bool, rects: *mut window_rect_t, num_rects: c_int));
-aborting_export!("graphics", fn window_event_poll(window: window_handle_t, block: bool, timeout_msec: u32) -> event_t);
-aborting_export!("graphics", fn get_screen_info(width: *mut c_int, height: *mut c_int, format: *mut pixel_format_t, refresh_rate: *mut f32));
-
 aborting_export!("wifi", fn wifi_get_status() -> wifi_status_t);
 aborting_export!("wifi", fn wifi_get_connection_status() -> wifi_connection_status_t);
 aborting_export!("wifi", fn wifi_get_connection_station() -> wifi_station_handle);
@@ -91,7 +72,6 @@ mod tests {
 
     #[test]
     fn deferred_symbols_have_addresses() {
-        assert_ne!(window_create as *const (), core::ptr::null());
         assert_ne!(wifi_get_status as *const (), core::ptr::null());
         assert_ne!(curl_easy_init as *const (), core::ptr::null());
         assert_ne!(socket as *const (), core::ptr::null());

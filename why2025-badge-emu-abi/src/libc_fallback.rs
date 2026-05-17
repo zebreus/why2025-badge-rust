@@ -2090,6 +2090,7 @@ pub unsafe extern "C" fn vsscanf(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::root_exports::__errno;
 
     unsafe extern "C" fn noop_atexit() {}
 
@@ -2097,14 +2098,14 @@ mod tests {
     fn atexit_rejects_null_callback() {
         runtime::set_errno(0);
         assert_eq!(atexit(None), -1);
-        assert_eq!(unsafe { *crate::__errno() }, libc::EINVAL);
+        assert_eq!(unsafe { *__errno() }, libc::EINVAL);
     }
 
     #[test]
     fn atexit_registers_callback() {
         runtime::set_errno(17);
         assert_eq!(atexit(Some(noop_atexit)), 0);
-        assert_eq!(unsafe { *crate::__errno() }, 0);
+        assert_eq!(unsafe { *__errno() }, 0);
     }
 
     #[test]
@@ -2491,10 +2492,10 @@ mod tests {
             fegetexceptflag(core::ptr::null_mut(), BADGE_FE_ALL_EXCEPT),
             -1
         );
-        assert_eq!(unsafe { *crate::__errno() }, libc::EINVAL);
+        assert_eq!(unsafe { *__errno() }, libc::EINVAL);
 
         runtime::set_errno(0);
         assert_eq!(fegetenv(core::ptr::null_mut()), -1);
-        assert_eq!(unsafe { *crate::__errno() }, libc::EINVAL);
+        assert_eq!(unsafe { *__errno() }, libc::EINVAL);
     }
 }

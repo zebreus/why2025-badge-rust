@@ -23,6 +23,8 @@ struct ManifestSymbol {
 }
 
 fn main() {
+    println!("cargo:rustc-check-cfg=cfg(why2025_emu_abi_direct_build)");
+
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("manifest dir"));
     let workspace_root = manifest_dir
         .parent()

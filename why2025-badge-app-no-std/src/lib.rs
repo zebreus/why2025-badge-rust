@@ -4,8 +4,12 @@ use core::ffi::CStr;
 
 #[cfg(all(target_arch = "riscv32", feature = "provided-panic-handler"))]
 extern crate alloc;
+#[cfg(not(target_arch = "riscv32"))]
+use why2025_badge_emu_abi as _;
+#[cfg(target_arch = "riscv32")]
+use why2025_badge_sys_bindings as _;
 
-pub use why2025_badge_sys as sys;
+pub use why2025_badge_sys_bindings as sys;
 
 const PRINT_AS_STRING: &[u8] = b"%s\0";
 

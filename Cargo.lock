@@ -1908,7 +1908,8 @@ version = "0.2.0"
 dependencies = [
  "spin",
  "talc",
- "why2025-badge-sys",
+ "why2025-badge-emu-abi",
+ "why2025-badge-sys-bindings",
 ]
 
 [[package]]
@@ -1920,7 +1921,7 @@ name = "why2025-badge-embedded-graphics"
 version = "0.2.0"
 dependencies = [
  "embedded-graphics",
- "why2025-badge-sys",
+ "why2025-badge-sys-bindings",
 ]
 
 [[package]]
@@ -1928,7 +1929,10 @@ name = "why2025-badge-emu-abi"
 version = "0.2.0"
 dependencies = [
  "libc",
+ "raw-window-handle",
+ "spin",
  "why2025-badge-sys-bindings",
+ "why2025-badge-x11-dl",
 ]
 
 [[package]]

@@ -18,4 +18,10 @@ provided-panic-handler = []
 [dependencies]
 spin = { workspace = true, optional = true }
 talc = { workspace = true, optional = true }
-why2025-badge-sys = { workspace = true }
+why2025-badge-sys-bindings.workspace = true
+
+[target.'cfg(not(target_arch = "riscv32"))'.dependencies]
+why2025-badge-emu-abi.workspace = true
+
+[target.'cfg(target_arch = "riscv32")'.dependencies]
+why2025-badge-sys-bindings.workspace = true

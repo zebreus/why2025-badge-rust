@@ -9,7 +9,7 @@ on:
       - "tools/badgevms-std/**"
       - "why2025-badge-rust-toolchain"
       - "why2025-badge-sys-bindings/**"
-      - "examples/std-hello-world/**"
+      - "examples/hello-world/**"
   workflow_dispatch:
   schedule:
     - cron: "17 3 * * *"

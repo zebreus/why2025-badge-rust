@@ -1,0 +1,8 @@
+[package]
+name = "hello-world-no_std-none-elf-manual-linking"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+why2025-badge-sys.workspace = true

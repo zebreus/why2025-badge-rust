@@ -1,3 +1,6 @@
+[target.riscv32imafc-unknown-none-elf]
+rustflags = ["-Crelocation-model=pic"]
+
 [alias]
 badge-check = ["check", "--target", "riscv32imafc-unknown-badgevms"]
 badge-build = ["build", "--target", "riscv32imafc-unknown-badgevms"]

@@ -1,13 +1,15 @@
 [workspace]
 resolver = "3"
 exclude = [
-    "examples/std-hello-world",
     "examples/std-mousefood-demo",
     "examples/std-ratatui-demo",
     "why2025-badge-rust-toolchain",
 ]
 members = [
     "examples/hello-world",
+    "examples/hello-world-no_std",
+    "examples/hello-world-no_std-none-elf",
+    "examples/hello-world-no_std-none-elf-manual-linking",
     "examples/graphics-demo",
     "examples/mousefood-demo",
     "examples/ratatui-demo",

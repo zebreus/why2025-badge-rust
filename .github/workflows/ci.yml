@@ -29,25 +29,33 @@ jobs:
         run: cargo fmt --check
       - name: Host build using Emulation
         run: cargo emu-check --workspace
+      - name: Legacy no_std examples on stock nightly
+        run: |
+          set -euo pipefail
+          cargo build --manifest-path examples/hello-world-no_std-none-elf/Cargo.toml --target riscv32imafc-unknown-none-elf -Zbuild-std=core,alloc,compiler_builtins
+          bash ./tools/badgevms-std/checks/inspect-elf.sh ./target/riscv32imafc-unknown-none-elf/debug/hello-world-no_std-none-elf
+          cargo build --manifest-path examples/hello-world-no_std-none-elf-manual-linking/Cargo.toml --target riscv32imafc-unknown-none-elf -Zbuild-std=core,alloc,compiler_builtins
+          bash ./tools/badgevms-std/checks/inspect-elf.sh ./target/riscv32imafc-unknown-none-elf/debug/hello-world-no_std-none-elf-manual-linking
       - name: Install BadgeVMS toolchain
         run: bash ./tools/badgevms-std/install.sh
       - name: no_std BadgeVMS build
-        run: >-
-          cargo +badgevms badge-check
-          -p why2025-badge-sys
-          -p why2025-badge-app-no-std
-          -p why2025-badge-embedded-graphics
-          -p hello-world
-          -p graphics-demo
-          -p mousefood-demo
-          -p ratatui-demo
+        run: |
+          cargo +badgevms badge-check \
+            -p why2025-badge-sys \
+            -p why2025-badge-app-no-std \
+            -p why2025-badge-embedded-graphics \
+            -p hello-world-no_std \
+            -p graphics-demo \
+            -p mousefood-demo \
+            -p ratatui-demo
       - name: no_std BadgeVMS smoke
-        run: bash ./tools/badgevms-std/checks/run-smoke.sh badgevms examples/hello-world/Cargo.toml
+        run: bash ./tools/badgevms-std/checks/run-smoke.sh badgevms examples/hello-world-no_std/Cargo.toml
       - name: std BadgeVMS smoke
-        run: bash ./tools/badgevms-std/checks/run-smoke.sh badgevms examples/std-hello-world/Cargo.toml
+        run: bash ./tools/badgevms-std/checks/run-smoke.sh badgevms examples/hello-world/Cargo.toml
       - name: std example host checks
         run: |
           set -euo pipefail
+          cargo check --manifest-path examples/hello-world/Cargo.toml
           for manifest in examples/std-*/Cargo.toml; do
             cargo check --manifest-path "$manifest"
           done

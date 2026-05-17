@@ -1,0 +1,8 @@
+[package]
+name = "hello-world-no_std"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+why2025-badge-app-no-std.workspace = true

@@ -1,0 +1,15 @@
+== Hello World no_std none-elf
+
+Minimal no_std example for using rust on the WHY2025 badge without the custom BadgeVMS toolchain.
+
+This example targets `riscv32imafc-unknown-none-elf` on a stock toolchain and lets `why2025-badge-build` emit the final BadgeVMS linker args from `build.rs`.
+For an example that does the linking itself, see `examples/hello-world-no_std-none-elf-manual-linking`.
+
+Build it with:
+
+[source,sh]
+----
+cargo +nightly build \
+  --target riscv32imafc-unknown-none-elf \
+  -Zbuild-std=core,alloc,compiler_builtins
+----

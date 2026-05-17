@@ -1,0 +1,9 @@
+== Hello World
+
+Minimal example for using rust on the WHY2025 badge
+
+This example now builds directly for `riscv32imafc-unknown-badgevms`. The built-in BadgeVMS target
+owns the shared-object link contract, so `why2025-badge-app-no-std` only provides runtime and
+entry glue here and the example no longer needs a root `build.rs` or `why2025-badge-build`.
+
+If you want to start a project, use [rust_starter](https://github.com/zebreus/why2025-rust-starter) instead, as that is standalone. See `Cargo.toml` and `src/main.rs` here for the integration shape used by the workspace examples.

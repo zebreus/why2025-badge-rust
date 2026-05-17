@@ -1,9 +1,16 @@
-#![cfg_attr(target_arch = "riscv32", no_std)]
-#![cfg_attr(target_arch = "riscv32", no_main)]
+#![allow(unexpected_cfgs)] // target_os badgevms is unexpected.
+use std::env;
 
-why2025_badge_app_no_std::app_main!(run);
+fn main() {
+    println!("Hello from a Rust std App for BadgeVMS");
+    println!("args:");
+    for (index, argument) in env::args().enumerate() {
+        println!("  {index}: {argument}");
+    }
 
-fn run() -> i32 {
-    why2025_badge_app_no_std::console::print_bytes(b"Hello, world! (from rust)\n\0");
-    121
+    #[cfg(target_os = "badgevms")]
+    println!("target_os=badgevms target_family=unix");
+
+    #[cfg(not(target_os = "badgevms"))]
+    println!("host smoke build; run with the BadgeVMS std target for on-device behavior");
 }

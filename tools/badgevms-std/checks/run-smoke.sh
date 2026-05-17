@@ -6,7 +6,7 @@ PROJECT_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 command -v rustup >/dev/null 2>&1 || { printf 'error: missing required command: rustup\n' >&2; exit 1; }
 
 toolchain=${1:-${BADGEVMS_DIST_TOOLCHAIN:-nightly-2099-01-01}}
-manifest=${2:-examples/std-hello-world/Cargo.toml}
+manifest=${2:-examples/hello-world/Cargo.toml}
 target=${BADGEVMS_TARGET:-riscv32imafc-unknown-badgevms}
 package_dir=$(cd "$(dirname "$manifest")" && pwd)
 package_name=$(sed -n 's/^name *= *"\(.*\)"/\1/p' "$manifest" | head -n1)

@@ -42,7 +42,9 @@ this crate. The target architecture and ownership boundary are recorded in
 
 The `badge-app-link` feature and `why2025-badge-build` remain available only for legacy downstreams
 that still target `riscv32imafc-unknown-none-elf`. That metadata path is preserved for
-compatibility, but it is no longer the repo's primary App workflow.
+compatibility, but it is no longer the repo's primary App workflow. See
+`examples/hello-world-no_std-none-elf` for the helper-based path and
+`examples/hello-world-no_std-none-elf-manual-linking` for the fully manual linking variant.
 
 ## Firmware Symbol Coverage
 

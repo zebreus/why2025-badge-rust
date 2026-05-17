@@ -2,3 +2,7 @@
 	path = why2025-badge-rust-toolchain
 	url = git@github.com:zebreus/why2025-badge-rust-toolchain.git
 	branch = main
+[submodule "why2025-badge-x11-rs"]
+	path = why2025-badge-x11-rs
+	url = https://github.com/zebreus/x11-rs
+	branch = why2025-badge

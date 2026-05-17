@@ -1954,6 +1954,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "why2025-badge-x11"
+version = "2.21.0"
+dependencies = [
+ "libc",
+ "pkg-config",
+]
+
+[[package]]
+name = "why2025-badge-x11-dl"
+version = "2.21.0"
+dependencies = [
+ "libc",
+ "once_cell",
+ "pkg-config",
+]
+
+[[package]]
 name = "winapi"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"

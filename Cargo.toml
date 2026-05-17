@@ -19,6 +19,8 @@ members = [
     "why2025-badge-emu-abi",
     "why2025-badge-sys-bindings",
     "why2025-badge-sys",
+    "why2025-badge-x11-rs/x11",
+    "why2025-badge-x11-rs/x11-dl",
 ]
 
 [workspace.package]
@@ -44,6 +46,8 @@ why2025-badge-emu-abi = { path = "why2025-badge-emu-abi", version = "0.2.0" }
 why2025-badge-sys-bindings = { path = "why2025-badge-sys-bindings", version = "0.2.0" }
 why2025-badge-sys = { path = "why2025-badge-sys", version = "0.2.0" }
 why2025-badge-embedded-graphics = { path = "why2025-badge-embedded-graphics", version = "0.2.0" }
+x11 = { package = "why2025-badge-x11", path = "why2025-badge-x11-rs/x11", version = "2.21.0" }
+x11-dl = { package = "why2025-badge-x11-dl", path = "why2025-badge-x11-rs/x11-dl", version = "2.21.0" }
 embedded-graphics = "0.8.1"
 mousefood = { git = "https://github.com/j-g00da/mousefood.git", default-features = false, features = [
     "fonts",

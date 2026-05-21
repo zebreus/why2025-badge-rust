@@ -37,6 +37,7 @@ fn main() {
 
     println!("cargo:rerun-if-changed={}", bindings_path.display());
     println!("cargo:rerun-if-changed={}", symbols_path.display());
+    println!("cargo:rerun-if-changed={}", manifest_dir.join("src").display());
     for source in rust_sources(&manifest_dir.join("src")) {
         println!("cargo:rerun-if-changed={}", source.display());
     }
@@ -99,6 +100,15 @@ fn macro_generated_exports() -> &'static [&'static str] {
         "wifi_station_get_mode",
         "wifi_station_wps",
         "wifi_set_connection_parameters",
+        "process_create",
+        "thread_create",
+        "wait",
+        "task_priority_lower",
+        "task_priority_restore",
+        "get_num_tasks",
+        "device_get",
+        "die",
+        "vaddr_to_paddr",
         "curl_easy_init",
         "curl_easy_perform",
         "curl_easy_cleanup",
@@ -364,9 +374,13 @@ fn extract_macro_decl_name(line: &str) -> Option<String> {
 fn extract_exported_item_name(line: &str) -> Option<String> {
     for prefix in [
         "pub unsafe extern \"C\" fn ",
+        "unsafe extern \"C\" fn ",
         "pub extern \"C\" fn ",
+        "extern \"C\" fn ",
         "pub static mut ",
+        "static mut ",
         "pub static ",
+        "static ",
     ] {
         if let Some(remainder) = line.strip_prefix(prefix) {
             let name = if prefix.contains(" fn ") {
@@ -407,6 +421,21 @@ fn family_for(symbol: &str, section: &str) -> &'static str {
     }
     if symbol.starts_with("application_") {
         return "application";
+    }
+    if matches!(
+        symbol,
+        "parse_path"
+            | "path_free"
+            | "mkdir_p"
+            | "rm_rf"
+            | "path_dirname"
+            | "path_basename"
+            | "path_devname"
+            | "path_dirconcat"
+            | "path_fileconcat"
+            | "path_concat"
+    ) {
+        return "filesystem";
     }
     if symbol.starts_with("ota_") {
         return "ota";
@@ -471,7 +500,7 @@ fn generate_stubs(
                     .replace("...", "mut _args: ...");
                 generated.push_str("#[allow(unused_variables)]\n");
                 generated.push_str("#[unsafe(no_mangle)]\n");
-                generated.push_str("pub unsafe extern \"C\" fn ");
+                generated.push_str("unsafe extern \"C\" fn ");
                 generated.push_str(&signature);
                 generated.push_str(" {\n");
                 generated.push_str("    crate::runtime::abort_unimplemented_symbol(");

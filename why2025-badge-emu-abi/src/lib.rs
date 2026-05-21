@@ -18,11 +18,15 @@ extern crate std;
 use core::ffi::{c_char, c_int};
 
 mod deferred;
+mod fs;
 mod graphics;
 mod host_forward;
 mod libc_compat;
 mod libc_fallback;
+mod misc;
+mod ota;
 mod runtime;
+mod wifi;
 
 mod allocator;
 #[cfg(not(test))]

@@ -2850,7 +2850,7 @@ mod tests {
             assert!(badge_fd_is_set(&badge_readfds, read_fd));
             assert!(libc::FD_ISSET(read_fd, &host_readfds));
             assert_eq!(badge_timeout.tv_sec, host_timeout.tv_sec as time_t);
-            assert_eq!(badge_timeout.tv_usec, host_timeout.tv_usec as _);
+            assert_eq!(badge_timeout.tv_usec, host_timeout.tv_usec as suseconds_t);
 
             libc::close(read_fd);
             libc::close(write_fd);

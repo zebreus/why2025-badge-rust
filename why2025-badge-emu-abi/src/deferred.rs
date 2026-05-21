@@ -1,6 +1,6 @@
 use crate::runtime;
 use crate::types::*;
-use core::ffi::{c_char, c_int, c_long};
+use core::ffi::{c_char, c_long};
 
 macro_rules! aborting_export {
     ($family:literal, fn $name:ident($($arg:ident : $arg_ty:ty),* $(,)?) -> $ret:ty) => {
@@ -18,23 +18,6 @@ macro_rules! aborting_export {
         }
     };
 }
-
-aborting_export!("wifi", fn wifi_get_status() -> wifi_status_t);
-aborting_export!("wifi", fn wifi_get_connection_status() -> wifi_connection_status_t);
-aborting_export!("wifi", fn wifi_get_connection_station() -> wifi_station_handle);
-aborting_export!("wifi", fn wifi_connect() -> wifi_connection_status_t);
-aborting_export!("wifi", fn wifi_disconnect() -> wifi_connection_status_t);
-aborting_export!("wifi", fn wifi_scan_free_station(station: wifi_station_handle));
-aborting_export!("wifi", fn wifi_scan_get_num_results() -> c_int);
-aborting_export!("wifi", fn wifi_scan_get_result(num: c_int) -> wifi_station_handle);
-aborting_export!("wifi", fn wifi_station_get_ssid(station: wifi_station_handle) -> *const c_char);
-aborting_export!("wifi", fn wifi_station_get_bssid(station: wifi_station_handle) -> *mut mac_address_t);
-aborting_export!("wifi", fn wifi_station_get_primary_channel(station: wifi_station_handle) -> c_int);
-aborting_export!("wifi", fn wifi_station_get_secondary_channel(station: wifi_station_handle) -> c_int);
-aborting_export!("wifi", fn wifi_station_get_rssi(station: wifi_station_handle) -> c_int);
-aborting_export!("wifi", fn wifi_station_get_mode(station: wifi_station_handle) -> wifi_auth_mode_t);
-aborting_export!("wifi", fn wifi_station_wps(station: wifi_station_handle) -> bool);
-aborting_export!("wifi", fn wifi_set_connection_parameters(ssid: *const c_char, password: *const c_char) -> bool);
 
 aborting_export!("networking", fn curl_easy_init() -> *mut CURL);
 aborting_export!("networking", fn curl_easy_perform(curl: *mut CURL) -> CURLcode);
@@ -72,7 +55,7 @@ mod tests {
 
     #[test]
     fn deferred_symbols_have_addresses() {
-        assert_ne!(wifi_get_status as *const (), core::ptr::null());
+        assert_ne!(crate::wifi::wifi_get_status as *const (), core::ptr::null());
         assert_ne!(curl_easy_init as *const (), core::ptr::null());
         assert_ne!(socket as *const (), core::ptr::null());
     }

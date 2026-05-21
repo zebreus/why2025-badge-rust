@@ -1930,6 +1930,8 @@ version = "0.2.0"
 dependencies = [
  "libc",
  "raw-window-handle",
+ "serde",
+ "serde_json",
  "spin",
  "why2025-badge-sys-bindings",
  "why2025-badge-x11-dl",

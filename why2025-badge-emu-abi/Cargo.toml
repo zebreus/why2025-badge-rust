@@ -24,5 +24,7 @@ wifi = []
 why2025-badge-sys-bindings.workspace = true
 libc = { version = "0.2", default-features = false }
 raw-window-handle = { version = "0.6", default-features = false }
+serde = { version = "1.0", default-features = false, features = ["alloc", "derive"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 spin.workspace = true
 x11-dl = { package = "why2025-badge-x11-dl", path = "../why2025-badge-x11-rs/x11-dl", version = "2.21.0", default-features = false }

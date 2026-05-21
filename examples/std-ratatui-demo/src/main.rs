@@ -3,6 +3,9 @@ use mousefood::{TerminalAlignment, prelude::*};
 use ratatui::Terminal;
 use why2025_badge_embedded_graphics::Why2025BadgeWindow;
 
+#[cfg(not(target_arch = "riscv32"))]
+use why2025_badge_emu_abi as _;
+
 mod app;
 mod ui;
 
@@ -18,6 +21,7 @@ fn main() {
         font_italic: None,
         vertical_alignment: TerminalAlignment::Center,
         horizontal_alignment: TerminalAlignment::Center,
+        ..Default::default()
     };
     let backend = EmbeddedBackend::new(&mut display, config);
 

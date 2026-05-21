@@ -30,6 +30,7 @@ fn run() -> i32 {
         font_italic: None,
         vertical_alignment: TerminalAlignment::Center,
         horizontal_alignment: TerminalAlignment::Center,
+        ..Default::default()
     };
     why2025_badge_app_no_std::console::print_bytes(b"Frame drawn B\n\0");
     let backend = EmbeddedBackend::new(&mut display, config);

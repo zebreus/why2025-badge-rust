@@ -26,6 +26,7 @@ fn run() -> i32 {
         font_italic: None,
         vertical_alignment: TerminalAlignment::Center,
         horizontal_alignment: TerminalAlignment::Center,
+        ..Default::default()
     };
     let backend = EmbeddedBackend::new(&mut display, config);
 

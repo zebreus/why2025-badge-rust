@@ -15,6 +15,8 @@ fn main() {
         "Std Mousefood Demo",
     );
 
+    println!("aaaa");
+    eprintln!("aaaa err");
     let config = EmbeddedBackendConfig {
         flush_callback: Box::new(|display: &mut Why2025BadgeWindow| {
             display.flush();
@@ -26,11 +28,18 @@ fn main() {
         horizontal_alignment: TerminalAlignment::Center,
         ..Default::default()
     };
+    println!("bbbb");
+    eprintln!("bbbb err");
     let backend = EmbeddedBackend::new(&mut display, config);
+    println!("cccc");
+    eprintln!("cccc err");
     let mut terminal = Terminal::new(backend).unwrap();
 
     loop {
+        println!("before draw out");
+        eprintln!("before draw err");
         terminal.draw(draw).unwrap();
+        eprintln!("after draw");
     }
 }
 

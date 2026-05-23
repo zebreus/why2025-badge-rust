@@ -45,6 +45,10 @@ mod implementation {
 
     pub type BadgeTcpConnection<'a> = BadgeTcpConnectionInner;
 
+    // BadgeVMS currently exposes blocking `std::net` sockets. The ocpncord demo, however,
+    // drives UI and backend work from one async loop, so blocking on that thread would stall
+    // rendering and network progress together. Each TCP connection therefore owns one worker
+    // thread that performs all blocking socket I/O for that connection.
     #[derive(Debug)]
     pub struct BadgeTcpConnectionInner {
         connection_id: usize,
@@ -61,12 +65,17 @@ mod implementation {
         join_handle: Option<JoinHandle<()>>,
     }
 
+    // The mailbox is intentionally single-slot. `reqwless` drives each connection
+    // sequentially, and this avoids the extra queue/channel allocation that previously
+    // triggered badge-side memory pressure during connection setup.
     #[derive(Debug, Default)]
     struct ConnectionWorkerState {
         pending_command: Option<ConnectionCommand>,
         closed: bool,
     }
 
+    // Commands carry owned data because the worker may still be using them after the async
+    // caller has yielded back to the executor.
     #[derive(Debug)]
     enum ConnectionCommand {
         Read {
@@ -150,6 +159,9 @@ mod implementation {
         }
     }
 
+    // DNS still uses a short-lived helper thread. Lookups are infrequent enough that this is
+    // simpler than maintaining a dedicated resolver worker, and it keeps the async caller off
+    // the blocking BadgeVMS socket APIs.
     fn spawn_blocking<T, F>(name: &'static str, operation: F) -> io::Result<TaskFuture<T>>
     where
         T: Send + 'static,
@@ -157,16 +169,8 @@ mod implementation {
     {
         let (future, completer) = task_completion();
 
-        println!("[badge-nal] scheduling worker name={name}");
-
         match thread::Builder::new().name(name.into()).spawn(move || {
-            println!("[badge-nal] worker started name={name}");
             let result = operation();
-            match &result {
-                Ok(_) => println!("[badge-nal] worker completed name={name}"),
-                Err(error) => println!("[badge-nal] worker failed name={name} error={error}"),
-            }
-
             completer.complete(result);
         }) {
             Ok(_) => {}
@@ -180,11 +184,6 @@ mod implementation {
     }
 
     fn resolve_host(host: String, addr_type: AddrType) -> io::Result<IpAddr> {
-        println!(
-            "[badge-nal] dns lookup start host={host} addr_type={}",
-            addr_type_name(&addr_type)
-        );
-
         let addrs = match (host.as_str(), 0).to_socket_addrs() {
             Ok(addrs) => addrs,
             Err(error) => {
@@ -195,20 +194,10 @@ mod implementation {
 
         for addr in addrs {
             let ip = addr.ip();
-            println!("[badge-nal] dns candidate host={host} candidate={ip}");
             match (&addr_type, ip) {
-                (AddrType::Either, _) => {
-                    println!("[badge-nal] dns selected host={host} ip={ip}");
-                    return Ok(ip);
-                }
-                (AddrType::IPv4, IpAddr::V4(_)) => {
-                    println!("[badge-nal] dns selected host={host} ip={ip}");
-                    return Ok(ip);
-                }
-                (AddrType::IPv6, IpAddr::V6(_)) => {
-                    println!("[badge-nal] dns selected host={host} ip={ip}");
-                    return Ok(ip);
-                }
+                (AddrType::Either, _) => return Ok(ip),
+                (AddrType::IPv4, IpAddr::V4(_)) => return Ok(ip),
+                (AddrType::IPv6, IpAddr::V6(_)) => return Ok(ip),
                 _ => {}
             }
         }
@@ -237,20 +226,8 @@ mod implementation {
         shared: Arc<Mutex<ConnectionWorkerState>>,
         ready: TaskCompleter<()>,
     ) {
-        println!(
-            "[badge-nal] worker started name=badge-net-connection connection_id={connection_id} remote={remote}"
-        );
-
         let mut stream = match TcpStream::connect(remote) {
             Ok(stream) => {
-                match stream.local_addr() {
-                    Ok(local_addr) => println!(
-                        "[badge-nal] tcp connect success remote={remote} local={local_addr} connection_id={connection_id}"
-                    ),
-                    Err(error) => println!(
-                        "[badge-nal] tcp connect success remote={remote} local=<unavailable> error={error} connection_id={connection_id}"
-                    ),
-                }
                 ready.complete(Ok(()));
                 stream
             }
@@ -259,13 +236,12 @@ mod implementation {
                     "[badge-nal] tcp connect failed remote={remote} error={error} connection_id={connection_id}"
                 );
                 ready.complete(Err(error));
-                println!(
-                    "[badge-nal] worker completed name=badge-net-connection connection_id={connection_id} remote={remote}"
-                );
                 return;
             }
         };
 
+        // Park while the connection is idle and wake explicitly with `Thread::unpark` when a
+        // new command arrives. This keeps the worker cheap without another heap-backed queue.
         loop {
             let command = loop {
                 let mut state = lock_unpoisoned(&shared);
@@ -287,56 +263,39 @@ mod implementation {
 
             match command {
                 ConnectionCommand::Read { len, response } => {
-                    println!(
-                        "[badge-nal] read start requested_len={len} connection_id={connection_id}"
-                    );
                     let mut buffer = vec![0_u8; len];
                     let result = std::io::Read::read(&mut stream, &mut buffer).map(|read| {
                         buffer.truncate(read);
                         ReadOutcome { buffer }
                     });
 
-                    match &result {
-                        Ok(outcome) => println!(
-                            "[badge-nal] read success requested_len={len} actual_len={} connection_id={connection_id}",
-                            outcome.buffer.len()
-                        ),
-                        Err(error) => println!(
+                    if let Err(error) = &result {
+                        println!(
                             "[badge-nal] read failed requested_len={len} error={error} connection_id={connection_id}"
-                        ),
+                        );
                     }
 
                     response.complete(result);
                 }
                 ConnectionCommand::Write { buffer, response } => {
                     let requested_len = buffer.len();
-                    println!(
-                        "[badge-nal] write start requested_len={requested_len} connection_id={connection_id}"
-                    );
                     let result = std::io::Write::write(&mut stream, &buffer);
 
-                    match &result {
-                        Ok(written) => println!(
-                            "[badge-nal] write success requested_len={requested_len} actual_len={written} connection_id={connection_id}"
-                        ),
-                        Err(error) => println!(
+                    if let Err(error) = &result {
+                        println!(
                             "[badge-nal] write failed requested_len={requested_len} error={error} connection_id={connection_id}"
-                        ),
+                        );
                     }
 
                     response.complete(result);
                 }
                 ConnectionCommand::Flush { response } => {
-                    println!("[badge-nal] flush start connection_id={connection_id}");
                     let result = std::io::Write::flush(&mut stream);
 
-                    match &result {
-                        Ok(()) => {
-                            println!("[badge-nal] flush success connection_id={connection_id}")
-                        }
-                        Err(error) => println!(
+                    if let Err(error) = &result {
+                        println!(
                             "[badge-nal] flush failed error={error} connection_id={connection_id}"
-                        ),
+                        );
                     }
 
                     response.complete(result);
@@ -344,10 +303,6 @@ mod implementation {
                 ConnectionCommand::Close => break,
             }
         }
-
-        println!(
-            "[badge-nal] worker completed name=badge-net-connection connection_id={connection_id} remote={remote}"
-        );
     }
 
     impl ConnectionWorker {
@@ -373,11 +328,6 @@ mod implementation {
         }
 
         fn shutdown(&mut self) {
-            println!(
-                "[badge-nal] connection worker shutdown requested connection_id={} remote={}",
-                self.connection_id, self.remote
-            );
-
             {
                 let mut state = lock_unpoisoned(&self.shared);
                 state.closed = true;
@@ -390,10 +340,7 @@ mod implementation {
 
             if let Some(join_handle) = self.join_handle.take() {
                 match join_handle.join() {
-                    Ok(()) => println!(
-                        "[badge-nal] connection worker joined connection_id={} remote={}",
-                        self.connection_id, self.remote
-                    ),
+                    Ok(()) => {}
                     Err(_) => println!(
                         "[badge-nal] connection worker panicked connection_id={} remote={}",
                         self.connection_id, self.remote
@@ -432,11 +379,6 @@ mod implementation {
             let (ready_future, ready) = task_completion();
             let shared = Arc::new(Mutex::new(ConnectionWorkerState::default()));
             let worker_shared = Arc::clone(&shared);
-
-            println!("[badge-nal] tcp connect start remote={remote} connection_id={connection_id}");
-            println!(
-                "[badge-nal] scheduling worker name=badge-net-connection connection_id={connection_id} remote={remote}"
-            );
 
             let join_handle = match thread::Builder::new()
                 .name(format!("badge-net-connection-{connection_id}"))
@@ -492,16 +434,7 @@ mod implementation {
             addr_type: AddrType,
         ) -> Result<IpAddr, Self::Error> {
             let host = host.to_owned();
-            match spawn_blocking("badge-dns-lookup", move || resolve_host(host, addr_type))?.await {
-                Ok(ip) => {
-                    println!("[badge-nal] dns lookup success ip={ip}");
-                    Ok(ip)
-                }
-                Err(error) => {
-                    println!("[badge-nal] dns lookup task failed error={error}");
-                    Err(error)
-                }
-            }
+            spawn_blocking("badge-dns-lookup", move || resolve_host(host, addr_type))?.await
         }
 
         async fn get_host_by_address(
@@ -542,6 +475,8 @@ mod implementation {
 
             let outcome = future.await?;
             let actual_len = outcome.buffer.len();
+            // The worker cannot borrow the caller's buffer across `await`, so it returns an
+            // owned buffer and we copy it back into the caller-provided slice here.
             buf[..actual_len].copy_from_slice(&outcome.buffer);
             Ok(actual_len)
         }
@@ -551,6 +486,8 @@ mod implementation {
         async fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
             let (future, response) = task_completion();
             self.worker_mut()?.submit(ConnectionCommand::Write {
+                // The worker needs owned bytes because the async caller may resume and drop its
+                // borrow before the blocking write actually runs.
                 buffer: buf.to_vec(),
                 response,
             })?;

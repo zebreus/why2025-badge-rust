@@ -23,12 +23,33 @@ pub struct Why2025BadgeWindow {
     title: String,
     window: window_handle_t,
     framebuffer: *mut framebuffer_t,
+    present: WindowPresentMode,
+}
+
+/// Window buffering strategy used when creating a BadgeVMS window.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WindowBuffering {
+    /// Let BadgeVMS allocate and swap between two framebuffers.
+    DoubleBuffered,
+    /// Draw directly into the compositor-visible framebuffer.
+    SingleBuffered,
+}
+
+/// How a window present call should synchronize with the compositor.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WindowPresentMode {
+    /// Return immediately after queuing the present.
+    Immediate,
+    /// Wait until BadgeVMS reports the frame was displayed.
+    Blocking,
 }
 
 pub struct Why2025BadgeWindowConfig {
     size: Size,
     title: String,
     fullscreen: bool,
+    buffering: WindowBuffering,
+    present: WindowPresentMode,
 }
 
 impl Why2025BadgeWindowConfig {
@@ -38,17 +59,21 @@ impl Why2025BadgeWindowConfig {
             size,
             title: title.to_string(),
             fullscreen: false,
+            buffering: WindowBuffering::DoubleBuffered,
+            present: WindowPresentMode::Immediate,
         }
     }
     /// Config for a new fullscreen Window
     pub fn new_fullscreen() -> Self {
         Self {
             size: Size {
-                width: 400,
-                height: 400,
+                width: 700,
+                height: 700,
             },
             title: String::new(),
             fullscreen: true,
+            buffering: WindowBuffering::DoubleBuffered,
+            present: WindowPresentMode::Immediate,
         }
     }
     pub fn title(mut self, title: &str) -> Self {
@@ -57,6 +82,16 @@ impl Why2025BadgeWindowConfig {
     }
     pub fn size(mut self, size: Size) -> Self {
         self.size = size;
+        self
+    }
+
+    pub fn buffering(mut self, buffering: WindowBuffering) -> Self {
+        self.buffering = buffering;
+        self
+    }
+
+    pub fn present(mut self, present: WindowPresentMode) -> Self {
+        self.present = present;
         self
     }
 }
@@ -86,19 +121,24 @@ impl Why2025BadgeWindow {
             title: config.title,
             window: null_mut(),
             framebuffer: null_mut(),
+            present: config.present,
         };
+
+        let mut flags = if config.buffering == WindowBuffering::DoubleBuffered {
+            window_flag_t::WINDOW_FLAG_DOUBLE_BUFFERED
+        } else {
+            window_flag_t::WINDOW_FLAG_NONE
+        };
+
+        if config.fullscreen {
+            flags |= window_flag_t::WINDOW_FLAG_UNDECORATED | window_flag_t::WINDOW_FLAG_FULLSCREEN;
+        }
 
         let window = unsafe {
             window_create(
                 CString::new(this.title.as_str()).unwrap().as_ptr(),
                 size.clone(),
-                window_flag_t::WINDOW_FLAG_DOUBLE_BUFFERED
-                    | (if config.fullscreen {
-                        window_flag_t::WINDOW_FLAG_UNDECORATED
-                            | window_flag_t::WINDOW_FLAG_FULLSCREEN
-                    } else {
-                        window_flag_t::WINDOW_FLAG_NONE
-                    }),
+                flags,
             )
         };
 
@@ -120,7 +160,12 @@ impl Why2025BadgeWindow {
 
     /// Flush the window to the screen
     pub fn flush(&mut self) {
-        unsafe { window_present(self.window, false, null_mut(), 0) };
+        let block = match self.present {
+            WindowPresentMode::Immediate => false,
+            WindowPresentMode::Blocking => true,
+        };
+
+        unsafe { window_present(self.window, block, null_mut(), 0) };
     }
 
     /// Change the size of the window

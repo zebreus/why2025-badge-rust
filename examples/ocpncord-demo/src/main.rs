@@ -1,9 +1,4 @@
-use std::{
-    boxed::Box,
-    process::ExitCode,
-    string::{String, ToString},
-    sync::LazyLock,
-};
+use std::{boxed::Box, process::ExitCode, string::String, sync::LazyLock};
 
 use futures::executor::block_on;
 use mousefood::{TerminalAlignment, prelude::*};
@@ -20,6 +15,8 @@ use why2025_badge_emu_abi as _;
 
 mod input;
 
+const OPENCODE_BASE_URL: &str = "http://192.168.178.20:4096";
+
 static BADGE_DNS: LazyLock<BadgeDns> = LazyLock::new(BadgeDns::default);
 static BADGE_TCP_CONNECT: LazyLock<BadgeTcpConnect> = LazyLock::new(BadgeTcpConnect::default);
 
@@ -29,6 +26,7 @@ fn main() -> ExitCode {
 
 fn run() -> i32 {
     let base_url = base_url();
+    log_startup_network_info(base_url);
     let mut display = Why2025BadgeWindow::new(
         Why2025BadgeWindowConfig::new_fullscreen().buffering(WindowBuffering::SingleBuffered),
     );
@@ -57,24 +55,63 @@ fn run() -> i32 {
     0
 }
 
-fn base_url() -> String {
-    let mut args = std::env::args().skip(1);
-    let mut url = "http://192.168.178.20:4096".to_string();
+fn base_url() -> &'static str {
+    OPENCODE_BASE_URL
+}
 
-    while let Some(argument) = args.next() {
-        if argument == "--url" {
-            if let Some(value) = args.next() {
-                url = value;
+#[cfg(not(target_arch = "riscv32"))]
+fn log_startup_network_info(base_url: &str) {
+    println!("ocpncord-demo base_url={base_url}");
+    match best_effort_local_ip(base_url) {
+        Some(ip) => println!("ocpncord-demo local_ip={ip}"),
+        None => println!("ocpncord-demo local_ip=unavailable"),
+    }
+}
+
+#[cfg(not(target_arch = "riscv32"))]
+fn best_effort_local_ip(base_url: &str) -> Option<std::net::IpAddr> {
+    let endpoint = base_url
+        .strip_prefix("http://")
+        .or_else(|| base_url.strip_prefix("https://"))?;
+    let authority = endpoint.split('/').next()?;
+    let (host, port) = authority.rsplit_once(':')?;
+    let port = port.parse::<u16>().ok()?;
+
+    let socket = std::net::UdpSocket::bind(("0.0.0.0", 0)).ok()?;
+    socket.connect((host, port)).ok()?;
+    socket.local_addr().ok().map(|addr| addr.ip())
+}
+
+#[cfg(target_arch = "riscv32")]
+fn log_startup_network_info(base_url: &str) {
+    use std::ffi::CStr;
+
+    use why2025_badge_sys_bindings as abi;
+
+    println!("ocpncord-demo base_url={base_url}");
+
+    let status = unsafe { abi::wifi_get_connection_status() };
+    println!("ocpncord-demo wifi_status={status:?}");
+
+    if status == abi::wifi_connection_status_t::WIFI_CONNECTED {
+        let station = unsafe { abi::wifi_get_connection_station() };
+        if station.is_null() {
+            println!("ocpncord-demo wifi_station=null");
+        } else {
+            let ssid_ptr = unsafe { abi::wifi_station_get_ssid(station) };
+            if ssid_ptr.is_null() {
+                println!("ocpncord-demo wifi_ssid=<null>");
+            } else {
+                let ssid = unsafe { CStr::from_ptr(ssid_ptr) }.to_string_lossy();
+                println!("ocpncord-demo wifi_ssid={ssid}");
             }
-            continue;
-        }
 
-        if let Some(value) = argument.strip_prefix("--url=") {
-            url = value.to_string();
+            let rssi = unsafe { abi::wifi_station_get_rssi(station) };
+            println!("ocpncord-demo wifi_rssi={rssi}");
         }
     }
 
-    url
+    println!("ocpncord-demo local_ip=unavailable current BadgeVMS ABI does not expose station IP");
 }
 
 fn current_working_directory() -> String {

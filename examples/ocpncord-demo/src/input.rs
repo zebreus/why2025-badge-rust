@@ -3,6 +3,8 @@
 use core::char;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use std::thread;
+use std::time::Duration;
 
 use futures::Stream;
 use ocpncord_tui::{Event, KeyEvent, Modifiers, Scancode};
@@ -30,13 +32,16 @@ impl Stream for BadgeEventStream {
     type Item = Event;
 
     fn poll_next(self: Pin<&mut Self>, _context: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        let next_event = poll(self.window, self.timeout_msec).unwrap_or(Event::Tick);
+        let next_event = poll(self.window).unwrap_or_else(|| {
+            thread::sleep(Duration::from_millis(self.timeout_msec as u64));
+            Event::Tick
+        });
         Poll::Ready(Some(next_event))
     }
 }
 
-pub fn poll(window: window_handle_t, timeout_msec: u32) -> Option<Event> {
-    let event = unsafe { window_event_poll(window, true, timeout_msec) };
+pub fn poll(window: window_handle_t) -> Option<Event> {
+    let event = unsafe { window_event_poll(window, false, 0) };
     translate(event)
 }
 

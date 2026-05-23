@@ -1324,9 +1324,9 @@ dependencies = [
 
 [[package]]
 name = "ocpncord-backend"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9d7d0b2e4a0c6ce5a0b2980e2de3252c45f89352f37039d7a19f0d14bd9490f"
+checksum = "f3e39814cc3ecae9bbef5b3ce6fc03d9907dbb0b866aa11070f816fb92e0c022"
 dependencies = [
  "futures-core",
  "serde",
@@ -1334,9 +1334,9 @@ dependencies = [
 
 [[package]]
 name = "ocpncord-backend-opencode"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6b0c604b6bbc4f4aafc74d8fec7332dee057bd3acb2b83816f4d34ce151afad"
+checksum = "791bc30d78c37894d6c402d55b4144569c82d7b68d3596eb0a410232eeed3be7"
 dependencies = [
  "embedded-io-async",
  "embedded-nal-async",
@@ -1370,9 +1370,9 @@ dependencies = [
 
 [[package]]
 name = "ocpncord-tui"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "575ac8f7d1df98f8ba54afdee02115d2fc5263f0fee9f220a1986aac74f7a267"
+checksum = "20344f7cf5b4e36b040de2eba0dda21764f5161798d432de5fd7b90878f61a77"
 dependencies = [
  "futures",
  "futures-core",

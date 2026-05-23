@@ -20,9 +20,9 @@ embedded-io = "0.7"
 embedded-io-async = "0.7"
 embedded-nal-async = "0.9"
 futures = "0.3"
-ocpncord-backend = "0.4.0"
-ocpncord-backend-opencode = "0.4.0"
-ocpncord-tui = "0.4.0"
+ocpncord-backend = "0.4.1"
+ocpncord-backend-opencode = "0.4.1"
+ocpncord-tui = "0.4.1"
 
 [target.'cfg(not(target_arch = "riscv32"))'.dependencies]
 why2025-badge-emu-abi.workspace = true

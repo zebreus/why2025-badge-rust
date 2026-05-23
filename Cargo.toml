@@ -12,9 +12,11 @@ members = [
     "examples/hello-world-no_std-none-elf-manual-linking",
     "examples/graphics-demo",
     "examples/mousefood-demo",
+    "examples/ocpncord-demo",
     "examples/ratatui-demo",
     "why2025-badge-app-no-std",
     "why2025-badge-build",
+    "why2025-badge-embedded-nal-async",
     "why2025-badge-embedded-graphics",
     "why2025-badge-emu-abi",
     "why2025-badge-sys-bindings",
@@ -43,6 +45,7 @@ lto = "thin"
 why2025-badge-app-no-std = { path = "why2025-badge-app-no-std", version = "0.2.0" }
 why2025-badge-build = { path = "why2025-badge-build", version = "0.2.0" }
 why2025-badge-emu-abi = { path = "why2025-badge-emu-abi", version = "0.2.0" }
+why2025-badge-embedded-nal-async = { path = "why2025-badge-embedded-nal-async", version = "0.2.0" }
 why2025-badge-sys-bindings = { path = "why2025-badge-sys-bindings", version = "0.2.0" }
 why2025-badge-sys = { path = "why2025-badge-sys", version = "0.2.0" }
 why2025-badge-embedded-graphics = { path = "why2025-badge-embedded-graphics", version = "0.2.0" }

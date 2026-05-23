@@ -1,0 +1,21 @@
+[package]
+name = "why2025-badge-embedded-nal-async"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "embedded-nal-async adapters for WHY2025 badge std networking"
+keywords = ["why2025", "badge", "networking"]
+categories = ["embedded", "os"]
+
+[dependencies]
+embedded-io = { version = "0.7", features = ["std"] }
+embedded-io-async = "0.7"
+embedded-nal-async = "0.9"
+
+[target.'cfg(all(target_os = "linux", target_arch = "x86_64"))'.dependencies]
+std-embedded-nal-async = "0.4"
+
+[dev-dependencies]
+futures = { version = "0.3", default-features = false, features = ["executor"] }

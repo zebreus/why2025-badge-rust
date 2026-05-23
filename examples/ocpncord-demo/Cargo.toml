@@ -1,0 +1,28 @@
+[package]
+version.workspace = true
+name = "ocpncord-demo"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords = ["why2025", "badge", "ocpncord", "opencode"]
+categories = ["embedded", "os"]
+
+[dependencies]
+why2025-badge-embedded-graphics.workspace = true
+why2025-badge-embedded-nal-async.workspace = true
+why2025-badge-sys-bindings.workspace = true
+embedded-graphics.workspace = true
+mousefood.workspace = true
+ratatui.workspace = true
+embedded-graphics-unicodefonts.workspace = true
+embedded-io = "0.7"
+embedded-io-async = "0.7"
+embedded-nal-async = "0.9"
+futures = "0.3"
+ocpncord-backend = "0.4.0"
+ocpncord-backend-opencode = "0.4.0"
+ocpncord-tui = "0.4.0"
+
+[target.'cfg(not(target_arch = "riscv32"))'.dependencies]
+why2025-badge-emu-abi.workspace = true

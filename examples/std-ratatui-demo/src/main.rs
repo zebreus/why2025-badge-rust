@@ -1,7 +1,9 @@
 use crate::app::App;
 use mousefood::{TerminalAlignment, prelude::*};
 use ratatui::Terminal;
-use why2025_badge_embedded_graphics::Why2025BadgeWindow;
+use why2025_badge_embedded_graphics::{
+    Why2025BadgeWindow, Why2025BadgeWindowConfig, WindowBuffering,
+};
 
 #[cfg(not(target_arch = "riscv32"))]
 use why2025_badge_emu_abi as _;
@@ -10,7 +12,10 @@ mod app;
 mod ui;
 
 fn main() {
-    let mut display = Why2025BadgeWindow::new_fullscreen();
+    let mut display = Why2025BadgeWindow::new(
+        Why2025BadgeWindowConfig::new_fullscreen()
+            .buffering(WindowBuffering::SingleBuffered),
+    );
 
     let config = EmbeddedBackendConfig {
         flush_callback: Box::new(|display: &mut Why2025BadgeWindow| {

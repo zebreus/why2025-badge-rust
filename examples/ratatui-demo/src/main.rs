@@ -7,7 +7,9 @@ extern crate alloc;
 use crate::app::App;
 use mousefood::{TerminalAlignment, prelude::*};
 use ratatui::Terminal;
-use why2025_badge_embedded_graphics::Why2025BadgeWindow;
+use why2025_badge_embedded_graphics::{
+    Why2025BadgeWindow, Why2025BadgeWindowConfig, WindowBuffering,
+};
 
 mod app;
 mod ui;
@@ -15,7 +17,10 @@ mod ui;
 why2025_badge_app_no_std::app_main!(run);
 
 fn run() -> i32 {
-    let mut display = Why2025BadgeWindow::new_fullscreen();
+    let mut display = Why2025BadgeWindow::new(
+        Why2025BadgeWindowConfig::new_fullscreen()
+            .buffering(WindowBuffering::SingleBuffered),
+    );
 
     let config = EmbeddedBackendConfig {
         flush_callback: alloc::boxed::Box::new(|d: &mut Why2025BadgeWindow| {

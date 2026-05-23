@@ -614,7 +614,7 @@ mod tests {
     }
 
     #[test]
-    fn present_copies_and_clears_framebuffer() {
+    fn present_keeps_framebuffer_contents() {
         let title = CString::new("present").unwrap();
         let window = window_create(
             title.as_ptr(),
@@ -629,7 +629,7 @@ mod tests {
         window_present(window, false, core::ptr::null_mut(), 0);
 
         unsafe {
-            assert_eq!(*(*framebuffer).pixels, 0);
+            assert_eq!(*(*framebuffer).pixels, 0xffff);
         }
         window_destroy(window);
     }

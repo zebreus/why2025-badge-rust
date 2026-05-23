@@ -125,7 +125,6 @@ pub(crate) fn update_windowbuffer(window_data: &mut WindowData, size: Option<(us
         window_data.framebuffer.w as usize,
         window_data.framebuffer.h as usize,
     );
-    window_data.buffer565.fill(0);
 }
 
 pub(crate) fn rescale_windowbuffer(window_data: &mut WindowData, size: Option<(usize, usize)>) {
